@@ -1,0 +1,27 @@
+#exp_graph {
+    height: 400px;
+    width: 300px;
+    background: pink;
+}
+
+[ng\:cloak], [ng-cloak], .ng-cloak {
+  display: none !important;
+}
+
+[ng-click] {
+    cursor: pointer;
+}
+
+.selected {
+    color: red;
+    background: yellow;
+}
+
+#title_input {
+    margin-top: 20px;
+    font-size: 24px;
+}
+
+#exptitlediv {
+    height: 60px;
+}
