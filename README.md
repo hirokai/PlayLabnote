@@ -1,10 +1,8 @@
-Lab notebook
+This is your new Play application
 =================================
 
-[![Build Status](https://travis-ci.org/hirokai/LabnotePlay.svg?branch=master)](https://travis-ci.org/hirokai/LabnotePlay)
-
+[![Build Status](https://travis-ci.org/hirokai/PlayLabnote.svg?branch=master)](https://travis-ci.org/hirokai/PlayLabnote)
 
 * Labnote written with Play! and AngularJS.
-* Has RESTful interface with single page application with AngularJS
-
+* Blazingly fast single page app on top of RESTful interface.
 
