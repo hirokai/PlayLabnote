@@ -2,6 +2,7 @@ logs
 bower_components
 project/project
 project/target
+public/libs
 target
 tmp
 .history
