@@ -23,6 +23,55 @@
     height: 200px;
 }
 
+#leftPane {
+    height: 100%;
+    overflow: auto;
+    display: flex;
+}
+
+.listContainer {
+    justify-content: center;
+    overflow: auto;
+
+}
+
+
+
+/* from http://www.bootply.com/5l9bZ7ZOt6 */
+body, html {
+    overflow: hidden;
+}
+
+@media (min-width: 768px){
+    .leftPane {
+        position: absolute;
+        top: 0px;
+        bottom: 0;
+        left: 0;
+//        width: 75%;
+        overflow-y: scroll;
+    }
+
+    .rightPane  {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        right: 0;
+        overflow-y: scroll;
+//        width: 25%;
+    }
+}
+
+.leftPane {
+    height:100%;
+}
+
+.rightPane {
+    height:100%;
+}
+
+
+
  svg {
     width: 400px;
     height: 300px;

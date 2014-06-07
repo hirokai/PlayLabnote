@@ -21,7 +21,7 @@
         </div>
 
         <div class='row'>
-            <div ng-show='showList.value' class='col-md-3' ng-controller='itemListCtrl'>
+            <div ng-show='showList.value' class='col-md-3 leftPane' ng-controller='itemListCtrl'>
                 <tabset type="tabs">
                     <tab ng-repeat="tab in tabs" heading="{{tab.title}}" active="tab.active" disabled="tab.disabled">
                         {{tab.content}}
@@ -38,14 +38,17 @@
 
                 </div>
                 <div ng-if='isSampleTab()'>
-                    <button class='btn btn-default' ng-click='addSample()'>Add sample</button>
-                    <input type="text" ng-model='freeword.title'/>
-                    <span>{{(samples| filter:freeword).length}}/{{samples.length}} samples shown.</span>
-                    <ul>
-                        <li ng-repeat='sample in samples| filter:freeword' class='sample_list_item' ng-class='{selected: sample.id==selectedItem.sample.id}' ng-click='clickList(sample,$event)'>
-                            <div ng-click='clickList(sample,$event)'>{{sample.title}}</div>
-                        </li>
-                    </ul>
+                    <div class='listContainer'>
+                        <button class='btn btn-default' ng-click='addSample()'>Add sample</button>
+                        <input type="text" ng-model='freeword.title'/>
+                        <span>{{(samples| filter:freeword).length}}/{{samples.length}} samples shown.</span>
+                        <ul>
+                            <li ng-repeat='sample in samples| filter:freeword' class='sample_list_item' ng-class='{selected: sample.id==selectedItem.sample.id}' ng-click='clickList(sample,$event)'>
+                                <div ng-click='clickList(sample,$event)'>{{sample.title}}</div>
+                            </li>
+                        </ul>
+
+                    </div>
 
                 </div>
                 <div ng-if='isTypeTab()'>
@@ -70,7 +73,7 @@
             </div>
 
 
-            <div  ng-class='"row " + (showList.value ? "col-md-8" : "col-md-11")' ng-if='isExpTab()' ng-controller='expDetailCtrl'>
+            <div  ng-class='"row " + (showList.value ? "col-md-8 rightPane" : "col-md-11")' ng-if='isExpTab()' ng-controller='expDetailCtrl'>
                 <div ng-if='!isActive()'>
             Choose from list.
                 </div>
@@ -126,7 +129,7 @@
                 </div>
             </div>
 
-            <div class='{{showList.value ? "col-md-8" : "col-md-11"}}' ng-if='isTypeTab()' ng-controller='typeDetailCtrl'>
+            <div  ng-class='"row " + (showList.value ? "col-md-8 rightPane" : "col-md-11")' ng-if='isTypeTab()' ng-controller='typeDetailCtrl'>
                 <div ng-if='!isActive()'>
             Choose from list.
                 </div>
@@ -169,7 +172,7 @@
                 </div>
 
             </div>
-            <div class='col-md-8' ng-if='isSampleTab()' ng-controller='sampleDetailCtrl'>
+            <div  ng-class='"row " + (showList.value ? "col-md-8 rightPane" : "col-md-11")' ng-if='isSampleTab()' ng-controller='sampleDetailCtrl'>
                 <div class="col-md-8" ng-if='!isActive()'>
             Choose from list.
                 </div>
