@@ -1,4 +1,4 @@
-var expsApp = angular.module('expsApp', ['editableTitleModule','expSamplesModule','myGraph','ui.tree','ui.bootstrap','ngRoute']);
+var expsApp = angular.module('expsApp', ['editableTitleModule','ui.bootstrap','ui.tree']);
 
 var guid = (function () {
     function s4() {
@@ -13,7 +13,7 @@ var guid = (function () {
     };
 })();
 
-expsApp.service('listViewSvc',function($http){
+expsApp.service('listViewSvc',['$http', function($http){
     return {
         hello: function(){
             console.log('Hello');
@@ -74,8 +74,11 @@ expsApp.service('listViewSvc',function($http){
                 delete s['name']
                 return s;
             });
+        },
+        showList: {
+            value: true
         }
-    }});
+    }}]);
 
 expsApp.controller('protocolGraphCtrl',['$scope',function($scope){
         //   $scope.nodes = [{},{},{}]; //$scope.exp;
@@ -107,9 +110,10 @@ expsApp.controller('itemListAndDetailCtrl',['$scope','$http','listViewSvc',funct
     }
 //    $scope.selectedItem = listViewSvc.selectedItem;
     $scope.selectedListTab = listViewSvc.selectedListTab;
+    $scope.showList = listViewSvc.showList;
 }]);
 
-expsApp.controller('typeDetailCtrl', function ($scope, $http,listViewSvc) {
+expsApp.controller('typeDetailCtrl', ['$scope', '$http', 'listViewSvc', function ($scope, $http,listViewSvc) {
     $scope.$watch('selectedItem',function(nv,ov){
         if(!$scope.selectedItem) return;        //Name changed.
         if(nv && ov && nv.id == ov.id && nv.title != ov.title){
@@ -130,7 +134,7 @@ expsApp.controller('typeDetailCtrl', function ($scope, $http,listViewSvc) {
     $scope.detail = null;
     $scope.selectedItem = listViewSvc.selectedItem.type;
     $scope.selectedListTab = listViewSvc.selectedListTab;
-    $scope.hoge = listViewSvc.value;
+    $scope.showList = listViewSvc.showList;
 
     $scope.isActive = function(){
         return $scope.selectedItem.id || $scope.selectedItem.id == 0;
@@ -159,10 +163,11 @@ expsApp.controller('typeDetailCtrl', function ($scope, $http,listViewSvc) {
         });
     }
 
-});
+}]);
 
 expsApp.controller('sampleDetailCtrl', ['$scope','$http','listViewSvc', function ($scope, $http,listViewSvc) {
     $scope.selectedItem = listViewSvc.selectedItem.sample;
+    $scope.showList = listViewSvc.showList;
 
     $scope.isActive = function(){
         return $scope.selectedItem.id || $scope.selectedItem.id == 0;
@@ -189,7 +194,7 @@ expsApp.controller('sampleDetailCtrl', ['$scope','$http','listViewSvc', function
     },true);
 }]);
 
-expsApp.controller('expDetailCtrl', function ($scope, $http,listViewSvc) {
+expsApp.controller('expDetailCtrl', ['$scope','$http', 'listViewSvc', function ($scope, $http,listViewSvc) {
  //   $scope.exps = convertData(data);
     //     console.log(data[0],$scope.exps[0]);
 
@@ -239,12 +244,13 @@ expsApp.controller('expDetailCtrl', function ($scope, $http,listViewSvc) {
 
     },true);
     $scope.selectedItem = listViewSvc.selectedItem.exp;
+    $scope.showList = listViewSvc.showList;
 
     $scope.isActive = function(){
         return $scope.selectedItem.id || $scope.selectedItem.id == 0;
     }
 
-});
+}]);
 
 expsApp.controller('itemListCtrl', ['$scope','$http', 'listViewSvc', function ($scope, $http, listViewSvc) {
 
@@ -285,6 +291,9 @@ expsApp.controller('itemListCtrl', ['$scope','$http', 'listViewSvc', function ($
 
 
     $scope.selectedListTab = listViewSvc.selectedListTab;
+    $scope.showList = listViewSvc.showList;
+
+
     var k = {"Samples": 'sample', "Exps": 'exp', "Types": 'type'}[$scope.selectedListTab.name];
     $scope.selectedItem = listViewSvc.selectedItem;
 //    $scope.$watch('selectedListTab',function(nv){
@@ -320,26 +329,6 @@ expsApp.filter('typeFilter', function() {
     };
 });
 
-
-expsApp.config(['$routeProvider','$locationProvider',function($routeProvider,$locationProvider){
-    $routeProvider.
-        when('/phones', {
-            templateUrl: "/assets/html/editableTitle.html",
-            controller: 'titleController'
-        }).
-        when('/phones/:phoneId', {
-            templateUrl: "/assets/html/editableTitle.html",
-            controller: 'titleController'
-        }).
-        otherwise({
-            redirectTo: '/phones'
-        });
-    $locationProvider.html5Mode(true);
-    $locationProvider.hashPrefix('!');
-}]);
-
-
-
 mkTreeData = function (d) {
     return {id: d.node.id, title: d.node.name, nodes: _.map(d.children, function (n) {
         return mkTreeData(n);
@@ -366,3 +355,37 @@ function findIndex(vs,id){
 function showMessage(msg){
     console.log(msg);
 }
+
+
+var diffChange = function (newval, oldval) {
+    var vs1 = flattenTree(newval);
+    var vs2 = flattenTree(oldval);
+    var vs1_2 = _.filter(vs1, function (obj) {
+        return !_.findWhere(vs2, obj);
+    });
+    var vs2_1 = _.filter(vs2, function (obj) {
+        return !_.findWhere(vs1, obj);
+    });
+    return {added: vs1_2, removed: vs2_1};
+};
+
+
+var flattenTree = function (t) {
+    return [
+        {id: t.id, title: t.title}
+    ].concat(_.flatten(_.map(t.nodes, flattenTree)));
+}
+
+var guid = (function () {
+    function s4() {
+        return Math.floor((1 + Math.random()) * 0x10000)
+            .toString(16)
+            .substring(1);
+    }
+
+    return function () {
+        return s4() + s4() + '-' + s4() + '-' + s4() + '-' +
+            s4() + '-' + s4() + s4() + s4();
+    };
+})();
+

@@ -11,12 +11,7 @@ angular.module('expSamplesModule',[])
         $scope.$watch('expSummary.output',function(nv,ov){
             $scope.samples = $scope.expSummary.output;
         },true);
-    }])
-    .directive('expSamples',function(){
-        return {
-            templateUrl: "/assets/html/expSamples.html"
-        }
-    });
+    }]);
 
 angular.module('editableTitleModule',[])
     .controller('titleController',['$scope','$timeout',function($scope,$timeout){
@@ -35,7 +30,7 @@ angular.module('editableTitleModule',[])
         };
     }]).directive('editableTitle',function(){
         return {
-            templateUrl: "/assets/html/editableTitle.html"
+            templateUrl: "/public/html/partial/editableTitle.html"
         };
     })
 ;
@@ -85,7 +80,7 @@ angular.module('myGraph',[])
             return Math.random()*100;
         }
     }])
-    .directive('protocolGraph', ['$http', '$timeout', function(d3Service,$http,$timeout) {
+    .directive('protocolGraph', ['d3Service', '$http', '$timeout', function(d3Service,$http,$timeout) {
         return {
           restrict: 'EA',
           scope: {

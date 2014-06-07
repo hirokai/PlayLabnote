@@ -11,7 +11,6 @@ GET           /public/*file                     controllers.Assets.at(path="/pub
 
 POST          /exps                             controllers.Experiment.create
 
-GET           /exps                             controllers.Experiment.list
 GET           /exps.json                        controllers.Experiment.listJson
 
 GET           /exps/$id<[0-9]+>/runs                    controllers.Experiment.getExpRuns(id)
@@ -34,18 +33,13 @@ PUT           /psamples/$id<[0-9]+>                     controllers.Experiment.u
 
 
 GET           /exps/$id<[0-9]+>.json                    controllers.Experiment.getJson(id: models.Database.Id)
-GET           /exps/$id<[0-9]+>                         controllers.Experiment.get(id: models.Database.Id)
-
 GET           /exps/$id<[0-9]+>/note                    controllers.Experiment.stub(id)
-
 GET           /exps/$id<[0-9]+>/protocol                controllers.Experiment.stub(id)
 
 
-GET           /samples                          controllers.Sample.list
 GET           /samples.json                     controllers.Sample.listJson
 POST          /samples                          controllers.Sample.create
 GET           /samples/$id<[0-9]+>.json                 controllers.Sample.getJson(id: models.Database.Id)
-GET           /samples/$id<[0-9]+>                      controllers.Sample.get(id: models.Database.Id)
 PUT           /samples/$id<[0-9]+>                      controllers.Sample.update(id: models.Database.Id)
 DELETE        /samples/$id<[0-9]+>                      controllers.Sample.delete(id: models.Database.Id)
 
@@ -58,12 +52,10 @@ GET           /samples/$id<[0-9]+>/note                 controllers.Sample.stub(
 
 GET           /samples/of_type/:tid             controllers.Sample.samplesOfType(tid: models.Database.Id)
 
-GET           /types                            controllers.SampleType.list
 GET           /types.json                       controllers.SampleType.listJson
 POST          /types                            controllers.SampleType.create
 
 GET           /types/$id<[0-9]+>.json                   controllers.SampleType.getJson(id: models.Database.Id)
-GET           /types/$id<[0-9]+>                        controllers.SampleType.get(id: models.Database.Id)
 PUT           /types/$id<[0-9]+>                        controllers.SampleType.update(id: models.Database.Id)
 DELETE        /types/$id<[0-9]+>                        controllers.SampleType.delete(id: models.Database.Id)
 

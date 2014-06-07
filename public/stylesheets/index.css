@@ -1,3 +1,10 @@
+#righttop_tools {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 1000;
+}
+
 .exp_list_item, .sample_list_item {
     cursor: pointer;
 }

@@ -17,14 +17,6 @@ object Sample extends Controller {
     Ok("Stub")
   }
 
-  def list = Action {
-    DB.withConnection{ implicit c =>
-      val samples = SampleAccess().list
-      println(samples.length)
-      Ok(views.html.sample_list(None,Json.toJson(samples)))
-    }
-  }
-
   def create = Action(parse.tolerantFormUrlEncoded) { request =>
     val params = request.body
     var o_typ: Option[Id] = params.get("type").flatMap(_.headOption).map(_.toLong)
@@ -57,13 +49,6 @@ object Sample extends Controller {
     DB.withConnection{ implicit c =>
       val samples = SampleAccess().list
       Ok(Json.toJson(samples))
-    }
-  }
-
-  def get(id: Id) = Action {
-    DB.withConnection{ implicit c =>
-      val sample = SampleAccess().get(id)
-      Ok(views.html.sample(id, Json.toJson(sample)))
     }
   }
 

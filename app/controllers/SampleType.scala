@@ -78,21 +78,6 @@ object SampleType extends Controller {
     }
   }
 
-  def list() = Action {
-    DB.withConnection{ implicit c =>
-      val tree: Tree[SampleType] = SampleTypeAccess().getTypeTree()(models.SampleType.AnyType)
-      Ok(views.html.types(None, mkTreeJson(tree)))
-    }
-  }
-
-  def get(id: Id) = Action {
-    DB.withConnection{ implicit c =>
-//      val t = SampleTypeAccess().get(id)
-      val tree: Tree[SampleType] = SampleTypeAccess().getTypeTree()(models.SampleType.AnyType)
-      Ok(views.html.types(Some(id),mkTreeJson(tree)))
-    }
-  }
-
   def getJson(id: Id) = Action {request =>
     DB.withConnection{ implicit c =>
       val full = request.getQueryString("full") == Some("true")

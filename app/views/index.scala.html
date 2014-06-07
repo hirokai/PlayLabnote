@@ -4,18 +4,24 @@
 <!DOCTYPE html>
 <html lang="en-US" ng-app='expsApp'>
     <head>
-        <link rel="stylesheet" media="screen" href="@routes.Assets.at("stylesheets/bootstrap.min.css")">
-        <link rel="stylesheet" media="screen" href="@routes.Assets.at("stylesheets/main.css")">
-        <link rel="stylesheet" media="screen" href="@routes.Assets.at("stylesheets/angular-ui-tree.min.css")">
-        <link rel="stylesheet" media="screen" href="@routes.Assets.at("stylesheets/experiment_list.css")">
+        <link rel="stylesheet" media="screen" href="/public/libs/bootstrap/dist/css/bootstrap.min.css">
+        <link rel="stylesheet" media="screen" href="/public/libs/angular-ui-tree/dist/angular-ui-tree.min.css">
+
+        <!-- My own stylesheets -->
+        <link rel="stylesheet" media="screen" href="/public/stylesheets/common.css">
+        <link rel="stylesheet" media="screen" href="/public/stylesheets/index.css">
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
 
         <title>List of experiments</title>
     </head>
     <body ng-cloak ng-controller='itemListAndDetailCtrl' class='container'>
+        <div id="righttop_tools">
+            <button type="button" class="btn btn-default btn-sm" ng-model="showList.value" btn-checkbox >List</button>
+        </div>
+
         <div class='row'>
-            <div class='col-md-3' ng-controller='itemListCtrl'>
+            <div ng-show='showList.value' class='col-md-3' ng-controller='itemListCtrl'>
                 <tabset type="tabs">
                     <tab ng-repeat="tab in tabs" heading="{{tab.title}}" active="tab.active" disabled="tab.disabled">
                         {{tab.content}}
@@ -64,22 +70,25 @@
             </div>
 
 
-            <div class='col-md-8' ng-if='isExpTab()' ng-controller='expDetailCtrl'>
-                <div class="col-md-8" ng-if='!isActive()'>
+            <div  ng-class='"row " + (showList.value ? "col-md-8" : "col-md-11")' ng-if='isExpTab()' ng-controller='expDetailCtrl'>
+                <div ng-if='!isActive()'>
             Choose from list.
                 </div>
                 <div ng-if='isActive()'>
-                    <div ng-controller='titleController'>
-                        <div editable-title></div>
+                    <div ng-class="row" ng-controller='titleController'>
+                        <div >
+                            <div editable-title></div>
+                        </div>
                     </div>
-                    <a class="btn btn-sm btn-default" ng-href='/exps/{{selectedItem.id}}'>See Detail</a>
-                    <a class="btn btn-sm btn-danger" ng-click='deleteExp(this)'>Delete</a>
-                    <div class="btn-group">
-                        <label class="btn btn-default btn-sm" ng-model="showSection.note" btn-checkbox>Note</label>
-                        <label class="btn btn-default btn-sm" ng-model="showSection.protocol" btn-checkbox>Protocol</label>
-                        <label class="btn btn-default btn-sm" ng-model="showSection.sample" btn-checkbox>Samples</label>
+                    <div class="row">
+                        <a class="btn btn-sm btn-default" ng-href='/exps/{{selectedItem.id}}'>See Detail</a>
+                        <a class="btn btn-sm btn-danger" ng-click='deleteExp(this)'>Delete</a>
+                        <div class="btn-group">
+                            <label class="btn btn-default btn-sm" ng-model="showSection.note" btn-checkbox>Note</label>
+                            <label class="btn btn-default btn-sm" ng-model="showSection.protocol" btn-checkbox>Protocol</label>
+                            <label class="btn btn-default btn-sm" ng-model="showSection.sample" btn-checkbox>Samples</label>
+                        </div>
                     </div>
-                    {{showSection | json}}
                     @*<div ng-controller='protocolGraphCtrl'>*@
                     @*<svg>*@
                     @*<g ng-repeat='n in nodes'>*@
@@ -89,44 +98,46 @@
                     @*Hey*@
                     @*<span>{{exp.protocolSamples.length}} nodes.</span>*@
                     @*</div>*@
-                    <section ng-show='showSection.note'>
-                        <h4>Note</h4>
-                        <textarea name="" id="explist_note" cols="30" rows="10" ng-model='selectedItem.note'></textarea>
-                    </section>
-                    <section ng-show='showSection.protocol'>
-                        <h4>Protocol</h4>
-                    </section>
-                    <section ng-show='showSection.sample'>
-                        <h4>Input</h4>
-                        <div ng-controller='inputSamplesCtrl'>
-                            <div exp-samples></div>
-                        </div>
+                    <div class='row' >
+                        <section ng-show='showSection.note' class='{{showList.value ? "col-md-8" : "col-md-11"}}'>
+                            <h4>Note</h4>
+                            <textarea name="" id="explist_note" cols="30" rows="10" ng-model='selectedItem.note'></textarea>
+                        </section>
+                    </div>
+                    <div class='row' >
+                        <section ng-show='showSection.protocol'>
+                            <h4>Protocol</h4>
+                        </section>
+                    </div>
+                    <div class='row' >
+                        <section ng-show='showSection.sample'>
+                            <h4>Input</h4>
+                            <div ng-controller='inputSamplesCtrl'>
+                                <div exp-samples></div>
+                            </div>
 
-                        <h4>Output</h4>
-                        <div ng-controller='outputSamplesCtrl'>
-                            <div exp-samples></div>
-                        </div>
+                            <h4>Output</h4>
+                            <div ng-controller='outputSamplesCtrl'>
+                                <div exp-samples></div>
+                            </div>
 
-                    </section>
-
-
+                        </section>
+                    </div>
                 </div>
-
-
             </div>
-            <div class='col-md-8' ng-if='isTypeTab()' ng-controller='typeDetailCtrl'>
-                <div class="col-md-8" ng-if='!isActive()'>
+
+            <div class='{{showList.value ? "col-md-8" : "col-md-11"}}' ng-if='isTypeTab()' ng-controller='typeDetailCtrl'>
+                <div ng-if='!isActive()'>
             Choose from list.
                 </div>
-                <div class="col-md-8" ng-if='isActive()'>
+                <div ng-if='isActive()'>
                     <div ng-controller='titleController'>
                         <div editable-title></div>
                     </div>
 
                     <section>
                         <h3>Samples of this type</h3>
-                         <span>{{(detail.samples|typeFilter:detail.id:showSubtypes).length}} samples.</span>
-                        {{showAlsoSubtypes}}
+                        <span>{{(detail.samples|typeFilter:detail.id:showSubtypes).length}} samples.</span>
                         <button class='btn btn-sm' ng-click='addSample()'>Add</button>
                         <input id='showsubtypes' type="checkbox" ng-model='showSubtypes'/>
                         <label for="showsubtypes">Show subtypes</label>
@@ -171,20 +182,31 @@
 
 
         </div>
-        <script type="text/javascript">
-        </script>
-        <script type="text/javascript" src="/public/javascripts/jquery-1.11.1.min.js" type="text/javascript"></script>
-        <script type="text/javascript" src="/public/javascripts/underscore-min.js" type="text/javascript"></script>
-        <script type="text/javascript" src="/public/javascripts/angular.min.js" type="text/javascript"></script>
-        <script type="text/javascript" src="/public/javascripts/angular-route.js" type="text/javascript"></script>
-        <script type="text/javascript" src="/public/javascripts/dagre-d3.js" type="text/javascript"></script>
-        <script type="text/javascript" src='/public/javascripts/angular-ui-tree.js'></script>
 
-        <script type="text/javascript" src="@routes.Assets.at("javascripts/my_directives.js")" type="text/javascript"></script>
-        <script type="text/javascript" src="@routes.Assets.at("javascripts/libs/ui-bootstrap-0.11.0.min.js")" type="text/javascript"></script>
-        <script type="text/javascript" src="@routes.Assets.at("javascripts/libs/ui-bootstrap-tpls-0.11.0.min.js")" type="text/javascript"></script>
 
-        <script type="text/javascript" src="@routes.Assets.at("javascripts/experiment_list.js")" type="text/javascript"></script>
+        <script src="//cdnjs.cloudflare.com/ajax/libs/underscore.js/1.6.0/underscore-min.js"></script>
+        <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+        <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.2.16/angular.min.js"></script>
+        <script src="//cdnjs.cloudflare.com/ajax/libs/angular-ui-bootstrap/0.10.0/ui-bootstrap.min.js"></script>
+        <script src="//cdnjs.cloudflare.com/ajax/libs/angular-ui-bootstrap/0.10.0/ui-bootstrap-tpls.min.js"></script>
+
+
+            <!-- Frameworks and plugins that are available in CDN as well -->
+<!--
+        <script src="/public/libs/underscore/underscore.js"></script>
+        <script src="/public/libs/angular/angular.min.js"></script>
+        <script src="/public/libs/jquery/dist/jquery.min.js"></script>
+        <script src="/public/libs/angular-bootstrap/ui-bootstrap.min.js"></script>
+        <script src="/public/libs/angular-bootstrap/ui-bootstrap-tpls.min.js"></script>
+-->
+
+            <!-- Library -->
+        <script src='/public/libs/angular-ui-tree/dist/angular-ui-tree.min.js'></script>
+
+        <!-- My own scripts -->
+        <script src="/public/javascripts/dagre-d3-custom.js"></script>
+        <script src="/public/javascripts/my_directives.js"></script>
+        <script src="/public/javascripts/index.js"></script>
 
     </body>
 </html>

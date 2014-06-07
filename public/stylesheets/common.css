@@ -1,7 +1,14 @@
+/*To make the scrollbar visible, to avoid changeing layout.*/
+html,body
+{
+    height:101%;
+}
+
 .container {
     margin-top: 30px;
 }
 
+.btn { outline: none ! important; }
 
 div[editable-title] h2 {
     font-size: 24px;
@@ -11,4 +18,5 @@ div[editable-title] h2 {
 div[editable-title] input {
     font-size: 24px;
     font-weight: bold;
+    width: 100px;
 }

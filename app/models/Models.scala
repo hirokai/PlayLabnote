@@ -11,6 +11,7 @@ import scala.reflect.ClassTag
 
 object Database {
   type Id = Long
+  def escape(s: String) = s.replace("'","''")
 }
 
 object Util {
@@ -25,6 +26,7 @@ object Util {
 }
 
 import Database.Id
+import Database.escape
 
 case class Experiment (
                        id: Id,
@@ -49,7 +51,7 @@ object Experiment {
 case class ExperimentAccess(owner: Id = 0) {
   def create(name: String, owner: Option[Id] = None)(implicit c: Connection): Option[Id] = {
       val oid: Id = owner.getOrElse(0l) // default is sandbox user.
-      SQL(s"INSERT into Experiment(owner,name) values($oid,'$name')").executeInsert()
+      SQL(s"INSERT into Experiment(owner,name) values($oid,'${escape(name)}')").executeInsert()
   }
 
   def setName(id: Id, name: String, owner: Option[Id] = None)(implicit c: Connection): Boolean = {
@@ -57,8 +59,12 @@ case class ExperimentAccess(owner: Id = 0) {
     if(name.trim == ""){
       false
     }else{
-      1 == SQL(s"UPDATE Experiment SET name='$name' where owner=$oid and id=$id").executeUpdate()
+      1 == SQL(s"UPDATE Experiment SET name='${escape(name)}' where owner=$oid and id=$id").executeUpdate()
     }
+  }
+
+  def countTotal(implicit c: Connection): Long = {
+    SQL(s"SELECT count(*) as c from Experiment where owner=$owner")().map(_[Long]("c")).headOption.getOrElse(0l)
   }
 
   def delete(id: Id, owner: Option[Id] = None)(implicit c: Connection): Boolean = {
@@ -107,7 +113,7 @@ case class ExperimentAccess(owner: Id = 0) {
         case Some(t) => Some(t)
       }
       o_tid.flatMap{tid =>
-        val o_id: Option[Id] = SQL(s"INSERT into Sample(owner,name,type) values($owner,'$name',$tid)").executeInsert()
+        val o_id: Option[Id] = SQL(s"INSERT into Sample(owner,name,type) values($owner,'${escape(name)}',$tid)").executeInsert()
         o_id.flatMap{ id =>
           SQL(s"INSERT into SampleInRun(sample,protocol_sample,run) values($id,$pid,$rid)").executeInsert()
         }
@@ -208,11 +214,11 @@ case class ProtocolSampleAccess() {
   val dbname = "ProtocolSample"
 
   def create(eid: Id, name: String, tid: Id)(implicit c: Connection): Option[Id] = {
-     SQL(s"INSERT into ProtocolSample(name,experiment,type) values('$name',$eid,$tid)").executeInsert()
+     SQL(s"INSERT into ProtocolSample(name,experiment,type) values('${escape(name)}',$eid,$tid)").executeInsert()
   }
 
   def setName(id: Id, name: String, owner: Option[Id] = None)(implicit c: Connection): Boolean = {
-        1 == SQL(s"UPDATE ProtocolSample SET name='$name' where id=$id").executeUpdate()
+        1 == SQL(s"UPDATE ProtocolSample SET name='${escape(name)}' where id=$id").executeUpdate()
   }
 
   def listInExp(eid: Id)(implicit c: Connection): Stream[ProtocolSample] = {
@@ -255,9 +261,9 @@ case class SampleTypeAccess(owner: Id = 0) {
 
   def create(name: String, parent: Id, system: Boolean = false)(implicit c: Connection): Option[Id] = {
     val exists = 0 < SQL(s"SELECT count(*) as c from SampleType where exists" +
-       s" (SELECT * from SampleType where owner=$owner and name='$name')")().map(_[Long]("c")).head
+       s" (SELECT * from SampleType where owner=$owner and name='${escape(name)}')")().map(_[Long]("c")).head
     if(!exists) {
-      SQL(s"INSERT into SampleType(owner,name,parent,system) values($owner,'$name',$parent,$system)").executeInsert()
+      SQL(s"INSERT into SampleType(owner,name,parent,system) values($owner,'${escape(name)}',$parent,$system)").executeInsert()
     }else{
       None
     }
@@ -307,7 +313,7 @@ case class SampleTypeAccess(owner: Id = 0) {
   }
 
   def getOrCreate(name: String, parent: Id)(implicit c: Connection): Option[Id] = {
-    val o_st = SQL(s"SELECT * from SampleType where owner=$owner and name='$name'")()
+    val o_st = SQL(s"SELECT * from SampleType where owner=$owner and name='${escape(name)}'")()
       .map(SampleType.fromRow).headOption
     o_st match {
       case None => {
@@ -396,14 +402,14 @@ case class ExpRunAccess() {
   val dbname = "ExpRun"
 
   def create(eid: Id, name: String)(implicit c: Connection): Option[Id] = {
-    SQL(s"INSERT into ExpRun(name,experiment) values('$name',$eid)").executeInsert()
+    SQL(s"INSERT into ExpRun(name,experiment) values('${escape(name)}',$eid)").executeInsert()
   }
 
   def setName(id: Id, name: String, owner: Option[Id] = None)(implicit c: Connection): Boolean = {
     if(name.trim == ""){
       false
     }else{
-      1 == SQL(s"UPDATE Experiment SET name='$name' where id=$id").executeUpdate()
+      1 == SQL(s"UPDATE Experiment SET name='${escape(name)}' where id=$id").executeUpdate()
     }
   }
 
@@ -463,11 +469,15 @@ case class SampleAccess(owner: Id = 0) {
       s"on sample.type = sampletype.id")().map(Sample.fromRow).toArray
   }
 
+  def countTotal(implicit c: Connection): Long = {
+    SQL(s"SELECT count(*) as c from Sample where owner=$owner")().map(_[Long]("c")).headOption.getOrElse(0l)
+  }
+
   def create(name: String, tid: Id = SampleType.AnyType.id)(implicit c: Connection): Option[Id] = {
     if(name.trim == ""){
       None
     }else{
-      SQL(s"INSERT into Sample(owner,name,type) values($owner,'$name',$tid)").executeInsert()
+      SQL(s"INSERT into Sample(owner,name,type) values($owner,'${escape(name)}',$tid)").executeInsert()
     }
   }
 
@@ -494,7 +504,7 @@ case class SampleAccess(owner: Id = 0) {
     if(name.trim == ""){
       false
     }else{
-      1 == SQL(s"UPDATE Sample SET name='$name' where id=$id").executeUpdate()
+      1 == SQL(s"UPDATE Sample SET name='${escape(name)}' where id=$id").executeUpdate()
     }
   }
 
@@ -571,7 +581,7 @@ class ProtocolStepAccess {
     if(name.trim == ""){
       None
     }else{
-      val ps1: Option[Id] = SQL(s"INSERT into ProtocolStep(experiment,name) values($eid,'$name')").executeInsert()
+      val ps1: Option[Id] = SQL(s"INSERT into ProtocolStep(experiment,name) values($eid,'${escape(name)}')").executeInsert()
       for(p <- params){
         val pp: Option[Id] = SQL(
           "INSERT into ProtocolStepParam(step,name,ptype,unit) " +

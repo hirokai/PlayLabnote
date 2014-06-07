@@ -162,10 +162,6 @@ object Experiment extends Controller {
     Ok("Stub")
   }
 
-  def list = Action {
-    Ok(views.html.experiment_list())
-  }
-
   def listJson = Action {
     DB.withConnection {implicit c =>
       val exps: Stream[models.Experiment] =
@@ -177,14 +173,6 @@ object Experiment extends Controller {
           )
         })
       Ok(Json.toJson(exps))
-    }
-  }
-
-  def get(id: Id) = Action { request =>
-    DB.withConnection { implicit c =>
-      ExperimentAccess().getFull(id.toLong).map{ exp =>
-        Ok(views.html.experiment(id,Json.toJson(exp)))
-      }.getOrElse(NotFound(views.html.notFound()))
     }
   }
 
