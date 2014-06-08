@@ -1,4 +1,4 @@
-var expsApp = angular.module('expsApp', ['editableTitleModule', 'ui.bootstrap', 'ui.tree','ngResource']);
+var expsApp = angular.module('expsApp', ['editableTitleModule', 'ui.bootstrap', 'ui.tree','ngResource','ngRoute']);
 
 expsApp.factory('helper',function(){
     return {
@@ -27,4 +27,19 @@ expsApp.filter('typeFilter', function () {
         });
         return filtered;
     };
+});
+
+expsApp.config(['$routeProvider',function($routeProvider){
+    $routeProvider.
+        when('/exps', {
+            templateUrl: '/public/html/partials/exps.html',
+            controller: 'testCtrl'
+        }).
+        otherwise({
+            redirectTo: '/'
+        });
+}]);
+
+expsApp.controller('testCtrl', function(){
+    console.log('Hey');
 });
