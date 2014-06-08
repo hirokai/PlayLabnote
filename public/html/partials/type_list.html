@@ -1,7 +1,4 @@
 <div ng-controller='TypeListCtrl'>
-    <a class='btn btn-sm btn-default' href='#/exps'>Exp</a>
-    <a class='btn btn-sm btn-default' href='#/samples'>Sample</a>
-    <a class='btn btn-sm btn-default' href='#/types'>Type</a>
 
     <script type="text/ng-template" id="nodes_renderer.html">
         <div ui-tree-handle class="tree-node tree-node-content" ng-click='selectItem(node)' ng-dblclick='dblClickTree(this)' ng-class='{selected: isSelectedType(node.id)}' >

@@ -1,4 +1,4 @@
-var expsApp = angular.module('expsApp', ['editableTitleModule', 'ui.bootstrap', 'ui.tree','ngResource','ngRoute']);
+var expsApp = angular.module('expsApp', ['editableTitleModule', 'ui.bootstrap', 'ui.tree','ngResource','ui.router']);
 
 expsApp.factory('helper',function(){
     return {
@@ -29,15 +29,86 @@ expsApp.filter('typeFilter', function () {
     };
 });
 
-expsApp.config(['$routeProvider','$locationProvider', function($routeProvider,$locationProvider){
-    $routeProvider.
-        when('/:mode/:id?', {
-           templateUrl: '/public/html/partials/entire_view.html',
-            controller: 'entireCtrl'
-        }).
-        otherwise({
-            redirectTo: '/exps'
-        });
+expsApp.config(['$stateProvider', '$urlRouterProvider', function($stateProvider, $urlRouterProvider){
+    $urlRouterProvider.otherwise("/exps");
 
-//    $locationProvider.html5Mode(true);
+    $stateProvider
+        .state('exps', {
+            url: "/exps",
+            views: {
+                list: {
+                    templateUrl: "/public/html/partials/exp_list.html",
+                    controller: 'ExpListCtrl'
+                },
+                detail: {
+                    templateUrl: "/public/html/partials/exp_detail.html",
+                    controller: 'ExpDetailCtrl'
+                }
+            }
+        })
+        .state('exp_id', {
+            url: "/exps/:id",
+            views: {
+                list: {
+                    templateUrl: "/public/html/partials/exp_list.html",
+                    controller: 'ExpListCtrl'
+                },
+                detail: {
+                    templateUrl: "/public/html/partials/exp_detail.html",
+                    controller: 'ExpDetailCtrl'
+                }
+            }
+        })
+        .state('samples', {
+            url: "/samples",
+            views: {
+                list: {
+                    templateUrl: "/public/html/partials/sample_list.html",
+                    controller: 'SampleListCtrl'
+                },
+                detail: {
+                    templateUrl: "/public/html/partials/sample_detail.html",
+                    controller: 'SampleDetailCtrl'
+                }
+            }
+        })
+        .state('sample_id', {
+            url: "/samples/:id",
+            views: {
+                list: {
+                    templateUrl: "/public/html/partials/sample_list.html",
+                    controller: 'SampleListCtrl'
+                },
+                detail: {
+                    templateUrl: "/public/html/partials/sample_detail.html",
+                    controller: 'SampleDetailCtrl'
+                }
+            }
+        })
+        .state('types', {
+            url: "/types",
+            views: {
+                list: {
+                    templateUrl: "/public/html/partials/type_list.html",
+                    controller: 'TypeListCtrl'
+                },
+                detail: {
+                    templateUrl: "/public/html/partials/type_detail.html",
+                    controller: 'TypeDetailCtrl'
+                }
+            }
+        })
+        .state('type_id', {
+            url: "/types/:id",
+            views: {
+                list: {
+                    templateUrl: "/public/html/partials/type_list.html",
+                    controller: 'TypeListCtrl'
+                },
+                detail: {
+                    templateUrl: "/public/html/partials/type_detail.html",
+                    controller: 'TypeDetailCtrl'
+                }
+            }
+        });
 }]);

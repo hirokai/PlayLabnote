@@ -78,11 +78,11 @@ expsApp.controller('protocolGraphCtrl', ['$scope', function ($scope) {
 
 //This controller is loaded in the beginning, no matter which tab is open. (Background loading).
 expsApp.controller('entireCtrl',
-    ['$scope', '$http', '$location','$route',
+    ['$scope', '$http',
         'listViewSvc',
         'ExpData', 'SampleData', 'TypeData',
         'ExpDataSvc', 'SampleDataSvc', 'TypeDataSvc',
-    function ($scope, $http, $location, $route,
+    function ($scope, $http,
               listViewSvc,
               ExpData, SampleData, TypeData,
               ExpDataSvc, SampleDataSvc, TypeDataSvc) {
@@ -93,18 +93,6 @@ expsApp.controller('entireCtrl',
             listViewSvc.types = TypeData.getAll();
 
             $scope.mode = 'exp';
-            console.log($route.current.params);
-
-          var mode = $route.current.params.mode;
-          if(mode != 'exps' && mode != 'samples' && mode != 'types'){
-              $location.path('/exps');
-          }
-
-//
-//        //Copying reference to this scope, so that you can watch.
-//        $scope.exps = listViewSvc.exps;
-//        $scope.samples = listViewSvc.samples;
-//        $scope.types = listViewSvc.types;
 
             $scope.selectedListTab = listViewSvc.selectedListTab;
             $scope.selectedItem = listViewSvc.selectedItem;
@@ -116,7 +104,6 @@ expsApp.controller('entireCtrl',
         //Selection change or content change
         $scope.$watch('selectedItem.exp', function (nv, ov) {
             ExpDataSvc.change(nv, ov);
-            console.log($location,$location.url());
         }, true);
         $scope.$watch('selectedItem.sample', function (nv, ov) {
             SampleDataSvc.change(nv, ov);
@@ -154,8 +141,52 @@ expsApp.controller('entireCtrl',
 
     }]);
 
+expsApp.controller('ExpDetailCtrl', ['$scope', '$http', 'listViewSvc', 'ExpData', 'ExpDataSvc', function ($scope, $http, listViewSvc, ExpData, ExpDataSvc) {
+    //   $scope.exps = convertData(data);
+    //     console.log(data[0],$scope.exps[0]);
 
-expsApp.controller('typeDetailCtrl', ['$scope', '$http', 'listViewSvc', 'TypeData', function ($scope, $http, listViewSvc, TypeData) {
+    $scope.selectedItem = listViewSvc.selectedItem;
+    $scope.item = listViewSvc.selectedItem.exp;
+    $scope.showList = listViewSvc.showList;
+
+    console.log($scope.item);
+
+    $scope.showSection = {note: true, sample: true, protocol: true};
+
+    $scope.deleteExp = function (scope) {
+        var id = $scope.item.id;
+        $http({url: '/exps/' + id, method: 'DELETE'}).then(function (r) {
+            var res = r.data;
+            console.log(res);
+            if (res.success) {
+                console.log($scope.exps);
+                var idx = findIndex($scope.exps, res.id);
+                $scope.exps.splice(idx, 1);
+                console.log(idx, $scope.exps);
+                $scope.selectedItem = $scope.exps[idx - 1];
+            }
+        });
+    };
+
+    $scope.isActive = function () {
+        return $scope.selectedItem.id || $scope.selectedItem.id == 0;
+    }
+
+}]);
+
+expsApp.controller('SampleDetailCtrl', ['$scope', '$http', 'listViewSvc', 'SampleData', function ($scope, $http, listViewSvc, SampleData) {
+    $scope.selectedItem = listViewSvc.selectedItem;
+    $scope.item = listViewSvc.selectedItem.sample;
+    $scope.showList = listViewSvc.showList;
+
+
+    $scope.isActive = function () {
+        return $scope.selectedItem.id || $scope.selectedItem.id == 0;
+    };
+
+}]);
+
+expsApp.controller('TypeDetailCtrl', ['$scope', '$http', 'listViewSvc', 'TypeData', function ($scope, $http, listViewSvc, TypeData) {
     var init = function () {
         $scope.showSubtypes = false;
 
@@ -203,81 +234,51 @@ expsApp.controller('typeDetailCtrl', ['$scope', '$http', 'listViewSvc', 'TypeDat
 
 }]);
 
-
-expsApp.controller('sampleDetailCtrl', ['$scope', '$http', 'listViewSvc', 'SampleData', function ($scope, $http, listViewSvc, SampleData) {
+expsApp.controller('ExpListCtrl', ['$scope', '$state', '$stateParams', 'listViewSvc', function ($scope, $state, $stateParams, listViewSvc) {
     $scope.selectedItem = listViewSvc.selectedItem;
-    $scope.item = listViewSvc.selectedItem.sample;
-    $scope.showList = listViewSvc.showList;
-
-
-    $scope.isActive = function () {
-        return $scope.selectedItem.id || $scope.selectedItem.id == 0;
-    };
-
-}]);
-
-expsApp.controller('expDetailCtrl', ['$scope', '$http', 'listViewSvc', 'ExpData', 'ExpDataSvc', function ($scope, $http, listViewSvc, ExpData, ExpDataSvc) {
-    //   $scope.exps = convertData(data);
-    //     console.log(data[0],$scope.exps[0]);
-
-    $scope.selectedItem = listViewSvc.selectedItem;
-    $scope.item = listViewSvc.selectedItem.exp;
-    $scope.showList = listViewSvc.showList;
-
-    console.log($scope.item);
-
-    $scope.showSection = {note: true, sample: true, protocol: true};
-
-    $scope.deleteExp = function (scope) {
-        var id = $scope.item.id;
-        $http({url: '/exps/' + id, method: 'DELETE'}).then(function (r) {
-            var res = r.data;
-            console.log(res);
-            if (res.success) {
-                console.log($scope.exps);
-                var idx = findIndex($scope.exps, res.id);
-                $scope.exps.splice(idx, 1);
-                console.log(idx, $scope.exps);
-                $scope.selectedItem = $scope.exps[idx - 1];
-            }
-        });
-    };
-
-    $scope.isActive = function () {
-        return $scope.selectedItem.id || $scope.selectedItem.id == 0;
-    }
-
-}]);
-
-expsApp.controller('ExpListCtrl', ['$scope', '$location', 'listViewSvc', function ($scope, $location, listViewSvc) {
+    $scope.sp = $stateParams
     $scope.exps = listViewSvc.exps;
-    console.log($scope.exps);
-    $scope.isSelectedSample = function (id) {
-        console.log($scope);
-        return id == $scope.selectedItem.id
-    };
-    $scope.goToSample = function(){
-        $location.path('/samples');
-    }
-}]);
+//    if($stateParams.id){
+//        $scope.selectedItem.exp.id = $stateParams.id;
+//    }
 
-expsApp.controller('SampleListCtrl', ['$scope', '$location', 'listViewSvc', function ($scope, $location, listViewSvc) {
-    $scope.samples = listViewSvc.samples;
-}]);
-
-expsApp.controller('TypeListCtrl', ['$scope', '$location', 'listViewSvc', function ($scope, $location, listViewSvc) {
-    $scope.treedata = listViewSvc.types;
-}]);
-
-expsApp.controller('itemListCtrl', ['$scope', '$http', '$location', 'listViewSvc', 'ExpData', function ($scope, $http, $location, listViewSvc, ExpData) {
     $scope.isSelectedExp = function (id) {
-        return id == $scope.selectedItem.exp.id
+        return id == $stateParams.id
+    };
+    $scope.selectItem = function (item) {
+        listViewSvc.selectedItem.exp = item;
+        console.log($stateParams);
+        $state.go('exp_id',{id: item.id});
     };
 
+}]);
+
+expsApp.controller('SampleListCtrl', ['$scope', '$state', '$stateParams', 'listViewSvc', function ($scope, $state, $stateParams, listViewSvc) {
+    $scope.samples = listViewSvc.samples;
+    $scope.selectedItem = listViewSvc.selectedItem;
+    $scope.isSelectedSample = function (id) {
+        return id == $stateParams.id
+    };
+    $scope.selectItem = function (item) {
+        listViewSvc.selectedItem.sample = item;
+        $state.go('sample_id',{id: item.id});
+    };
+}]);
+
+expsApp.controller('TypeListCtrl', ['$scope', '$state', '$stateParams', 'listViewSvc', function ($scope, $state, $stateParams, listViewSvc) {
+    $scope.treedata = listViewSvc.types;
+    $scope.selectedItem = listViewSvc.selectedItem;
     $scope.isSelectedType = function (id) {
-        return id == $scope.selectedItem.type.id
+        return id == $stateParams.id
     };
+    $scope.selectItem = function (item) {
+        listViewSvc.selectedItem.type = item;
+        console.log(item);
+        $state.go('type_id',{id: item.id});
+    };
+}]);
 
+expsApp.controller('itemListCtrl', ['$scope', '$http', 'listViewSvc', 'ExpData', function ($scope, $http, listViewSvc, ExpData) {
     $scope.selectItem = function (item) {
         var k = {"Samples": 'sample', "Exps": 'exp', "Types": 'type'}[$scope.selectedListTab.name];
         listViewSvc.selectedItem[k] = item;
@@ -289,29 +290,7 @@ expsApp.controller('itemListCtrl', ['$scope', '$http', '$location', 'listViewSvc
         {value: 'type', title: 'Types'}
     ];
 
-    $scope.$watch('tabs', function (nv, ov) {
-        var t = _.findWhere(nv, {active: true});
-        var v = t ? t.value : null;
-        if(!v) return;
-
-        $scope.selectedListTab.name = v;
-        listViewSvc.tab.value = v;
-//        console.log('tab changed.',listViewSvc.tab);
-//        if(v == 'exp'){
-//            $location.path('/exps');
-//        }
-        console.log(v);
-//        if(v == 'sample'){
-//            $location.path('/samples');
-//        }
-//        if(v == 'type'){
-//            $location.path('/types');
-//        }
-    }, true);
-
-    $scope.selectedListTab = listViewSvc.selectedListTab;
     $scope.showList = listViewSvc.showList;
-
 
     var k = {"Samples": 'sample', "Exps": 'exp', "Types": 'type'}[$scope.selectedListTab.name];
     $scope.selectedItem = listViewSvc.selectedItem;
