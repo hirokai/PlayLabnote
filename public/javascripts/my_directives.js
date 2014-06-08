@@ -34,7 +34,7 @@ angular.module('editableTitleModule',[])
                     $scope.editingTitle = false;
                 };
             }],
-            templateUrl: "/public/html/partial/editableTitle.html"
+            templateUrl: "/public/html/partials/editableTitle.html"
         };
     })
     .directive('editableName',function(){
@@ -57,7 +57,7 @@ angular.module('editableTitleModule',[])
                     $scope.editingTitle = false;
                 };
             }],
-            templateUrl: "/public/html/partial/editableName.html"
+            templateUrl: "/public/html/partials/editableName.html"
         };
     });
 

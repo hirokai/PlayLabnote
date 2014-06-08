@@ -41,6 +41,6 @@ module.exports = function(grunt) {
     grunt.file.delete("public/javascripts/dist")
 
     // Default task(s).
-    grunt.registerTask('default', ['uglify','watch']);
+    grunt.registerTask('default', ['uglify']);
 
 };
