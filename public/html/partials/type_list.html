@@ -1,4 +1,4 @@
-<div ng-controller='TypeListCtrl'>
+<div ng-controller='TypeListCtrl' ng-class="{fade: true, in: treedata}">
 
     <script type="text/ng-template" id="nodes_renderer.html">
         <div ui-tree-handle class="tree-node tree-node-content" ng-click='selectItem(node)' ng-dblclick='dblClickTree(this)' ng-class='{selected: isSelectedType(node.id)}' >

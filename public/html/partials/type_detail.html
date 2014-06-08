@@ -1,12 +1,15 @@
-<div  ng-class='"row " + (showList.value ? "col-md-8 rightPane" : "col-md-11")' ng-controller='TypeDetailCtrl'>
+<div class="fade row" ng-class="{in:loaded, 'col-md-8': showList.value, 'rightPane': showList.value, 'col-md-11': !showList.value}" ng-controller='TypeDetailCtrl'>
     <div ng-class="row" >
-        <div editable-title item='selectedItem.type'></div>
+        <div editable-name item='item'></div>
     </div>
-    <button type="button" class="btn btn-default btn-sm" ng-model="showJson" btn-checkbox >JSON</button>
-    <pre class='json' ng-if='showJson'>{{selectedItem.type | json}}</pre>
+    <button type="button" class="btn btn-default btn-sm" ng-model="showDetailJson.value" btn-checkbox >JSON</button>
+    <pre class='json' ng-if='showDetailJson.value'>{{selectedItem.type | json}}</pre>
+
+    <pre class='json' ng-if='showDetailJson.value'>{{item | json}}</pre>
+
     <section>
         <h3>Samples of this type</h3>
-        <span>{{(detail.samples|typeFilter:detail.id:showSubtypes).length}} samples.</span>
+        <span>{{(samples|typeFilter:id:showSubtypes).length}} samples.</span>
         <button class='btn btn-sm' ng-click='addSample()'>Add</button>
         <input id='showsubtypes' type="checkbox" ng-model='showSubtypes'/>
         <label for="showsubtypes">Show subtypes</label>
@@ -21,19 +24,17 @@
             </tr>
             </thead>
             <tbody>
-            <tr ng-repeat='sample in detail.samples | typeFilter:detail.id:showSubtypes'>
+            <tr ng-repeat='sample in samples | typeFilter:id:showSubtypes'>
 
                 <td><a href="/samples/{{sample.id}}">{{sample.name}}</a></td>
                 <td>{{sample.typ.name}}</td>
                 <td></td>
                 <td></td>
-                <td><a href="#" ng-click='deleteSample(sample)'>Delete</a></td>
+                <td><a class='link' ng-click='deleteSample(sample)'>Delete</a></td>
             </tr>
             </tbody>
         </table>
 
 
     </section>
-
-
 </div>

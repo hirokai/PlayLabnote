@@ -6,7 +6,8 @@ expsApp.factory('TypeData',['$resource',function($resource){
     };
 
     return $resource('/types.json',{}, {
-        getAll: {method: 'GET', params: {}, isArray: true, transformResponse: readData}
+        getAll: {method: 'GET', params: {}, isArray: true, transformResponse: readData},
+        getOne: {method: 'GET', 'url': '/types/:id.json'}
     });
 }]);
 
@@ -21,19 +22,111 @@ expsApp.factory('TypeDataSvc',['$http', 'listViewSvc', function($http, listViewS
                 //This means not selection, but content is changed.
 
                 console.log('item content changed.',nv,ov);
-                $http({url: '/types/'+nv.id, method: 'PUT',data: $.param({name: nv.title})}).success(function(r){
+                $http({url: '/types/'+nv.id, method: 'PUT',data: $.param({name: nv.name})}).success(function(r){
                     if(r.success){
                         var ts = flattenTree(listViewSvc.types)
                         var t = findInTree(ts[0][0],r.data.id);
                         t.title = r.data.name;
                     }
                     console.log(r.data);
-                });
+                }).error(function(r){
+                        console.log('TypeDataSvc.change() error',r);
+                    });
             }else{
                 console.log('item selection changed.',nv);
             }
         }
     };
+}]);
+
+
+expsApp.controller('TypeListCtrl', ['$scope', '$state', '$stateParams', 'listViewSvc', function ($scope, $state, $stateParams, listViewSvc) {
+    $scope.treedata = listViewSvc.types;
+    $scope.selectedItem = listViewSvc.selectedItem;
+
+    listViewSvc.current.mode = 'type';
+    listViewSvc.current.id = $stateParams.id;
+
+    $scope.isSelectedType = function (id) {
+        return id == $stateParams.id
+    };
+    $scope.selectItem = function (item) {
+        listViewSvc.selectedItem.type = item;
+        console.log(item);
+        $state.go('type_id',{id: item.id});
+    };
+}]);
+
+
+expsApp.controller('TypeDetailCtrl', ['$scope', '$http', '$stateParams', 'listViewSvc', 'TypeData', 'TypeDataSvc',
+    function ($scope, $http, $stateParams, listViewSvc, TypeData, TypeDataSvc) {
+    var init = function () {
+        $scope.showSubtypes = false;
+
+        $scope.showDetailJson = listViewSvc.showDetailJson;
+
+        $scope.selectedItem = listViewSvc.selectedItem;
+//        $scope.loaded = true;
+        $scope.item = TypeData.getOne({id: $stateParams.id},function(){
+            $scope.loaded = true;
+        });
+
+        $scope.$watch('item', function (nv, ov) {
+            TypeDataSvc.change(nv, ov);
+        }, true);
+
+        $scope.showList = listViewSvc.showList;
+        $scope.types = listViewSvc.types;
+        $scope.id = $stateParams.id;
+        if($scope.id){
+            $http.get('/samples/of_type/'+$scope.id, {params: {subtypes: true}}).then(function(r){
+                $scope.samples = r.data;
+                console.log(r);
+            });
+        }else{
+            $scope.samples = [];
+        }
+    }
+
+    init();
+
+    //Selected type changed. (NOT type content change)
+    $scope.$watch('selectedItem.type', function () {
+        //Stub: Load samples of type
+    });
+
+    $scope.isActive = function () {
+        return $scope.selectedItem.id || $scope.selectedItem.id == 0;
+    };
+
+    $scope.addSample = function () {
+        var typ = $scope.id;
+        console.log(typ, $scope);
+        if (typ || typ == 0) {
+            var name = $scope.selectedItem.type.title || 'New sample';
+
+            $http.post('/samples', $.param({name: name, type: typ})).success(function (r) {
+                console.log(r);
+                $scope.samples.push(r.data);
+                console.log(r.data, $scope.samples);
+            });
+        } else {
+            console.log('not selected');
+        }
+    };
+
+    $scope.deleteSample = function (sample) {
+        $http({url: '/samples/' + sample.id, method: 'DELETE'}).then(function (r) {
+            var res = r.data;
+            if (res.success) {
+                var idx = findIndex($scope.samples, sample.id);
+                if (idx >= 0) {
+                    $scope.samples.splice(idx, 1);
+                }
+            }
+        });
+    }
+
 }]);
 
 

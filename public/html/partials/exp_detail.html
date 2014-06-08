@@ -1,10 +1,12 @@
-<div  ng-class='"row " + (showList.value ? "col-md-8 rightPane" : "col-md-11")' ng-controller='ExpDetailCtrl'>
-<div ng-class="row" >
-        <div editable-title item='selectedItem.exp'></div>
+<div class="fade row" ng-class="{in:loaded, 'col-md-8': showList.value, 'rightPane': showList.value, 'col-md-11': !showList.value}" ng-controller='ExpDetailCtrl'>
+    <div ng-class="row" >
+        <div editable-name item='item'></div>
     </div>
     <div class="row">
-        <button type="button" class="btn btn-default btn-sm" ng-model="showJson" btn-checkbox >JSON</button>
-        <pre class='json' ng-if='showJson'>{{selectedItem.exp | json}}</pre>
+        <button type="button" class="btn btn-default btn-sm" ng-model="showDetailJson.value" btn-checkbox >JSON</button>
+        <pre class='json' ng-if='showDetailJson.value'>{{selectedItem.exp | json}}</pre>
+        <pre class='json' ng-if='showDetailJson.value'>{{item | json}}</pre>
+
         <a class="btn btn-sm btn-default" ng-href='/exps/{{selectedItem.id}}'>See Detail</a>
         <a class="btn btn-sm btn-danger" ng-click='deleteExp(this)'>Delete</a>
         <div class="btn-group">

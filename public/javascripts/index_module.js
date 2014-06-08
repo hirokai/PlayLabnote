@@ -41,8 +41,8 @@ expsApp.config(['$stateProvider', '$urlRouterProvider', function($stateProvider,
                     controller: 'ExpListCtrl'
                 },
                 detail: {
-                    templateUrl: "/public/html/partials/exp_detail.html",
-                    controller: 'ExpDetailCtrl'
+                    templateUrl: "/public/html/partials/empty_detail.html",
+                    controller: 'EmptyDetailCtrl'
                 }
             }
         })
@@ -67,8 +67,8 @@ expsApp.config(['$stateProvider', '$urlRouterProvider', function($stateProvider,
                     controller: 'SampleListCtrl'
                 },
                 detail: {
-                    templateUrl: "/public/html/partials/sample_detail.html",
-                    controller: 'SampleDetailCtrl'
+                    templateUrl: "/public/html/partials/empty_detail.html",
+                    controller: 'EmptyDetailCtrl'
                 }
             }
         })
@@ -93,8 +93,8 @@ expsApp.config(['$stateProvider', '$urlRouterProvider', function($stateProvider,
                     controller: 'TypeListCtrl'
                 },
                 detail: {
-                    templateUrl: "/public/html/partials/type_detail.html",
-                    controller: 'TypeDetailCtrl'
+                    templateUrl: "/public/html/partials/empty_detail.html",
+                    controller: 'EmptyDetailCtrl'
                 }
             }
         })

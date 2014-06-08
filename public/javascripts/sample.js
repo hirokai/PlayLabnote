@@ -9,7 +9,8 @@ expsApp.factory('SampleData',['$resource',function($resource){
     };
 
     return $resource('/samples.json',{}, {
-        getAll: {method: 'GET', params: {}, isArray: true, transformResponse: readData}
+        getAll: {method: 'GET', params: {}, isArray: true, transformResponse: readData},
+        getOne: {method: 'GET', 'url': '/samples/:id.json'}
     });
 }]);
 
@@ -23,7 +24,7 @@ expsApp.factory('SampleDataSvc',['$http', 'listViewSvc', function($http, listVie
                 //This means not selection, but content is changed.
 
                 console.log('item content changed.',nv,ov);
-                $http({url: '/samples/'+nv.id, method: 'PUT',data: $.param({name: nv.title})}).success(function(r){
+                $http({url: '/samples/'+nv.id, method: 'PUT',data: $.param({name: nv.name})}).success(function(r){
                     if(r.success){
                         var e = _.findWhere(listViewSvc.samples,{id: r.data.id});
                         e.name = r.data.name;
@@ -36,4 +37,39 @@ expsApp.factory('SampleDataSvc',['$http', 'listViewSvc', function($http, listVie
             }
         }
     };
+}]);
+
+
+expsApp.controller('SampleListCtrl', ['$scope', '$state', '$stateParams', 'listViewSvc', function ($scope, $state, $stateParams, listViewSvc) {
+    $scope.samples = listViewSvc.samples;
+    $scope.selectedItem = listViewSvc.selectedItem;
+
+    listViewSvc.current.mode = 'sample';
+    listViewSvc.current.id = $stateParams.id;
+
+    $scope.isSelectedSample = function (id) {
+        return id == $stateParams.id
+    };
+    $scope.selectItem = function (item) {
+        listViewSvc.selectedItem.sample = item;
+        $state.go('sample_id',{id: item.id});
+    };
+}]);
+
+expsApp.controller('SampleDetailCtrl', ['$scope', '$http', '$stateParams', 'listViewSvc', 'SampleData', 'SampleDataSvc', function ($scope, $http, $stateParams, listViewSvc, SampleData, SampleDataSvc) {
+    $scope.selectedItem = listViewSvc.selectedItem;
+    $scope.item = SampleData.getOne({id: $stateParams.id}, function(){
+        $scope.loaded = true;
+    });
+    $scope.showList = listViewSvc.showList;
+    $scope.showDetailJson = listViewSvc.showDetailJson;
+
+    $scope.$watch('item', function (nv, ov) {
+        SampleDataSvc.change(nv, ov);
+    }, true);
+
+    $scope.isActive = function () {
+        return $scope.selectedItem.id || $scope.selectedItem.id == 0;
+    };
+
 }]);
