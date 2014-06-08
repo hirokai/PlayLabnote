@@ -8,5 +8,5 @@ before_script:
   - npm install -g grunt-cli
   - npm install
   - bower install
-  - grunt build
+  - grunt
 script: play-${PLAY_VERSION}/play test

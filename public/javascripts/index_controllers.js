@@ -75,10 +75,14 @@ expsApp.controller('protocolGraphCtrl', ['$scope', function ($scope) {
 
 //This controller is loaded in the beginning, no matter which tab is open. (Background loading).
 expsApp.controller('itemListAndDetailCtrl',
-    ['$scope', '$http', 'listViewSvc',
+    ['$scope', '$http', '$location',
+        'listViewSvc',
         'ExpData', 'SampleData', 'TypeData',
         'ExpDataSvc', 'SampleDataSvc', 'TypeDataSvc',
-    function ($scope, $http, listViewSvc, ExpData, SampleData, TypeData, ExpDataSvc, SampleDataSvc, TypeDataSvc) {
+    function ($scope, $http, $location,
+              listViewSvc,
+              ExpData, SampleData, TypeData,
+              ExpDataSvc, SampleDataSvc, TypeDataSvc) {
         var init = function () {
             //Common data store
             listViewSvc.exps = ExpData.getAll();
@@ -101,6 +105,7 @@ expsApp.controller('itemListAndDetailCtrl',
         //Selection change or content change
         $scope.$watch('selectedItem.exp', function (nv, ov) {
             ExpDataSvc.change(nv, ov);
+            console.log($location,$location.url());
         }, true);
         $scope.$watch('selectedItem.sample', function (nv, ov) {
             SampleDataSvc.change(nv, ov);
