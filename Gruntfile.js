@@ -24,16 +24,23 @@ module.exports = function(grunt) {
                 src: ['public/javascripts/*.js', '!public/javascripts/index_module.js'],
                 dest: 'public/javascripts/dist/<%= pkg.name %>.js'
             }
+        },
+        watch: {
+            dev: {
+                files: ["public/javascripts/*.js"],
+                tasks: ['uglify']
+            }
         }
     });
 
     // Load the plugin that provides the "uglify" task.
     grunt.loadNpmTasks('grunt-contrib-uglify');
     grunt.loadNpmTasks('grunt-contrib-concat');
+    grunt.loadNpmTasks('grunt-contrib-watch');
 
     grunt.file.delete("public/javascripts/dist")
 
     // Default task(s).
-    grunt.registerTask('default', ['uglify']);
+    grunt.registerTask('default', ['uglify','watch']);
 
 };
