@@ -1,0 +1,13 @@
+<div ng-controller='ExpListCtrl'>
+    <a class='btn btn-sm btn-default' href='#/exps'>Exp</a>
+    <a class='btn btn-sm btn-default' href='#/samples'>Sample</a>
+    <a class='btn btn-sm btn-default' href='#/types'>Type</a>
+
+    <button class='btn btn-default' ng-click='addExp()'>Add exp</button>
+
+    <ul>
+        <li ng-repeat='exp in exps' class='exp_list_item' ng-class='{selected: isSelectedExp(exp.id)}' ng-click='selectItem(exp)'>
+            <div ng-click='clickList(exp,$event)'>{{exp.name}}</div>
+        </li>
+    </ul>
+</div>

@@ -1,0 +1,12 @@
+<div>
+    <div id="righttop_tools">
+        <button type="button" class="btn btn-default btn-sm" ng-model="showList.value" btn-checkbox >List</button>
+    </div>
+
+    <div class='row'>
+        <div ng-show='showList.value' class='col-md-3 leftPane' ng-controller='itemListCtrl'>
+            <ng-include src='"/public/html/partials/type_list.html"'></ng-include>
+        </div>
+    </div>
+    <ng-include src='"/public/html/partials/type_detail.html"'></ng-include>
+</div>

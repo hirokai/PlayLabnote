@@ -11,6 +11,9 @@ expsApp.service('listViewSvc', ['$http', function ($http) {
         selectedListTab: {
             name: ''
         },
+        tab: {
+            value: null
+        },
         newSubItem: function (scope) {
             console.log(scope);
             var nodeData = scope.$modelValue;
@@ -74,12 +77,12 @@ expsApp.controller('protocolGraphCtrl', ['$scope', function ($scope) {
 }]);
 
 //This controller is loaded in the beginning, no matter which tab is open. (Background loading).
-expsApp.controller('itemListAndDetailCtrl',
-    ['$scope', '$http', '$location',
+expsApp.controller('entireCtrl',
+    ['$scope', '$http', '$location','$route',
         'listViewSvc',
         'ExpData', 'SampleData', 'TypeData',
         'ExpDataSvc', 'SampleDataSvc', 'TypeDataSvc',
-    function ($scope, $http, $location,
+    function ($scope, $http, $location, $route,
               listViewSvc,
               ExpData, SampleData, TypeData,
               ExpDataSvc, SampleDataSvc, TypeDataSvc) {
@@ -88,6 +91,14 @@ expsApp.controller('itemListAndDetailCtrl',
             listViewSvc.exps = ExpData.getAll();
             listViewSvc.samples = SampleData.getAll();
             listViewSvc.types = TypeData.getAll();
+
+            $scope.mode = 'exp';
+            console.log($route.current.params);
+
+          var mode = $route.current.params.mode;
+          if(mode != 'exps' && mode != 'samples' && mode != 'types'){
+              $location.path('/exps');
+          }
 
 //
 //        //Copying reference to this scope, so that you can watch.
@@ -238,30 +249,31 @@ expsApp.controller('expDetailCtrl', ['$scope', '$http', 'listViewSvc', 'ExpData'
 
 }]);
 
-expsApp.controller('ExpListCtrl', ['$scope', 'listViewSvc', function ($scope, listViewSvc) {
+expsApp.controller('ExpListCtrl', ['$scope', '$location', 'listViewSvc', function ($scope, $location, listViewSvc) {
     $scope.exps = listViewSvc.exps;
+    console.log($scope.exps);
+    $scope.isSelectedSample = function (id) {
+        console.log($scope);
+        return id == $scope.selectedItem.id
+    };
+    $scope.goToSample = function(){
+        $location.path('/samples');
+    }
 }]);
 
-expsApp.controller('SampleListCtrl', ['$scope', 'listViewSvc', function ($scope, listViewSvc) {
+expsApp.controller('SampleListCtrl', ['$scope', '$location', 'listViewSvc', function ($scope, $location, listViewSvc) {
     $scope.samples = listViewSvc.samples;
 }]);
 
-expsApp.controller('TypeListCtrl', ['$scope', 'listViewSvc', function ($scope, listViewSvc) {
+expsApp.controller('TypeListCtrl', ['$scope', '$location', 'listViewSvc', function ($scope, $location, listViewSvc) {
     $scope.treedata = listViewSvc.types;
 }]);
 
-expsApp.controller('itemListCtrl', ['$scope', '$http', 'listViewSvc', 'ExpData', function ($scope, $http, listViewSvc, ExpData) {
-    $scope.$watch('exps', function (nv, ov) {
-        console.log(nv);
-    }, true);
-    listViewSvc.hello();
-
+expsApp.controller('itemListCtrl', ['$scope', '$http', '$location', 'listViewSvc', 'ExpData', function ($scope, $http, $location, listViewSvc, ExpData) {
     $scope.isSelectedExp = function (id) {
         return id == $scope.selectedItem.exp.id
     };
-    $scope.isSelectedSample = function (id) {
-        return id == $scope.selectedItem.sample.id
-    };
+
     $scope.isSelectedType = function (id) {
         return id == $scope.selectedItem.type.id
     };
@@ -272,14 +284,29 @@ expsApp.controller('itemListCtrl', ['$scope', '$http', 'listViewSvc', 'ExpData',
     };
 
     $scope.tabs = [
-        {title: 'Exps', active: true},
-        {title: 'Samples'},
-        {title: 'Types'}
+        {value: 'exp', title: 'Exps'},
+        {value: 'sample', title: 'Samples'},
+        {value: 'type', title: 'Types'}
     ];
 
     $scope.$watch('tabs', function (nv, ov) {
-        var v = _.findWhere(nv, {active: true}).title;
+        var t = _.findWhere(nv, {active: true});
+        var v = t ? t.value : null;
+        if(!v) return;
+
         $scope.selectedListTab.name = v;
+        listViewSvc.tab.value = v;
+//        console.log('tab changed.',listViewSvc.tab);
+//        if(v == 'exp'){
+//            $location.path('/exps');
+//        }
+        console.log(v);
+//        if(v == 'sample'){
+//            $location.path('/samples');
+//        }
+//        if(v == 'type'){
+//            $location.path('/types');
+//        }
     }, true);
 
     $scope.selectedListTab = listViewSvc.selectedListTab;

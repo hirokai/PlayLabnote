@@ -29,17 +29,15 @@ expsApp.filter('typeFilter', function () {
     };
 });
 
-expsApp.config(['$routeProvider',function($routeProvider){
+expsApp.config(['$routeProvider','$locationProvider', function($routeProvider,$locationProvider){
     $routeProvider.
-        when('/exps', {
-            templateUrl: '/public/html/partials/exps.html',
-            controller: 'testCtrl'
+        when('/:mode/:id?', {
+           templateUrl: '/public/html/partials/entire_view.html',
+            controller: 'entireCtrl'
         }).
         otherwise({
-            redirectTo: '/'
+            redirectTo: '/exps'
         });
-}]);
 
-expsApp.controller('testCtrl', function(){
-    console.log('Hey');
-});
+//    $locationProvider.html5Mode(true);
+}]);

@@ -1,0 +1,47 @@
+<div ng-class='"row " + (showList.value ? "col-md-8 rightPane" : "col-md-11")' ng-controller='expDetailCtrl'>
+    <div ng-class="row" >
+        <div editable-title item='selectedItem.exp'></div>
+    </div>
+    <div class="row">
+        <button type="button" class="btn btn-default btn-sm" ng-model="showJson" btn-checkbox >JSON</button>
+        <pre class='json' ng-if='showJson'>{{selectedItem.exp | json}}</pre>
+        <a class="btn btn-sm btn-default" ng-href='/exps/{{selectedItem.id}}'>See Detail</a>
+        <a class="btn btn-sm btn-danger" ng-click='deleteExp(this)'>Delete</a>
+        <div class="btn-group">
+            <label class="btn btn-default btn-sm" ng-model="showSection.note" btn-checkbox>Note</label>
+            <label class="btn btn-default btn-sm" ng-model="showSection.protocol" btn-checkbox>Protocol</label>
+            <label class="btn btn-default btn-sm" ng-model="showSection.sample" btn-checkbox>Samples</label>
+        </div>
+    </div>
+    <div class='row' >
+        <section ng-show='showSection.note' class='{{showList.value ? "col-md-8" : "col-md-11"}}'>
+            <h4>Note</h4>
+            <textarea name="" id="explist_note" cols="30" rows="10" ng-model='selectedItem.note'></textarea>
+        </section>
+    </div>
+    <div class='row' >
+        <section ng-show='showSection.protocol'>
+            <h4>Protocol</h4>
+        </section>
+    </div>
+    <div class='row' >
+        <section ng-show='showSection.sample'>
+            <table>
+                <thead><tr>
+                    <th>Name</th>
+                    <th>Type</th>
+                    <th ng-repeat='run in runs'>{{run.name}}</th>
+                    <th>+</th>
+                </tr>
+                </thead>
+                <tbody><tr ng-repeat='psample in psamples'>
+                    <td>{{psample.name}}</td>
+                    <td>{{psample.typ.name}}</td>
+                    <td ng-repeat='run in runs'></td>
+                    <td></td>
+                </tr>
+                </tbody>
+            </table>
+        </section>
+    </div>
+</div>
