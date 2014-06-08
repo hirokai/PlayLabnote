@@ -71,8 +71,9 @@
             </div>
 
             <div ng-class='"row " + (showList.value ? "col-md-8 rightPane" : "col-md-11")' ng-if='isEmptyDetail()'>
+                <div class='row'>
                 Choose from list.
-                <pre class="json">{{selectedItem|json}}</pre>
+                </div>
             </div>
 
             <div ng-class='"row " + (showList.value ? "col-md-8 rightPane" : "col-md-11")' ng-if='isExpDetail()' ng-controller='expDetailCtrl'>
@@ -80,6 +81,8 @@
                     <div editable-title item='selectedItem.exp'></div>
                 </div>
                 <div class="row">
+                    <button type="button" class="btn btn-default btn-sm" ng-model="showJson" btn-checkbox >JSON</button>
+                    <pre class='json' ng-if='showJson'>{{selectedItem.exp | json}}</pre>
                     <a class="btn btn-sm btn-default" ng-href='/exps/{{selectedItem.id}}'>See Detail</a>
                     <a class="btn btn-sm btn-danger" ng-click='deleteExp(this)'>Delete</a>
                     <div class="btn-group">
@@ -134,15 +137,16 @@
                 <div ng-class="row" >
                     <div editable-title item='selectedItem.sample'></div>
                 </div>
-                <span>Type: {{selectedItem.sample.typ.name}}</span>
-                <pre class='json'>{{selectedItem.sample | json}}</pre>
+                <button type="button" class="btn btn-default btn-sm" ng-model="showJson" btn-checkbox >JSON</button>
+                <pre class='json' ng-if='showJson'>{{selectedItem.sample | json}}</pre>
             </div>
 
             <div  ng-class='"row " + (showList.value ? "col-md-8 rightPane" : "col-md-11")' ng-if='isTypeDetail()' ng-controller='typeDetailCtrl'>
                 <div ng-class="row" >
                     <div editable-title item='selectedItem.type'></div>
                 </div>
-                <pre class='json'>{{selectedItem.type | json}}</pre>
+                <button type="button" class="btn btn-default btn-sm" ng-model="showJson" btn-checkbox >JSON</button>
+                <pre class='json' ng-if='showJson'>{{selectedItem.type | json}}</pre>
                 <section>
                     <h3>Samples of this type</h3>
                     <span>{{(detail.samples|typeFilter:detail.id:showSubtypes).length}} samples.</span>
