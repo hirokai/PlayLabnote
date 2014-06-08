@@ -1,13 +1,10 @@
-@import play.api.libs.json.{JsValue,Json}
-
-
 <!DOCTYPE html>
 <html lang="en-US" ng-app='expsApp'>
     <head>
         <link rel="stylesheet" media="screen" href="/public/libs/bootstrap/dist/css/bootstrap.min.css">
         <link rel="stylesheet" media="screen" href="/public/libs/angular-ui-tree/dist/angular-ui-tree.min.css">
 
-        <!-- My own stylesheets -->
+            <!-- My own stylesheets -->
         <link rel="stylesheet" media="screen" href="/public/stylesheets/common.css">
         <link rel="stylesheet" media="screen" href="/public/stylesheets/index.css">
         <meta charset="UTF-8">
@@ -22,38 +19,39 @@
 
         <div class='row'>
             <div ng-show='showList.value' class='col-md-3 leftPane' ng-controller='itemListCtrl'>
-                <tabset type="tabs">
+                <tabset vertical="false" ng-class='' type="tabs">
                     <tab ng-repeat="tab in tabs" heading="{{tab.title}}" active="tab.active" disabled="tab.disabled">
                         {{tab.content}}
                     </tab>
                 </tabset>
 
-                <div ng-if='isExpTab()'>
+
+                <div ng-if='isExpTab()' ng-controller='ExpListCtrl'>
                     <button class='btn btn-default' ng-click='addExp()'>Add exp</button>
                     <ul>
-                        <li ng-repeat='exp in exps' class='exp_list_item' ng-class='{selected: exp.id==selectedItem.exp.id}' ng-click='clickList(exp,$event)'>
-                            <div ng-click='clickList(exp,$event)'>{{exp.title}}</div>
+                        <li ng-repeat='exp in exps' class='exp_list_item' ng-class='{selected: isSelectedExp(exp.id)}' ng-click='selectItem(exp)'>
+                            <div ng-click='clickList(exp,$event)'>{{exp.name}}</div>
                         </li>
                     </ul>
 
                 </div>
-                <div ng-if='isSampleTab()'>
+                <div ng-if='isSampleTab()' ng-controller='SampleListCtrl'>
                     <div class='listContainer'>
                         <button class='btn btn-default' ng-click='addSample()'>Add sample</button>
                         <input type="text" ng-model='freeword.title'/>
                         <span>{{(samples| filter:freeword).length}}/{{samples.length}} samples shown.</span>
                         <ul>
-                            <li ng-repeat='sample in samples| filter:freeword' class='sample_list_item' ng-class='{selected: sample.id==selectedItem.sample.id}' ng-click='clickList(sample,$event)'>
-                                <div ng-click='clickList(sample,$event)'>{{sample.title}}</div>
+                            <li ng-repeat='sample in samples| filter:freeword' class='sample_list_item' ng-class='{selected: isSelectedSample(sample.id)}' ng-click='selectItem(sample)'>
+                                <div ng-click='clickList(sample,$event)'>{{sample.name}}</div>
                             </li>
                         </ul>
 
                     </div>
 
                 </div>
-                <div ng-if='isTypeTab()'>
+                <div ng-if='isTypeTab()' ng-controller='TypeListCtrl'>
                     <script type="text/ng-template" id="nodes_renderer.html">
-                        <div ui-tree-handle class="tree-node tree-node-content" ng-click='clickTree(this)' ng-dblclick='dblClickTree(this)' ng-class='{selected: node.id==selectedItem.type.id}' >
+                        <div ui-tree-handle class="tree-node tree-node-content" ng-click='selectItem(node)' ng-dblclick='dblClickTree(this)' ng-class='{selected: isSelectedType(node.id)}' >
                             <a class="btn btn-success btn-xs" ng-if="node.nodes && node.nodes.length > 0" data-nodrag ng-click="toggle(this)"><span class="glyphicon" ng-class="{'glyphicon-chevron-right': collapsed, 'glyphicon-chevron-down': !collapsed}"></span></a>
                             {{node.title}}
                             <a class="pull-right btn btn-danger btn-xs" data-nodrag ng-click="deleteTypeItem(this)"><span class="glyphicon glyphicon-remove"></span></a>
@@ -72,132 +70,128 @@
                 </div>
             </div>
 
-
-            <div  ng-class='"row " + (showList.value ? "col-md-8 rightPane" : "col-md-11")' ng-if='isExpTab()' ng-controller='expDetailCtrl'>
-                <div ng-if='!isActive()'>
-            Choose from list.
-                </div>
-                <div ng-if='isActive()'>
-                    <div ng-class="row" ng-controller='titleController'>
-                        <div >
-                            <div editable-title></div>
-                        </div>
-                    </div>
-                    <div class="row">
-                        <a class="btn btn-sm btn-default" ng-href='/exps/{{selectedItem.id}}'>See Detail</a>
-                        <a class="btn btn-sm btn-danger" ng-click='deleteExp(this)'>Delete</a>
-                        <div class="btn-group">
-                            <label class="btn btn-default btn-sm" ng-model="showSection.note" btn-checkbox>Note</label>
-                            <label class="btn btn-default btn-sm" ng-model="showSection.protocol" btn-checkbox>Protocol</label>
-                            <label class="btn btn-default btn-sm" ng-model="showSection.sample" btn-checkbox>Samples</label>
-                        </div>
-                    </div>
-                    @*<div ng-controller='protocolGraphCtrl'>*@
-                    @*<svg>*@
-                    @*<g ng-repeat='n in nodes'>*@
-                    @*<rect style='fill: pink;' ng-attr-x='n.x' ng-attr-y='n.y' width='100' height='100'></rect>*@
-                    @*</g>*@
-                    @*</svg>*@
-                    @*Hey*@
-                    @*<span>{{exp.protocolSamples.length}} nodes.</span>*@
-                    @*</div>*@
-                    <div class='row' >
-                        <section ng-show='showSection.note' class='{{showList.value ? "col-md-8" : "col-md-11"}}'>
-                            <h4>Note</h4>
-                            <textarea name="" id="explist_note" cols="30" rows="10" ng-model='selectedItem.note'></textarea>
-                        </section>
-                    </div>
-                    <div class='row' >
-                        <section ng-show='showSection.protocol'>
-                            <h4>Protocol</h4>
-                        </section>
-                    </div>
-                    <div class='row' >
-                        <section ng-show='showSection.sample'>
-                            <h4>Input</h4>
-                            <div ng-controller='inputSamplesCtrl'>
-                                <div exp-samples></div>
-                            </div>
-
-                            <h4>Output</h4>
-                            <div ng-controller='outputSamplesCtrl'>
-                                <div exp-samples></div>
-                            </div>
-
-                        </section>
-                    </div>
-                </div>
+            <div ng-class='"row " + (showList.value ? "col-md-8 rightPane" : "col-md-11")' ng-if='isEmptyDetail()'>
+                Choose from list.
+                <pre class="json">{{selectedItem|json}}</pre>
             </div>
 
-            <div  ng-class='"row " + (showList.value ? "col-md-8 rightPane" : "col-md-11")' ng-if='isTypeTab()' ng-controller='typeDetailCtrl'>
-                <div ng-if='!isActive()'>
-            Choose from list.
+            <div ng-class='"row " + (showList.value ? "col-md-8 rightPane" : "col-md-11")' ng-if='isExpDetail()' ng-controller='expDetailCtrl'>
+                <div ng-class="row" >
+                    <div editable-title item='selectedItem.exp'></div>
                 </div>
-                <div ng-if='isActive()'>
-                    <div ng-controller='titleController'>
-                        <div editable-title></div>
+                <div class="row">
+                    <a class="btn btn-sm btn-default" ng-href='/exps/{{selectedItem.id}}'>See Detail</a>
+                    <a class="btn btn-sm btn-danger" ng-click='deleteExp(this)'>Delete</a>
+                    <div class="btn-group">
+                        <label class="btn btn-default btn-sm" ng-model="showSection.note" btn-checkbox>Note</label>
+                        <label class="btn btn-default btn-sm" ng-model="showSection.protocol" btn-checkbox>Protocol</label>
+                        <label class="btn btn-default btn-sm" ng-model="showSection.sample" btn-checkbox>Samples</label>
                     </div>
-
-                    <section>
-                        <h3>Samples of this type</h3>
-                        <span>{{(detail.samples|typeFilter:detail.id:showSubtypes).length}} samples.</span>
-                        <button class='btn btn-sm' ng-click='addSample()'>Add</button>
-                        <input id='showsubtypes' type="checkbox" ng-model='showSubtypes'/>
-                        <label for="showsubtypes">Show subtypes</label>
-                        <table class='table col-md-3'>
-                            <thead>
-                                <tr>
-                                    <th>Name</th>
-                                    <th>Type</th>
-                                    <th>Date made</th>
-                                    <th>Exp used</th>
-                                    <th>Note</th>
-                                </tr>
+                </div>
+                @*<div ng-controller='protocolGraphCtrl'>*@
+                @*<svg>*@
+                @*<g ng-repeat='n in nodes'>*@
+                @*<rect style='fill: pink;' ng-attr-x='n.x' ng-attr-y='n.y' width='100' height='100'></rect>*@
+                @*</g>*@
+                @*</svg>*@
+                @*Hey*@
+                @*<span>{{exp.protocolSamples.length}} nodes.</span>*@
+                @*</div>*@
+                <div class='row' >
+                    <section ng-show='showSection.note' class='{{showList.value ? "col-md-8" : "col-md-11"}}'>
+                        <h4>Note</h4>
+                        <textarea name="" id="explist_note" cols="30" rows="10" ng-model='selectedItem.note'></textarea>
+                    </section>
+                </div>
+                <div class='row' >
+                    <section ng-show='showSection.protocol'>
+                        <h4>Protocol</h4>
+                    </section>
+                </div>
+                <div class='row' >
+                    <section ng-show='showSection.sample'>
+                        <table>
+                            <thead><tr>
+                                <th>Name</th>
+                                <th>Type</th>
+                                <th ng-repeat='run in runs'>{{run.name}}</th>
+                                <th>+</th>
+                            </tr>
                             </thead>
-                            <tbody>
-                                <tr ng-repeat='sample in detail.samples | typeFilter:detail.id:showSubtypes'>
-
-                                    <td><a href="/samples/{{sample.id}}">{{sample.name}}</a></td>
-                                    <td>{{sample.typ.name}}</td>
-                                    <td></td>
-                                    <td></td>
-                                    <td><a href="#" ng-click='deleteSample(sample)'>Delete</a></td>
-                                </tr>
+                            <tbody><tr ng-repeat='psample in psamples'>
+                                <td>{{psample.name}}</td>
+                                <td>{{psample.typ.name}}</td>
+                                <td ng-repeat='run in runs'></td>
+                                <td></td>
+                            </tr>
                             </tbody>
                         </table>
-
-
                     </section>
-
-                </div>
-
-            </div>
-            <div  ng-class='"row " + (showList.value ? "col-md-8 rightPane" : "col-md-11")' ng-if='isSampleTab()' ng-controller='sampleDetailCtrl'>
-                <div class="col-md-8" ng-if='!isActive()'>
-            Choose from list.
-                </div>
-                <div class="col-md-8" ng-if='isActive()'>
-                    <div ng-controller='titleController'>
-                        <div editable-title></div>
-                    </div>
                 </div>
             </div>
 
+            <div  ng-class='"row " + (showList.value ? "col-md-8 rightPane" : "col-md-11")' ng-if='isSampleDetail()' ng-controller='sampleDetailCtrl'>
+                <div ng-class="row" >
+                    <div editable-title item='selectedItem.sample'></div>
+                </div>
+                <span>Type: {{selectedItem.sample.typ.name}}</span>
+                <pre class='json'>{{selectedItem.sample | json}}</pre>
+            </div>
 
+            <div  ng-class='"row " + (showList.value ? "col-md-8 rightPane" : "col-md-11")' ng-if='isTypeDetail()' ng-controller='typeDetailCtrl'>
+                <div ng-class="row" >
+                    <div editable-title item='selectedItem.type'></div>
+                </div>
+                <pre class='json'>{{selectedItem.type | json}}</pre>
+                <section>
+                    <h3>Samples of this type</h3>
+                    <span>{{(detail.samples|typeFilter:detail.id:showSubtypes).length}} samples.</span>
+                    <button class='btn btn-sm' ng-click='addSample()'>Add</button>
+                    <input id='showsubtypes' type="checkbox" ng-model='showSubtypes'/>
+                    <label for="showsubtypes">Show subtypes</label>
+                    <table class='table col-md-3'>
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Type</th>
+                                <th>Date made</th>
+                                <th>Exp used</th>
+                                <th>Note</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr ng-repeat='sample in detail.samples | typeFilter:detail.id:showSubtypes'>
+
+                                <td><a href="/samples/{{sample.id}}">{{sample.name}}</a></td>
+                                <td>{{sample.typ.name}}</td>
+                                <td></td>
+                                <td></td>
+                                <td><a href="#" ng-click='deleteSample(sample)'>Delete</a></td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+
+                </section>
+
+
+            </div>
         </div>
 
 
         <script src="//cdnjs.cloudflare.com/ajax/libs/underscore.js/1.6.0/underscore-min.js"></script>
         <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
-        <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.2.16/angular.min.js"></script>
+        <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.3.0-beta.10/angular.min.js"></script>
+        <script src="//cdnjs.cloudflare.com/ajax/libs/angular.js/1.3.0-beta.8/angular-resource.min.js"></script>
         <script src="//cdnjs.cloudflare.com/ajax/libs/angular-ui-bootstrap/0.10.0/ui-bootstrap.min.js"></script>
         <script src="//cdnjs.cloudflare.com/ajax/libs/angular-ui-bootstrap/0.10.0/ui-bootstrap-tpls.min.js"></script>
 
 
             <!-- Frameworks and plugins that are available in CDN as well -->
-<!--
+            <!--
         <script src="/public/libs/underscore/underscore.js"></script>
         <script src="/public/libs/angular/angular.min.js"></script>
+        <script src="/public/libs/angular-resource/angular-resource.min.js"></script>
         <script src="/public/libs/jquery/dist/jquery.min.js"></script>
         <script src="/public/libs/angular-bootstrap/ui-bootstrap.min.js"></script>
         <script src="/public/libs/angular-bootstrap/ui-bootstrap-tpls.min.js"></script>
@@ -206,10 +200,18 @@
             <!-- Library -->
         <script src='/public/libs/angular-ui-tree/dist/angular-ui-tree.min.js'></script>
 
-        <!-- My own scripts -->
-        <script src="/public/javascripts/dagre-d3-custom.js"></script>
+            <!-- My own scripts -->
+<!--        <script src="/public/javascripts/dagre-d3-custom.js"></script>
         <script src="/public/javascripts/my_directives.js"></script>
-        <script src="/public/javascripts/index.js"></script>
+        <script src="/public/javascripts/index_module.js"></script>
+        <script src="/public/javascripts/experiment.js"></script>
+        <script src="/public/javascripts/sample.js"></script>
+        <script src="/public/javascripts/type.js"></script>
+        <script src="/public/javascripts/index_controllers.js"></script> -->
+
+        <script src="/public/javascripts/index_module.js"></script>
+
+        <script src="/public/javascripts/dist/LabnoteServer.min.js"></script>
 
     </body>
 </html>

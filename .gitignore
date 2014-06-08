@@ -3,6 +3,7 @@ bower_components
 project/project
 project/target
 public/libs
+public/javascripts/dist
 target
 tmp
 .history

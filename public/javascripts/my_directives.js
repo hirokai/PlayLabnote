@@ -14,26 +14,52 @@ angular.module('expSamplesModule',[])
     }]);
 
 angular.module('editableTitleModule',[])
-    .controller('titleController',['$scope','$timeout',function($scope,$timeout){
-        $scope.editTitle = function(){
-            $scope.oldTitle = $scope.selectedItem.title;
-            $scope.editingTitle = true;
-        };
-        $scope.keyDownTitle = function($event){
-           // console.log(self);
-            if($event.keyCode == 13){
-                $timeout(function () { $event.target.blur() }, 0, false);
-            }
-        };
-        $scope.handleBlur = function($event){
-            $scope.editingTitle = false;
-        };
-    }]).directive('editableTitle',function(){
+    .directive('editableTitle',function(){
         return {
+            scope: {
+                item: '='
+            },
+            controller: ['$scope','$timeout',function($scope,$timeout){
+                $scope.editTitle = function(){
+                    $scope.oldTitle = $scope.item.title;
+                    $scope.editingTitle = true;
+                };
+                $scope.keyDownTitle = function($event){
+                    // console.log(self);
+                    if($event.keyCode == 13){
+                        $timeout(function () { $event.target.blur() }, 0, false);
+                    }
+                };
+                $scope.handleBlur = function($event){
+                    $scope.editingTitle = false;
+                };
+            }],
             templateUrl: "/public/html/partial/editableTitle.html"
         };
     })
-;
+    .directive('editableName',function(){
+        return {
+            scope: {
+                item: '='
+            },
+            controller: ['$scope','$timeout',function($scope,$timeout){
+                $scope.editTitle = function(){
+                    $scope.oldTitle = $scope.item.name;
+                    $scope.editingTitle = true;
+                };
+                $scope.keyDownTitle = function($event){
+                    // console.log(self);
+                    if($event.keyCode == 13){
+                        $timeout(function () { $event.target.blur() }, 0, false);
+                    }
+                };
+                $scope.handleBlur = function($event){
+                    $scope.editingTitle = false;
+                };
+            }],
+            templateUrl: "/public/html/partial/editableName.html"
+        };
+    });
 
 angular.module('d3', [])
     .factory('d3Service', ['$document', '$q', '$rootScope',

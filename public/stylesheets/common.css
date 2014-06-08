@@ -10,13 +10,19 @@ html,body
 
 .btn { outline: none ! important; }
 
-div[editable-title] h2 {
+div[editable-title] h2,div[editable-name] h2 {
+    margin-left: 3px;
     font-size: 24px;
     font-weight: bold;
 }
 
-div[editable-title] input {
+div[editable-title] input,div[editable-name] input {
+    margin-top: 14px;
     font-size: 24px;
     font-weight: bold;
-    width: 100px;
+    width: 90%;
+}
+
+pre.json {
+    width: 400px;
 }

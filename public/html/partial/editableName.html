@@ -1,0 +1,6 @@
+<div id='item_titlediv'>
+    <input ng-blur='handleBlur($event)'  ng-if='editingTitle' id="title_input" type="text" ng-model-options="{ updateOn: 'blur' }" ng-model='item.name' ng-keydown='keyDownTitle($event)'
+           
+            />
+    <h2 ng-if='!editingTitle' ng-dblclick='editTitle()'>{{item.name}}&nbsp;</h2>
+</div>

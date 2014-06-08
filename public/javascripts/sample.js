@@ -1,4 +1,4 @@
-expsApp.factory('ExpData',['$resource',function($resource){
+expsApp.factory('SampleData',['$resource',function($resource){
     //Just add title.
     var readData = function (str) {
         var es = JSON.parse(str);
@@ -8,12 +8,12 @@ expsApp.factory('ExpData',['$resource',function($resource){
         });
     };
 
-    return $resource('/exps.json',{}, {
+    return $resource('/samples.json',{}, {
         getAll: {method: 'GET', params: {}, isArray: true, transformResponse: readData}
     });
 }]);
 
-expsApp.factory('ExpDataSvc',['$http', 'listViewSvc', function($http, listViewSvc){
+expsApp.factory('SampleDataSvc',['$http', 'listViewSvc', function($http, listViewSvc){
     return {
         hello: function(){
             console.log('hello');
@@ -23,9 +23,9 @@ expsApp.factory('ExpDataSvc',['$http', 'listViewSvc', function($http, listViewSv
                 //This means not selection, but content is changed.
 
                 console.log('item content changed.',nv,ov);
-                $http({url: '/exps/'+nv.id, method: 'PUT',data: $.param({name: nv.title})}).success(function(r){
+                $http({url: '/samples/'+nv.id, method: 'PUT',data: $.param({name: nv.title})}).success(function(r){
                     if(r.success){
-                        var e = _.findWhere(listViewSvc.exps,{id: r.data.id});
+                        var e = _.findWhere(listViewSvc.samples,{id: r.data.id});
                         e.name = r.data.name;
                         e.title = r.data.name;
                     }
