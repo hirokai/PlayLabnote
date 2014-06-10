@@ -79,13 +79,14 @@ object Experiment extends Controller {
   // $.ajax('/psamples/1',{type: 'put', data: 'name=Huge', success: function(r){console.log(r)}});
   def updateProtocolSample(id: Id) = Action(parse.tolerantFormUrlEncoded) { request =>
     val parameters = request.body
-    var o_name: Option[String] = parameters.get("name").flatMap(_.headOption)
-    o_name.map{ name =>
-      DB.withTransaction {implicit c =>
-        models.ProtocolSampleAccess().setName(id,name)
+    val o_name: Option[String] = parameters.get("name").flatMap(_.headOption)
+    val o_typ: Option[Id] = parameters.get("type").flatMap(_.headOption).flatMap(toIdOpt)
+    DB.withTransaction {implicit c =>
+      ProtocolSampleAccess().update(id,o_name,o_typ) match {
+        case Right(dat) => Ok(Json.obj("id" -> id, "success" -> true, "data" -> dat))
+        case Left(err) => Ok(Json.obj("id" -> id, "success" -> false, "message" -> err))
       }
-      Ok(Json.obj("id" -> id, "success" -> true))
-    }.getOrElse(Status(400))
+    }
   }
 
   def deleteProtocolSample(pid: Id) = Action(parse.tolerantFormUrlEncoded) {request =>
@@ -142,7 +143,7 @@ object Experiment extends Controller {
     val tid = params.get("type").flatMap(_.headOption).flatMap(toIdOpt)
     o_name match {
       case Some(n) => {
-        DB.withConnection {implicit c =>
+        DB.withTransaction {implicit c =>
           val o_r: Option[Id] = ExperimentAccess().createRunSample(rid,pid,n,tid)
           val Right(typ) = SampleAccess().get(o_r.get).get.typ
           (o_r,typ)

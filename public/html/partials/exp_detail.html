@@ -27,6 +27,14 @@
     </div>
     <div class='row' >
         <section ng-show='showSection.sample'>
+            <div>
+                <span ng-if='selectedPSCount() == 1'>Protocol sample type:
+                <select ng-model="typeSelected" ng-change='onChangeType(selectedPSample(),typeSelected)' ng-options="type.title for type in types"></select>
+
+                </span>
+                <span>&nbsp;</span>
+                <span ng-if='selectedRunSampleCount() == 1'></span>
+            </div>
             <table class='table'>
                 <thead><tr>
                     <th></th>
@@ -42,9 +50,14 @@
                     <td><a href="" class='btn btn-sm btn-default' ng-click='deletePSample(psample.id)'>
                         <span class='glyphicon glyphicon-minus'></span>
                     </a></td>
-                    <td>{{psample.name}}</td>
+                    <td ng-click='clickPSample(psample.id)' ng-class='{selected: selectedPS[psample.id]}'>{{psample.name}}</td>
                     <td>{{psample.typ.name}}</td>
-                    <td ng-repeat='run in item.runs'></td>
+                    <td ng-repeat='run in item.runs'>
+                        <div ng-if='runSample(psample,run)' ng-click='clickRunSample(psample,run,$event)'>{{runSample(psample,run).name}}</div>
+                        <div ng-if='!runSample(psample,run)'>
+                            <a class="btn btn-sm btn-primary" ng-click='addRunSample(psample,run)'><span class='glyphicon glyphicon-plus'></span></a>
+                        </div>
+                    </td>
                     <td>
                     </td>
                 </tr>

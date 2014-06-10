@@ -35,6 +35,14 @@
 
 }
 
+td {
+    cursor: pointer;
+}
+
+td.selected {
+    background: pink;
+}
+
 
 
 /* from http://www.bootply.com/5l9bZ7ZOt6 */

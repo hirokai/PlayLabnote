@@ -96,17 +96,23 @@ case class ExperimentAccess(owner: Id = 0) {
       }
   }
 
+  //@Transaction
   def createRunSample(rid: Id, pid: Id, name: String, tid2: Option[Id])(implicit c: Connection): Option[Id] = {
       val o_tid = tid2 match {
         case None => ProtocolSampleAccess().sampleTypeId(pid)
         case Some(t) => Some(t)
       }
       o_tid.flatMap{tid =>
-        val o_id: Option[Id] = SQL(s"INSERT into Sample(owner,name,type) values($owner,'${escape(name)}',$tid)").executeInsert()
-        o_id.flatMap{ id =>
-          SQL(s"INSERT into SampleInRun(sample,protocol_sample,run) values($id,$pid,$rid)").executeInsert()
+        try{
+          val o_id: Option[Id] = SQL(s"INSERT into Sample(owner,name,type) values($owner,'${escape(name)}',$tid)").executeInsert()
+          o_id.flatMap{ id =>
+            SQL(s"INSERT into SampleInRun(sample,protocol_sample,run) values($id,$pid,$rid)").executeInsert()
+          }
+          o_id
+        }catch {
+          case e: Throwable =>
+            None
         }
-        o_id
       }
   }
 
@@ -234,6 +240,27 @@ case class ProtocolSampleAccess() {
      SQL(s"INSERT into ProtocolSample(name,experiment,type) values('${escape(name)}',$eid,$tid)").executeInsert()
   }
 
+
+  //@Transaction
+  def update(psid: Id, o_name: Option[String], o_typ: Option[Id])(implicit c: Connection): Either[String, ProtocolSample] = {
+    val s_name: Array[String] = o_name.map(name => Array(s"name=${escape(name)}")).getOrElse(Array())
+    val s_typ: Array[String] = o_typ.map(typ => Array(s"type=${typ}")).getOrElse(Array())
+    val str = (s_name++s_typ).mkString(",")
+    try{
+      if(1 == SQL(s"UPDATE ProtocolSample SET $str where id=$psid").executeUpdate()){
+        val ps = ProtocolSampleAccess().get(psid)
+        ps.map(s => Right(s)).getOrElse(Left("Error"))
+      }else{
+        Left("Not found.")
+      }
+    }catch{
+      case e: Throwable =>{
+        println(e.getMessage)
+        Left("DB error.")
+      }
+    }
+  }
+
   def setName(id: Id, name: String, owner: Option[Id] = None)(implicit c: Connection): Boolean = {
         1 == SQL(s"UPDATE ProtocolSample SET name='${escape(name)}' where id=$id").executeUpdate()
   }
@@ -243,7 +270,7 @@ case class ProtocolSampleAccess() {
   }
 
   def get(psid: Id)(implicit c: Connection): Option[ProtocolSample] = {
-    SQL(s"SELECT type from ProtocolSample where id=$psid")().map(ProtocolSample.fromRow).headOption
+    SQL(s"SELECT * from ProtocolSample where id=$psid")().map(ProtocolSample.fromRow).headOption
   }
 
   def sampleTypeId(psid: Id)(implicit c: Connection): Option[Id] = {
@@ -349,7 +376,7 @@ case class SampleTypeAccess(owner: Id = 0) {
   }
 
   def get(id: Id)(implicit c: Connection): Option[SampleType] = {
-       SQL(s"SELECT * from SampleType where owner=$owner and id='$id'")().map(SampleType.fromRow).headOption
+       SQL(s"SELECT * from SampleType where owner=$owner and id=$id")().map(SampleType.fromRow).headOption
   }
 
   def getTypeIdTree(depth: Int = 20)(root: Id)(implicit c: Connection): Tree[Id] = {

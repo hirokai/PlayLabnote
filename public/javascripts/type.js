@@ -136,9 +136,9 @@ var mkTreeData = function (d) {
     })};
 };
 
-var flattenTree = function (t) {
+flattenTree = function (t) {
     return [
-        t
+        {id: t.id, title: t.title}
     ].concat(_.flatten(_.map(t.nodes, flattenTree)));
 }
 

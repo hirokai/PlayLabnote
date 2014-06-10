@@ -65,7 +65,8 @@ expsApp.controller('ExpListCtrl', ['$scope', '$state', '$stateParams', 'listView
 }]);
 
 
-expsApp.controller('ExpDetailCtrl', ['$scope', '$http', '$state', '$stateParams', 'listViewSvc', 'ExpData', 'ExpDataSvc', function ($scope, $http, $state, $stateParams, listViewSvc, ExpData, ExpDataSvc) {
+expsApp.controller('ExpDetailCtrl', ['$scope', '$http', '$state', '$stateParams', 'listViewSvc', 'ExpData', 'ExpDataSvc', '$timeout',
+    function ($scope, $http, $state, $stateParams, listViewSvc, ExpData, ExpDataSvc, $timeout) {
     //   $scope.exps = convertData(data);
     //     console.log(data[0],$scope.exps[0]);
 
@@ -121,11 +122,88 @@ expsApp.controller('ExpDetailCtrl', ['$scope', '$http', '$state', '$stateParams'
     $scope.deletePSample = function(id){
         var url = '/psamples/' + id
         $http({url: url, method: 'DELETE'}).success(function(r){
-            var idx = findIndex($scope.item.protocolSamples,id);
-            if(idx >= 0){
-                $scope.item.protocolSamples.splice(idx,1);
+            console.log(r);
+            if(r.success){
+                var idx = findIndex($scope.item.protocolSamples,id);
+                if(idx >= 0){
+                    $scope.item.protocolSamples.splice(idx,1);
+                }
             }
-        });
+        }).error(function(r){
+                console.log(r);
+            });
+    };
+
+        $scope.clickPSample = function(id){
+            $scope.selectedPS[id] = !$scope.selectedPS[id];
+        }
+
+    $scope.selectedPS = {};
+
+        $scope.types = flattenTree(listViewSvc.types[0]);
+
+    $scope.selectedPSCount = function(){
+        return _.countBy($scope.selectedPS, function(v){
+            return v;
+        })['true'] || 0;
+    };
+
+        $scope.selectedPSample = function(){
+            try{
+                var r = null;
+                _.map($scope.selectedPS,function(v,k){
+                   if(v){
+                       r = k;
+                       throw "found";
+                   }
+                });
+            }catch(e){
+                return r;
+            }
+            return null;
+        }
+
+        $scope.onChangeType = function(psid,type){
+            console.log(psid,type);
+            var url = '/psamples/'+psid;
+            $http({url: url, method: 'PUT', data: $.param({type: type.id})}).success(function(r){
+                console.log(r);
+                console.log($scope.item.protocolSamples,psid);
+                var ps = _.findWhere($scope.item.protocolSamples, {id: parseInt(psid)});
+                ps.typ = r.data.typ;
+            });
+        }
+
+    $scope.runSample = function(psample,run){
+        var key = run.id + ':' + psample.id;
+        return $scope.item.runSamples[key];
+    };
+
+    $scope.clickRunSample = function(psample,run,$event){
+        if($event.altKey){
+            $http({url: '/runsamples/'+run.id+'/'+psample.id, method: 'DELETE'}).success(function(r){
+                var k = run.id + ':' + psample.id;
+                delete $scope.item.runSamples[k];
+            }).error(function(r){
+
+                });
+        }
+    };
+
+    $scope.addRunSample = function(psample,run){
+      var rid = run.id;
+      var pid = psample.id;
+      $http({url: '/runsamples/'+rid+'/'+pid, method: 'POST', data: $.param({name: 'New sample'})}).success(function(r){
+             console.log(r);
+             var d = r.data;
+             var key = d.run + ':' + d.protocolSample;
+          console.log($scope.item.runSamples);
+             $scope.item.runSamples[key] = d;
+            console.log($scope.item.runSamples);
+          $timeout(function(){$scope.$digest();},0);
+          }).error(function(r){
+              console.log(r);
+          });
     };
 
     $scope.addRun = function(exp) {
@@ -135,6 +213,8 @@ expsApp.controller('ExpDetailCtrl', ['$scope', '$http', '$state', '$stateParams'
             $scope.item.runs.push(r.data);
         });
     };
+
+
 
     $scope.clickRun = function(run,$event) {
       if($event.altKey){
