@@ -4,11 +4,10 @@
     </div>
     <div class="row">
         <button type="button" class="btn btn-default btn-sm" ng-model="showDetailJson.value" btn-checkbox >JSON</button>
-        <pre class='json' ng-if='showDetailJson.value'>{{selectedItem.exp | json}}</pre>
         <pre class='json' ng-if='showDetailJson.value'>{{item | json}}</pre>
 
-        <a class="btn btn-sm btn-default" ng-href='/exps/{{selectedItem.id}}'>See Detail</a>
-        <a class="btn btn-sm btn-danger" ng-click='deleteExp(this)'>Delete</a>
+        <a class="btn btn-sm btn-default" ng-href='/exps/{{item.id}}'>See Detail</a>
+        <a class="btn btn-sm btn-danger" ng-click='deleteExp(item.id)'>Delete</a>
         <div class="btn-group">
             <label class="btn btn-default btn-sm" ng-model="showSection.note" btn-checkbox>Note</label>
             <label class="btn btn-default btn-sm" ng-model="showSection.protocol" btn-checkbox>Protocol</label>
@@ -28,20 +27,28 @@
     </div>
     <div class='row' >
         <section ng-show='showSection.sample'>
-            <table>
+            <table class='table'>
                 <thead><tr>
+                    <th></th>
                     <th>Name</th>
                     <th>Type</th>
-                    <th ng-repeat='run in runs'>{{run.name}}</th>
-                    <th>+</th>
+                    <th ng-repeat='run in item.runs' ng-click='clickRun(run,$event)'>{{run.name}}</th>
+                    <th>
+                        <a href="" class='btn btn-sm btn-default' ng-click='addRun(item)'>Add</a>
+                    </th>
                 </tr>
                 </thead>
-                <tbody><tr ng-repeat='psample in psamples'>
+                <tbody><tr ng-repeat='psample in item.protocolSamples'>
+                    <td><a href="" class='btn btn-sm btn-default' ng-click='deletePSample(psample.id)'>
+                        <span class='glyphicon glyphicon-minus'></span>
+                    </a></td>
                     <td>{{psample.name}}</td>
                     <td>{{psample.typ.name}}</td>
-                    <td ng-repeat='run in runs'></td>
-                    <td></td>
+                    <td ng-repeat='run in item.runs'></td>
+                    <td>
+                    </td>
                 </tr>
+                <tr><td><a href="" class='btn btn-sm btn-default' ng-click='addPSample(item.id)'>Add</a></td></tr>
                 </tbody>
             </table>
         </section>

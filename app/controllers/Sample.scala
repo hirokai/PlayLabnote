@@ -13,13 +13,15 @@ object Sample extends Controller {
   import JsonWriter.implicitSampleTypeWrites
   import JsonWriter.implicitSampleWrites
 
+  import Util._
+
   def stub(id: String) = Action {
     Ok("Stub")
   }
 
   def create = Action(parse.tolerantFormUrlEncoded) { request =>
     val params = request.body
-    var o_typ: Option[Id] = params.get("type").flatMap(_.headOption).map(_.toLong)
+    var o_typ: Option[Id] = params.get("type").flatMap(_.headOption).flatMap(toIdOpt)
     var o_name: Option[String] = params.get("name").flatMap(_.headOption)
     (o_name,o_typ) match {
       case (Some(name),Some(tid)) =>{
@@ -74,7 +76,7 @@ object Sample extends Controller {
 
   def update(id: Id) = Action(parse.tolerantFormUrlEncoded) { request =>
     val parameters = request.body
-    var o_typ: Option[Id] = parameters.get("type").flatMap(_.headOption).map(_.toLong)
+    var o_typ: Option[Id] = parameters.get("type").flatMap(_.headOption).flatMap(toIdOpt)
     var o_name: Option[String] = parameters.get("name").flatMap(_.headOption)
     val res = DB.withConnection{ implicit c =>
       if(o_typ.isEmpty || SampleAccess().isTypeCompatibleWithAllAssignment(id,o_typ.get)){

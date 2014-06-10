@@ -12,7 +12,9 @@ import models._
 import models.Database.Id
 
 object Experiment extends Controller {
-  import Database.Id
+  import Database._
+
+  import Util._
 
   import JsonWriter._
 
@@ -54,30 +56,45 @@ object Experiment extends Controller {
   def createProtocolSample(eid: Database.Id) = Action(parse.tolerantFormUrlEncoded) { request =>
     DB.withConnection {implicit c =>
       val parameters = request.body
-      var o_name: Option[String] = parameters.get("name").flatMap(_.headOption)
-      o_name.map{ name =>
-        val id = ProtocolSampleAccess().create(eid,name,models.SampleType.AnyType.id)
-        val newData = SQL(s"Select * from ProtocolSample order by id")().map( row => {
-          ProtocolSample(
-            name = row[Option[String]]("name").getOrElse("(N/A)"),
-            id = row[Long]("id")
-          )
-        })
-        Ok(Json.obj("exp_id" -> eid, "id" -> id, "success" -> true, "newData" -> newData))
-      }.getOrElse(Status(400))
+      val o_name: Option[String] = parameters.get("name").flatMap(_.headOption)
+      val o_typ: Option[Id] = parameters.get("type").flatMap(_.headOption).flatMap(toIdOpt)
+      (o_name,o_typ) match {
+        case (Some(name),Some(typ)) => {
+          val o_id = ProtocolSampleAccess().create(eid,name,typ)
+          o_id match {
+            case Some(id) =>{
+              val data: Option[ProtocolSample] = SQL(s"Select * from ProtocolSample where id=$id")().map(ProtocolSample.fromRow).headOption
+              Ok(Json.obj("exp_id" -> eid, "id" -> id, "success" -> true, "data" -> data))
+            }
+            case _ =>
+              Ok(Json.obj("exp_id" -> eid, "success" -> false, "message" -> "DB error."))
+          }
+        }
+        case _ =>
+          Status(400)
+      }
     }
   }
 
   // $.ajax('/psamples/1',{type: 'put', data: 'name=Huge', success: function(r){console.log(r)}});
-  def updateProtocolSample(id: String) = Action(parse.tolerantFormUrlEncoded) { request =>
+  def updateProtocolSample(id: Id) = Action(parse.tolerantFormUrlEncoded) { request =>
     val parameters = request.body
     var o_name: Option[String] = parameters.get("name").flatMap(_.headOption)
     o_name.map{ name =>
       DB.withTransaction {implicit c =>
-        models.ProtocolSampleAccess().setName(id.toLong,name)
+        models.ProtocolSampleAccess().setName(id,name)
       }
       Ok(Json.obj("id" -> id, "success" -> true))
     }.getOrElse(Status(400))
+  }
+
+  def deleteProtocolSample(pid: Id) = Action(parse.tolerantFormUrlEncoded) {request =>
+    DB.withTransaction {implicit c =>
+      models.ExperimentAccess().deleteProtocolSample(pid) match {
+        case Right(_) =>    Ok(Json.obj("id" -> pid, "success" -> true))
+        case Left(err) => Ok(Json.obj("id" -> pid, "success" -> false, "message" -> err))
+      }
+    }
   }
 
   def getExpRuns(id: String) = Action {
@@ -100,25 +117,29 @@ object Experiment extends Controller {
     }
   }
 
-  def createExpRun(eid: models.Database.Id) = Action {request =>
+  def createExpRun(eid: models.Database.Id) = Action(parse.tolerantFormUrlEncoded) {request =>
     DB.withConnection {implicit c =>
-      val parameters = request.body.asFormUrlEncoded
-      var name = parameters.get("name")(0)
-      val id = ExpRunAccess().create(eid,name)
-      val newData = SQL(s"Select * from ExpRun order by id")().map( row => {
-        ExpRun(
-          name = row[Option[String]]("name").getOrElse("(N/A)"),
-          id = row[Long]("id")
-        )
-      })
-      Ok(Json.obj("exp_id" -> eid, "id" -> id, "success" -> true, "newData" -> newData))
+      val params = request.body
+      var o_name = params.get("name").flatMap(_.headOption)
+      o_name.map{ name =>
+        val o_id = ExpRunAccess().create(eid,name)
+        o_id match {
+          case Some(id) => {
+            val data = SQL(s"Select * from ExpRun where id=$id")().map(ExpRun.fromRow).headOption
+            Ok(Json.obj("exp_id" -> eid, "id" -> id, "success" -> true, "data" -> data))
+          }
+          case _ => {
+            Ok(Json.obj("exp_id" -> eid, "success" -> false, "message" -> "DB error."))
+          }
+        }
+      }.getOrElse(Status(400))
     }
   }
 
   def createRunSample(rid: Id, pid: Id) = Action(parse.tolerantFormUrlEncoded) { request =>
     val params = request.body
     val o_name = params.get("name").flatMap(_.headOption)
-    val tid = params.get("type").flatMap(_.headOption).map(_.toLong)
+    val tid = params.get("type").flatMap(_.headOption).flatMap(toIdOpt)
     o_name match {
       case Some(n) => {
         DB.withConnection {implicit c =>

@@ -14,17 +14,6 @@ object Database {
   def escape(s: String) = s.replace("'","''")
 }
 
-object Util {
-  def toIdOpt(s: String): Option[Database.Id] = {
-    try{
-      Some(s.toLong)
-    }catch {
-      case _: NumberFormatException => None
-      case e => throw e
-    }
-  }
-}
-
 import Database.Id
 import Database.escape
 
@@ -159,6 +148,34 @@ case class ExperimentAccess(owner: Id = 0) {
     SQL(s"SELECT * from ProtocolSample where experiment=$eid")().map(ProtocolSample.fromRow).toArray
   }
 
+  //@Transaction
+  def deleteProtocolSample(pid: Id, force: Boolean = false)(implicit c: Connection): Either[String,String] = {
+    if(force){
+      SQL(s"DELETE * from SampleInRun where protocol_sample=$pid").executeUpdate()
+      val r = SQL(s"DELETE * from ProtocolSample where id=$pid").executeUpdate()
+      if(r == 1){
+        Right("Done.")
+      }else if(r ==0){
+        Left("Not found.")
+      }else{
+        Left("Unknown error.")
+      }
+    }else{
+      if(SQL(s"SELECT count(*) as c from SampleInRun where protocol_sample=$pid")().map(_[Long]("c")).headOption == Some(0l)){
+        val r = SQL(s"DELETE from ProtocolSample where id=$pid").executeUpdate()
+        if(r == 1){
+          Right("Done")
+        }else if(r == 0){
+          Left("Not found.")
+        }else{
+          Left("Unknown error.")
+        }
+      }else{
+        Left("Run samples still exist.")
+      }
+    }
+  }
+
   //Run samples
   def countRunSamples(rid: Id, pid: Id)(implicit c: Connection): Long = {
       SQL("SELECT COUNT(*) as c from SampleInRun where run={r} and protocol_sample={p}")
@@ -279,6 +296,7 @@ case class SampleTypeAccess(owner: Id = 0) {
         case (Some(name),Some(parent)) => "name='%s',parent=%d".format(name,parent)
         case (Some(name),None) => "name='%s'".format(name)
         case (None,Some(parent)) => "parent=%d".format(parent)
+        case _ => throw new Exception("This should not happen.")
       }
       val cmd = s"UPDATE SampleType SET $str where id=$id"
       if(1 == SQL(cmd).executeUpdate()){
@@ -518,6 +536,7 @@ case class SampleAccess(owner: Id = 0) {
           case (Some(name),Some(typ)) => "name='%s',type=%d".format(name,typ)
           case (Some(name),None) => "name='%s'".format(name)
           case (None,Some(typ)) => "type=%d".format(typ)
+          case _ => throw new Exception("This should not happen.")
         }
         1 == SQL(s"UPDATE Sample SET $str where id=$id").executeUpdate()
       }
@@ -532,7 +551,7 @@ case class SampleAccess(owner: Id = 0) {
     DB.withConnection {implicit c =>
       val str =
         if(subtypes)
-          (SampleTypeAccess(owner).findDescendantsId()(tid) ++ Array(tid)).mkString(",")
+          SampleTypeAccess(owner).findDescendantsId()(tid).mkString(",")
         else
           tid.toString
       SQL(s"SELECT * from sampletype inner join sample " +

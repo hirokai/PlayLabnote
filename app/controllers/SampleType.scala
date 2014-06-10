@@ -15,11 +15,12 @@ object SampleType extends Controller {
   import JsonWriter.implicitSampleTypeWrites
   import JsonWriter.implicitSampleWrites
   import models.Tree
+  import Util._
 
   def create = Action(parse.tolerantFormUrlEncoded) { request =>
     val params = request.body
     val o_name = params.get("name").flatMap(_.headOption)
-    val o_parent = params.get("parent").flatMap(_.headOption).map(_.toLong)  //FIXME: Unsafe conversion!
+    val o_parent = params.get("parent").flatMap(_.headOption).flatMap(toIdOpt)
     (o_name,o_parent) match {
       case (Some(name),Some(parent)) =>
       DB.withConnection{implicit c =>
@@ -39,7 +40,7 @@ object SampleType extends Controller {
     val params = request.body
     //Logger.debug(params.mkString)
     val o_name = params.get("name").flatMap(_.headOption)
-    val o_parent = params.get("parent").flatMap(_.headOption).map(_.toLong)  //FIXME: Unsafe conversion!
+    val o_parent = params.get("parent").flatMap(_.headOption).flatMap(toIdOpt)
     DB.withConnection{implicit c =>
       val res = SampleTypeAccess().update(id,o_name,o_parent)
       res match {

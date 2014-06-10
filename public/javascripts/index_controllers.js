@@ -148,7 +148,7 @@ expsApp.controller('itemListCtrl', ['$scope', '$http', 'listViewSvc', 'ExpData',
 expsApp.controller('EmptyDetailCtrl', [function () {
 }]);
 
-var findIndex = function(vs, id) {
+findIndex = function(vs, id) {
     var len = vs.length;
     for (var i = 0; i < len; i++) {
         if (vs[i].id == id)
