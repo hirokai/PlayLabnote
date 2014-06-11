@@ -160,3 +160,8 @@ findIndex = function(vs, id) {
 function showMessage(msg) {
     console.log(msg);
 }
+
+showGet = function(url){
+    $.get(url,function(r){console.log(r);});
+    return null;
+}

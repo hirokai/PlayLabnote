@@ -43,6 +43,18 @@ td.selected {
     background: pink;
 }
 
+td.selected.cell_runsample {
+    background: orange;
+}
+
+td {
+    padding: 0;
+}
+
+small {
+    color: #bababa;
+}
+
 
 
 /* from http://www.bootply.com/5l9bZ7ZOt6 */
@@ -68,6 +80,29 @@ body, html {
         overflow-y: scroll;
 //        width: 25%;
     }
+}
+
+.runsample {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+}
+
+input[disabled] {
+    color: #a9a9a9;
+}
+
+.cell_runsample .empty_runsample {
+    visibility: hidden;
+}
+
+.cell_runsample:hover {
+    background: pink;
+}
+
+.cell_runsample:hover .empty_runsample {
+    visibility: visible;
 }
 
 .leftPane {
