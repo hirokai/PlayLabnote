@@ -62,7 +62,10 @@ try { d3 = require('d3'); } catch (_) { d3 = window.d3; }
 
 module.exports = Renderer;
 
-function Renderer() {
+    var selection;
+function Renderer(d3obj,sel) {
+  d3 = d3obj;
+  selection = sel;
   // Set up defaults...
   this._layout = layout();
 
@@ -414,12 +417,13 @@ function addLabel(node, root, marginX, marginY) {
   var label = node.label;
     //This is only for nodes, not edges.
   root
-//      .classed('selected',function(d){
-//          return _.contains(Session.get('selected_nodes'),d);
-//      })
-//      .classed('selected-first',function(d){
-//          return Session.get('selected_nodes')[0] == d;
-//      });
+      .classed('selected',function(d){
+          console.log(selection);
+          return _.contains(selection,d);
+      })
+      .classed('selected-first',function(d){
+          return selection[0] == d;
+      });
 
   var rect = root.append('rect');
   var labelSvg = root.append('g');
@@ -430,6 +434,7 @@ function addLabel(node, root, marginX, marginY) {
   if (label[0] === '<') {
     addForeignObjectLabel(label, labelSvg);
     // No margin for HTML elements
+
     marginX = marginY = 0;
   } else {
     addTextLabel(label,

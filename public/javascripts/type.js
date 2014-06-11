@@ -1,16 +1,3 @@
-expsApp.factory('TypeData',['$resource',function($resource){
-    //Just add title.
-    var readData = function (str) {
-        var obj = JSON.parse(str);
-        return [mkTreeData(obj)];
-    };
-
-    return $resource('/types.json',{}, {
-        getAll: {method: 'GET', params: {}, isArray: true, transformResponse: readData},
-        getOne: {method: 'GET', 'url': '/types/:id.json'}
-    });
-}]);
-
 expsApp.factory('TypeDataSvc',['$http', 'listViewSvc', function($http, listViewSvc){
     return {
         hello: function(){
@@ -18,7 +5,7 @@ expsApp.factory('TypeDataSvc',['$http', 'listViewSvc', function($http, listViewS
         },
         change: function(nv,ov) {
             console.log('type may have changed.')
-            if(ov.id && nv.id == ov.id && !_.isEqual(nv,ov)){
+            if(ov && nv & ov.id && nv.id == ov.id && !_.isEqual(nv,ov)){
                 //This means not selection, but content is changed.
 
                 console.log('item content changed.',nv,ov);
@@ -62,16 +49,18 @@ expsApp.controller('TypeListCtrl', ['$scope', '$state', '$stateParams', 'listVie
 }]);
 
 
-expsApp.controller('TypeDetailCtrl', ['$scope', '$http', '$stateParams', 'listViewSvc', 'TypeData', 'TypeDataSvc',
-    function ($scope, $http, $stateParams, listViewSvc, TypeData, TypeDataSvc) {
+expsApp.controller('TypeDetailCtrl', ['$scope', '$http', '$stateParams', 'listViewSvc', 'TypeDataSvc',
+    function ($scope, $http, $stateParams, listViewSvc, TypeDataSvc) {
     var init = function () {
         $scope.showSubtypes = false;
 
         $scope.showDetailJson = listViewSvc.showDetailJson;
 
         $scope.selectedItem = listViewSvc.selectedItem;
-//        $scope.loaded = true;
-        $scope.item = TypeData.getOne({id: $stateParams.id},function(){
+        var id = $stateParams.id;
+        if(!id)return;
+        $http({url: '/types/'+id+'.json', method: 'GET'}).success(function(r){
+            $scope.item = r;
             listViewSvc.pageTitle.value = $scope.item.name + ' - Labnotebook';
             $scope.loaded = true;
         });

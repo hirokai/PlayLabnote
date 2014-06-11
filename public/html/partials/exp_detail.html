@@ -23,6 +23,7 @@
     <div class='row' >
         <section ng-show='showSection.protocol'>
             <h4>Protocol</h4>
+            <protocol-graph ng-if='loaded' exp='item' selection='selectedPSamples'></protocol-graph>
         </section>
     </div>
     <div class='row' >
@@ -58,7 +59,7 @@
                     <td><a href="" class='btn btn-sm btn-default' ng-click='deletePSample(psample.id)'>
                         <span class='glyphicon glyphicon-minus'></span>
                     </a></td>
-                    <td ng-click='clickPSample(psample)' ng-class='{selected: isSelectedPS(psample)}'>{{psample.name}}</td>
+                    <td ng-click='clickPSample(psample,$event)' ng-class='{selected: isSelectedPS(psample)}'>{{psample.name}}</td>
                     <td>{{psample.typ.name}}</td>
                     <td ng-repeat='run in item.runs' ng-class='{cell_runsample: true, selected: runSample.selected}' ng-controller='RunSampleCtrl'>
                         <div class='runsample' ng-if='runSample.id' ng-click='clickRunSample($event)'>{{runSample.name}} <br><small>{{runSample.typ.name}}</small></div>

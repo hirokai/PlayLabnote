@@ -1,5 +1,7 @@
 module.exports = function(grunt) {
 
+    var jsfiles = ['public/javascripts/*.js', '!public/javascripts/index_module.js', '!public/javascripts/dagre-d3-custom.js'];
+
     // Project configuration.
     grunt.initConfig({
         pkg: grunt.file.readJSON('package.json'),
@@ -12,7 +14,7 @@ module.exports = function(grunt) {
                 }
             },
             build: {
-                src: ['public/javascripts/*.js', '!public/javascripts/index_module.js'],
+                src: jsfiles,
                 dest: 'public/javascripts/dist/<%= pkg.name %>.min.js'
             }
         },
@@ -21,13 +23,13 @@ module.exports = function(grunt) {
                 separator: ';'
             },
             dist: {
-                src: ['public/javascripts/*.js', '!public/javascripts/index_module.js'],
+                src: jsfiles,
                 dest: 'public/javascripts/dist/<%= pkg.name %>.js'
             }
         },
         watch: {
             dev: {
-                files: ["public/javascripts/*.js"],
+                files: jsfiles,
                 tasks: ['uglify']
             }
         }

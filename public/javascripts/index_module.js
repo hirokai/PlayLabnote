@@ -1,4 +1,4 @@
-var expsApp = angular.module('expsApp', ['editableTitleModule', 'ui.bootstrap', 'ui.tree','ngResource','ui.router']);
+var expsApp = angular.module('expsApp', ['editableTitleModule', 'ui.bootstrap', 'ui.tree','ngResource','ui.router','myGraph']);
 
 expsApp.factory('helper',function(){
     return {

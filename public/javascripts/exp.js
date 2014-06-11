@@ -1,19 +1,3 @@
-expsApp.factory('ExpData',['$resource',function($resource){
-    //Just add title.
-    var readData = function (str) {
-        var es = JSON.parse(str);
-        return _.map(es, function (e) {
-            e.title = e.name;
-            return e;
-        });
-    };
-
-    return $resource('/exps.json',{}, {
-        getAll: {method: 'GET', params: {}, isArray: true, transformResponse: readData},
-        getOne: {method: 'GET', isArray: false, 'url': '/exps/:id.json', params: {full: true}}
-    });
-}]);
-
 expsApp.factory('ExpDataSvc',['$http', 'listViewSvc', function($http, listViewSvc){
     return {
         hello: function(){
@@ -35,7 +19,7 @@ expsApp.factory('ExpDataSvc',['$http', 'listViewSvc', function($http, listViewSv
     };
 }]);
 
-expsApp.controller('ExpListCtrl', ['$scope', '$state', '$stateParams', 'listViewSvc', 'ExpData', 'ExpDataSvc', '$http', function ($scope, $state, $stateParams, listViewSvc, ExpData, ExpDataSvc, $http) {
+expsApp.controller('ExpListCtrl', ['$scope', '$state', '$stateParams', 'listViewSvc', 'ExpDataSvc', '$http', function ($scope, $state, $stateParams, listViewSvc, ExpDataSvc, $http) {
     $scope.exps = listViewSvc.exps;
     $scope.selectedItem = listViewSvc.selectedItem;
 
@@ -69,14 +53,17 @@ expsApp.controller('ExpListCtrl', ['$scope', '$state', '$stateParams', 'listView
 }]);
 
 
-expsApp.controller('ExpDetailCtrl', ['$scope', '$http', '$state', '$stateParams', 'listViewSvc', 'ExpData', 'ExpDataSvc', '$timeout',
-    function ($scope, $http, $state, $stateParams, listViewSvc, ExpData, ExpDataSvc, $timeout) {
+expsApp.controller('ExpDetailCtrl', ['$scope', '$http', '$state', '$stateParams', 'listViewSvc', 'ExpDataSvc', '$timeout',
+    function ($scope, $http, $state, $stateParams, listViewSvc, ExpDataSvc, $timeout) {
         //   $scope.exps = convertData(data);
         //     console.log(data[0],$scope.exps[0]);
 
         //These two are decoupled...
         $scope.selectedItem = listViewSvc.selectedItem;
-        $scope.item = ExpData.getOne({id: $stateParams.id}, function(){
+        var id = $stateParams.id;
+        $http({url: '/exps/'+id+'.json', method: 'GET', params: {full: true}}).success(function(r){
+            console.log(r);
+            $scope.item = r;
             $scope.$watch('item.name', function (nv, ov) {
                 if($scope.loaded && nv && nv != ov)
                     ExpDataSvc.changeName($scope.item.id,nv, function(r){
@@ -89,6 +76,7 @@ expsApp.controller('ExpDetailCtrl', ['$scope', '$http', '$state', '$stateParams'
             listViewSvc.pageTitle.value = $scope.item.name + ' - Labnotebook';
             $scope.loaded = true;
         });
+        $scope.pageTitle = listViewSvc.pageTitle;
 
         $scope.selectedSample = {};
 
@@ -144,8 +132,8 @@ expsApp.controller('ExpDetailCtrl', ['$scope', '$http', '$state', '$stateParams'
 
         $scope.selectedType = 0;
 
-        $scope.clickPSample = function(item){
-            $scope.selectPSample(item,false);
+        $scope.clickPSample = function(item,$event){
+            $scope.selectPSample(item,$event.metaKey);
         };
 
         $scope.$watch('selectedPSOne',function(){

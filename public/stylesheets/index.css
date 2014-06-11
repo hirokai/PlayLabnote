@@ -141,7 +141,7 @@ input[disabled] {
 
  svg {
     width: 400px;
-    height: 300px;
+    height: 100px;
 }
 
 .nav, .pagination, .carousel, .panel-title a { cursor: pointer; }
@@ -181,4 +181,20 @@ input[disabled] {
 
 .tree-node.selected {
     background: #ff87ca;
+}
+
+#protocol_graph {
+    width: 80%;
+}
+
+#protocol_graph g.node {
+    cursor: pointer;
+}
+
+g.selected rect {
+    fill: #ff87ca;
+}
+
+g.selected-first rect {
+    stroke-width: 3;
 }

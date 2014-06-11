@@ -89,32 +89,6 @@ angular.module('d3', [])
             };
         }]);
 
-angular.module('myGraph',[])
-    .controller('protocolGraphCtrl',['$scope',function($scope){
-     //   $scope.nodes = [{},{},{}]; //$scope.exp;
-     //   console.log($scope);
-        $scope.$watch('exp',function(nv,ov){
-            console.log(nv);
-            $scope.nodes = [{x: Math.random()*100, y: 100}];
-        },true);
-        $scope.x = function(scope){
-            console.log(scope);
-            return Math.random()*100;
-        }
-        $scope.y = function(scope){
-            //console.log(scope);
-            return Math.random()*100;
-        }
-    }])
-    .directive('protocolGraph', ['d3Service', '$http', '$timeout', function(d3Service,$http,$timeout) {
-        return {
-          restrict: 'EA',
-          scope: {
-              exp: '='
-          },
-          templateUrl: '/assets/html/protocolGraph.html'
-        };
-    }]);
 
 /*
 angular.module('myGraphOld', ['d3'])

@@ -1,26 +1,10 @@
-expsApp.factory('SampleData',['$resource',function($resource){
-    //Just add title.
-    var readData = function (str) {
-        var es = JSON.parse(str);
-        return _.map(es, function (e) {
-            e.title = e.name;
-            return e;
-        });
-    };
-
-    return $resource('/samples.json',{}, {
-        getAll: {method: 'GET', params: {}, isArray: true, transformResponse: readData},
-        getOne: {method: 'GET', 'url': '/samples/:id.json'}
-    });
-}]);
-
 expsApp.factory('SampleDataSvc',['$http', 'listViewSvc', function($http, listViewSvc){
     return {
         hello: function(){
             console.log('hello');
         },
         change: function(nv,ov) {
-            if(ov.id && nv.id == ov.id && !_.isEqual(nv,ov)){
+            if(ov && nv && ov.id && nv.id == ov.id && !_.isEqual(nv,ov)){
                 //This means not selection, but content is changed.
 
                 console.log('item content changed.',nv,ov);
@@ -59,16 +43,21 @@ expsApp.controller('SampleListCtrl', ['$scope', '$state', '$stateParams', 'listV
     };
 }]);
 
-expsApp.controller('SampleDetailCtrl', ['$scope', '$http', '$state', '$stateParams', 'listViewSvc', 'SampleData', 'SampleDataSvc', function ($scope, $http, $state, $stateParams, listViewSvc, SampleData, SampleDataSvc) {
+expsApp.controller('SampleDetailCtrl', ['$scope', '$http', '$state', '$stateParams', 'listViewSvc', 'SampleDataSvc', function ($scope, $http, $state, $stateParams, listViewSvc, SampleDataSvc) {
     $scope.selectedItem = listViewSvc.selectedItem;
-    $scope.item = SampleData.getOne({id: $stateParams.id}, function(){
+
+    var id = $stateParams.id;
+    if(!id)return;
+
+    $http({url: '/samples/'+id+'.json', method: 'GET'}).success(function(r){
+        $scope.item = r;
         $scope.loaded = true;
-        var id = $scope.item.id;
         $http({url: '/samples/'+id+'/exps', method: 'GET'}).success(function(r){
             console.log(r);
             $scope.exps = r.data;
         });
         listViewSvc.pageTitle.value = $scope.item.name + ' - Labnotebook';
+
     });
     $scope.showList = listViewSvc.showList;
     $scope.showDetailJson = listViewSvc.showDetailJson;

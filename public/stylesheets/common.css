@@ -42,3 +42,9 @@ pre.json {
 .fade.in{
     opacity: 1;
 }
+
+rect {
+    fill: #f8fff1;
+    stroke-width: 1;
+    stroke: black;
+}

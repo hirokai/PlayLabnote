@@ -87,17 +87,21 @@ expsApp.controller('protocolGraphCtrl', ['$scope', function ($scope) {
 expsApp.controller('entireCtrl',
     ['$scope', '$http', '$timeout',
         'listViewSvc',
-        'ExpData', 'SampleData', 'TypeData',
         'ExpDataSvc', 'SampleDataSvc', 'TypeDataSvc',
     function ($scope, $http, $timeout,
               listViewSvc,
-              ExpData, SampleData, TypeData,
               ExpDataSvc, SampleDataSvc, TypeDataSvc) {
         var init = function () {
-            //Common data store
-            listViewSvc.exps = ExpData.getAll();
-            listViewSvc.samples = SampleData.getAll();
-            listViewSvc.types = TypeData.getAll();
+            //Common data store. This enables background loading.
+            $http({url: '/exps.json', method: 'GET'}).success(function(r){
+               listViewSvc.exps = r;
+            });
+            $http({url: '/samples.json', method: 'GET'}).success(function(r){
+                listViewSvc.samples = r;
+            });
+            $http({url: '/types.json', method: 'GET'}).success(function(r){
+                listViewSvc.types = [mkTreeData(r)];
+            });
 
             $scope.mode = 'exp';
 
@@ -137,7 +141,7 @@ expsApp.controller('entireCtrl',
 
 
 
-expsApp.controller('itemListCtrl', ['$scope', '$http', 'listViewSvc', 'ExpData', function ($scope, $http, listViewSvc, ExpData) {
+expsApp.controller('itemListCtrl', ['$scope', '$http', 'listViewSvc', function ($scope, $http, listViewSvc) {
 
 
     $scope.showList = listViewSvc.showList;

@@ -1,0 +1,49 @@
+
+<div id='graph_buttons'>
+    <div>
+        <span class='btnlabel'>For sample:</span>
+        <button id='newsamplebtn' class="btn btn-xs btn-default" type="button"
+        {{disabled_if_locked}}>New sample</button>
+        <button id='deletesamplebtn' class="btn btn-xs btn-default"
+        {{oneormorenode_edit_disabled}} {{disabled_if_locked}} type="button">Delete</button>
+    </div>
+    <div>
+
+        <span class='btnlabel'>For sample:</span>
+        <button id='addprevstepbtn' class="btn btn-xs btn-default"
+                ng-disabled='selectedPSamples.length != 1' {{disabled_if_locked}} type="button">Add prev step</button>
+        <button id='addnextstepbtn' class="btn btn-xs btn-default"
+                ng-disabled='selectedPSamples.length != 1' {{disabled_if_locked}} type="button">Add next step</button>
+    </div>
+    <div>
+        <span class='btnlabel'>For two samples:</span>
+        <button id='connectnodes' class="btn btn-xs btn-default" ng-disabled='selectedPSamples.length != 2'
+         {{disabled_if_locked}} type="button">Connect nodes</button>
+        <button id='insertnode' class="btn btn-xs btn-default" ng-disabled='selectedPSamples.length != 2'
+        {{disabled_if_locked}} type="button">Insert</button>
+    </div>
+    <div>
+        <span class='btnlabel'>For operation:</span>
+        <button id='newinputbtn' class="btn btn-xs btn-default"
+        {{oneedge_edit_disabled}} {{disabled_if_locked}} type="button">New input</button>
+        <button id='newoutputbtn' class="btn btn-xs btn-default"
+        {{oneedge_edit_disabled}} {{disabled_if_locked}} type="button">New output</button>
+        <button id='deleteopbtn' class="btn btn-xs btn-default"
+        {{oneedge_edit_disabled}} {{disabled_if_locked}} type="button">Delete</button>
+    </div>
+    <div style='margin: 8px 0px;'>
+        <button id='deselect' class="btn btn-xs btn-default" type="button">Select none</button>
+        <button id='resetzoom' class="btn btn-xs btn-default" type="button">Reset zoom</button>
+    </div>
+    <div style='margin: 8px 0px;'>
+        <input type="checkbox" id='shrink_nodes' {{shrink_nodes}}/>
+        <span style='font-size: 12px'>Shrink intermediate samples</span>
+    </div>
+
+</div>
+<svg id='protocol_graph'>
+
+
+</svg>
+        Hey
+        <span>{{exp.protocolSamples.length}} nodes.</span>
