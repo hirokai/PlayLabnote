@@ -42,10 +42,10 @@ GET           /samples/$id<[0-9]+>.json                 controllers.Sample.getJs
 PUT           /samples/$id<[0-9]+>                      controllers.Sample.update(id: models.Database.Id)
 DELETE        /samples/$id<[0-9]+>                      controllers.Sample.delete(id: models.Database.Id)
 
-GET           /samples/$id<[0-9]+>/exp                  controllers.Sample.stub(id)
-GET           /samples/$id<[0-9]+>/related              controllers.Sample.stub(id)
-GET           /samples/$id<[0-9]+>/data                 controllers.Sample.stub(id)
-GET           /samples/$id<[0-9]+>/note                 controllers.Sample.stub(id)
+GET           /samples/$id<[0-9]+>/exps                 controllers.Sample.getExps(id: models.Database.Id)
+GET           /samples/$id<[0-9]+>/related              controllers.Sample.stub(id: models.Database.Id)
+GET           /samples/$id<[0-9]+>/data                 controllers.Sample.stub(id: models.Database.Id)
+GET           /samples/$id<[0-9]+>/note                 controllers.Sample.stub(id: models.Database.Id)
 
 
 

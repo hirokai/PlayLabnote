@@ -120,6 +120,24 @@ input[disabled] {
     min-height: 46px;
 }
 
+#alertdiv {
+    position: fixed;
+    bottom: 0;
+    right: 0;
+}
+
+.wrapper {
+    min-height: 100%;
+    height: auto !important;
+    height: 100%;
+    margin: 0 auto -70px; /* the bottom margin is the negative value of the footer's height */
+}
+#alertdiv {
+    height: 70px; /* '.push' must be the same height as 'footer' */
+    width: 70%;
+    margin-right: 20px;
+}
+
 
  svg {
     width: 400px;

@@ -514,6 +514,13 @@ case class SampleAccess(owner: Id = 0) {
       s"on sample.type = sampletype.id")().map(Sample.fromRow).toArray
   }
 
+  def findExps(id: Id)(implicit c: Connection): Array[Experiment] = {
+    SQL("SELECT Experiment.* from Experiment inner join ExpRun on ExpRun.experiment=Experiment.id " +
+      "inner join SampleInRun on ExpRun.id=SampleInRun.run " +
+      s"inner join Sample on SampleInRun.sample=Sample.id where Sample.id=$id"
+    )().map(Experiment.fromRow).toArray
+  }
+
   def countTotal(implicit c: Connection): Long = {
     SQL(s"SELECT count(*) as c from Sample where owner=$owner")().map(_[Long]("c")).headOption.getOrElse(0l)
   }

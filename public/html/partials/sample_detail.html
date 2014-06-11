@@ -3,7 +3,27 @@
     <div editable-name item='item'></div>
 </div>
 
+
+    <button type="button" class="btn btn-danger btn-sm" ng-click="deleteSample()">Delete</button>
     <button type="button" class="btn btn-default btn-sm" ng-model="showDetailJson.value" btn-checkbox >JSON</button>
     <pre class='json' ng-if='showDetailJson.value'>{{selectedItem.sample | json}}</pre>
     <pre class='json' ng-if='showDetailJson.value'>{{item | json}}</pre>
+
+    <section>
+        <h3>Experiments using sample</h3>
+        <table class='table'>
+            <thead>
+            <tr>
+                <th>Name</th>
+                <th>Date</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr ng-repeat='exp in exps'>
+                <td><a ui-sref="exp_id({id: exp.id})">{{exp.name}}</a></td>
+                <td>{{exp.date}}</td>
+            </tr>
+            </tbody>
+        </table>
+    </section>
 </div>

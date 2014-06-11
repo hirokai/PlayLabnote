@@ -46,6 +46,10 @@ expsApp.controller('TypeListCtrl', ['$scope', '$state', '$stateParams', 'listVie
 
     listViewSvc.current.mode = 'type';
     listViewSvc.current.id = $stateParams.id;
+    if(!$stateParams.id){
+        listViewSvc.pageTitle.value = 'List of types - Labnotebook';
+    }
+
 
     $scope.isSelectedType = function (id) {
         return id == $stateParams.id
@@ -68,6 +72,7 @@ expsApp.controller('TypeDetailCtrl', ['$scope', '$http', '$stateParams', 'listVi
         $scope.selectedItem = listViewSvc.selectedItem;
 //        $scope.loaded = true;
         $scope.item = TypeData.getOne({id: $stateParams.id},function(){
+            listViewSvc.pageTitle.value = $scope.item.name + ' - Labnotebook';
             $scope.loaded = true;
         });
 
@@ -77,6 +82,7 @@ expsApp.controller('TypeDetailCtrl', ['$scope', '$http', '$stateParams', 'listVi
 
         $scope.showList = listViewSvc.showList;
         $scope.types = listViewSvc.types;
+
         $scope.id = $stateParams.id;
         if($scope.id){
             $http.get('/samples/of_type/'+$scope.id, {params: {subtypes: true}}).then(function(r){

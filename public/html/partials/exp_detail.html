@@ -39,6 +39,7 @@
                          <select ng-disabled='selectedSamples.length != 1' ng-model="selectedSamples[0].typ"
                                  ng-change='' ng-options="type as type.title for type in types"></select>
                     </span>
+                    <span><a ng-disabled='selectedSamples.length != 1'  class='btn btn-sm btn-default' href="#/samples/{{selectedSamples[0].id}}">Detail</a></span>
                 </div>
 
             </div>

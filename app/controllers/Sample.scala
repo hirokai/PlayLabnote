@@ -15,7 +15,7 @@ object Sample extends Controller {
 
   import Util._
 
-  def stub(id: String) = Action {
+  def stub(id: Id) = Action {
     Ok("Stub")
   }
 
@@ -43,7 +43,7 @@ object Sample extends Controller {
     val force = request.getQueryString("force") == Some("true")
     DB.withConnection{ implicit c =>
       val r = SampleAccess().delete(id,force)
-      Ok(Json.obj("success" -> r))
+      Ok(Json.obj("success" -> r, "data" -> Json.obj("id" -> id)))
     }
   }
 
@@ -58,6 +58,14 @@ object Sample extends Controller {
     DB.withConnection{ implicit c =>
       val sample = SampleAccess().get(id)
       Ok(Json.toJson(sample))
+    }
+  }
+
+  def getExps(id: Id) = Action {
+    import JsonWriter.implicitExperimentWrites
+    DB.withConnection{implicit c =>
+      val exps: Array[models.Experiment] = SampleAccess().findExps(id)
+      Ok(Json.obj("success" -> true, "data" -> exps))
     }
   }
 

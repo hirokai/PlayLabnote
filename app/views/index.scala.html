@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en-US" ng-app='expsApp'>
+<html lang="en-US" ng-cloak ng-app='expsApp' ng-controller='entireCtrl'>
     <head>
         <link rel="stylesheet" media="screen" href="/public/libs/bootstrap/dist/css/bootstrap.min.css">
         <link rel="stylesheet" media="screen" href="/public/libs/angular-ui-tree/dist/angular-ui-tree.min.css">
@@ -10,14 +10,14 @@
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
 
-        <title>List of experiments</title>
+        <title>{{pageTitle.value}}</title>
     </head>
-    <body ng-cloak class='container' ng-controller='entireCtrl'>
+    <body class='container'>
         <div id="righttop_tools">
             <button type="button" class="btn btn-default btn-sm" ng-model="showList.value" btn-checkbox >List</button>
         </div>
 
-        <div class='row'>
+        <div class='row wrapper'>
             <div ng-show='showList.value' class='col-md-3 leftPane' ng-controller='itemListCtrl'>
                 <a class='btn btn-sm btn-default' href='#/exps'>Exp</a>
                 <a class='btn btn-sm btn-default' href='#/samples'>Sample</a>
@@ -26,6 +26,9 @@
             </div>
             @*<div  ng-class='"row " + (showList.value ? "col-md-8 rightPane" : "col-md-11")'>*@
                  <div ui-view='detail'></div>
+        </div>
+        <div id='alertdiv' ng-show='alert.shown'>
+            <alert type="danger" close="closeAlert(0)">{{alert.msg}}</alert>
         </div>
 
         <script src="//cdnjs.cloudflare.com/ajax/libs/underscore.js/1.6.0/underscore-min.js"></script>

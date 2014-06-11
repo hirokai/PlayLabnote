@@ -42,6 +42,10 @@ expsApp.controller('ExpListCtrl', ['$scope', '$state', '$stateParams', 'listView
     listViewSvc.current.mode = 'exp';
     listViewSvc.current.id = $stateParams.id;
 
+    if(!$stateParams.id){
+        listViewSvc.pageTitle.value = 'List of experiments';
+    }
+
     $scope.sp = $stateParams; // For debug purpose.
 
     $scope.addExp = function(){
@@ -82,6 +86,7 @@ expsApp.controller('ExpDetailCtrl', ['$scope', '$http', '$state', '$stateParams'
                         $scope.selectedItem.exp.name = d.name;
                     })
             }, false);
+            listViewSvc.pageTitle.value = $scope.item.name + ' - Labnotebook';
             $scope.loaded = true;
         });
 
@@ -101,7 +106,7 @@ expsApp.controller('ExpDetailCtrl', ['$scope', '$http', '$state', '$stateParams'
                     console.log($scope.exps);
                     var idx = findIndex(listViewSvc.exps, res.id);
                     listViewSvc.exps.splice(idx, 1);
-                    var exp = listViewSvc.exps[0];
+                    var exp = listViewSvc.exps[idx];
                     var id = exp ? exp.id : null;
                     console.log(idx, listViewSvc.exps,id);
                     if(id){

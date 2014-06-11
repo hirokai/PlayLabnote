@@ -12,8 +12,14 @@ expsApp.service('listViewSvc', ['$http', function ($http) {
             mode: null,
             id: null
         },
+        alert: {
+            msg: null
+        },
         showDetailJson: {
             value: false
+        },
+        pageTitle: {
+            value: 'Labnotebook'
         },
         newSubItem: function (scope) {
             console.log(scope);
@@ -79,11 +85,11 @@ expsApp.controller('protocolGraphCtrl', ['$scope', function ($scope) {
 
 //This controller is loaded in the beginning, no matter which tab is open. (Background loading).
 expsApp.controller('entireCtrl',
-    ['$scope', '$http',
+    ['$scope', '$http', '$timeout',
         'listViewSvc',
         'ExpData', 'SampleData', 'TypeData',
         'ExpDataSvc', 'SampleDataSvc', 'TypeDataSvc',
-    function ($scope, $http,
+    function ($scope, $http, $timeout,
               listViewSvc,
               ExpData, SampleData, TypeData,
               ExpDataSvc, SampleDataSvc, TypeDataSvc) {
@@ -111,10 +117,18 @@ expsApp.controller('entireCtrl',
             TypeDataSvc.change(nv, ov);
         }, true);
 
+        $scope.alert = listViewSvc.alert;
+        $scope.showMessage = function(msg) {
+            $scope.alert.msg = msg;
+            $scope.alert.shown = true;
+            $timeout(function(){
+                $scope.alert.shown = false;
+                $scope.alert.msg = '';
+            },3000);
+        };
+        $scope.pageTitle = listViewSvc.pageTitle;
 
-
-
-
+        $scope.pageTitle.value = 'Labnotebook';
 
 
 
