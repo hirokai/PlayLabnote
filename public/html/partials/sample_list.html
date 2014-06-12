@@ -2,13 +2,15 @@
 
     <div class='listContainer'>
         <button class='btn btn-default' ng-click='addSample()'>Add sample</button>
-        <input type="text" ng-model='freeword.title'/>
+        <input type="text" ng-model='freeword.name'/>
         <span>{{(samples| filter:freeword).length}}/{{samples.length}} samples shown.</span>
-        <ul>
-            <li ng-repeat='sample in samples| filter:freeword' class='sample_list_item' ng-class='{selected: isSelectedSample(sample.id)}' ng-click='selectItem(sample)'>
-                <div ng-click='clickList(sample,$event)'>{{sample.name}}</div>
-            </li>
-        </ul>
+        <div class='fixedHeight'>
+            <ul>
+                <li ng-repeat='sample in samples| filter:freeword' class='sample_list_item' ng-class='{selected: isSelectedSample(sample.id)}' ng-click='selectItem(sample)'>
+                    <div ng-click='clickList(sample,$event)'>{{sample.name}}</div>
+                </li>
+            </ul>
+        </div>
 
     </div>
 

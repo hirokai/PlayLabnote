@@ -22,6 +22,7 @@ case class Experiment (
                        owner: Id,
                        name: String,
                        protocolSamples: Array[ProtocolSample] = Array(),
+                       protocolSteps: Array[ProtocolStep] = Array(),
                        runs: Array[ExpRun] = Array(),
                        note: String = "",
                        runSamples: Map[(Id,Id),Sample] = Map()
@@ -72,8 +73,9 @@ case class ExperimentAccess(owner: Id = 0) {
       case Some(exp) =>{
         val runs: Array[ExpRun] = getRuns(id)
         val pss: Array[ProtocolSample] = getProtocolSamples(id)
+        val steps: Array[ProtocolStep] = getProtocolSteps(id)
         val rss: Map[(Id,Id),Sample] = getRunSamplesKeyValue(id)
-        Some(exp.copy(runs = runs, protocolSamples = pss, runSamples = rss))
+        Some(exp.copy(runs = runs, protocolSamples = pss, protocolSteps = steps, runSamples = rss))
       }
       case _ =>
         None
@@ -94,6 +96,32 @@ case class ExperimentAccess(owner: Id = 0) {
         }
         case _ => None
       }
+  }
+
+  //@Transaction
+  def createProtocolStep(id: Id, name: String, ins: Array[Id], outs: Array[Id])(implicit c: Connection): Either[String,Id] = {
+    val o_step_id: Option[Id] = SQL(s"INSERT into ProtocolStep(experiment,name) values($id,'${escape(name)}')").executeInsert()
+    o_step_id match {
+      case Some(step_id) => {
+        try{
+          for(i <- ins){
+            val r: Long = SQL(s"INSERT into ProtocolSampleInStep(step,sample,role) values($step_id,$i,'input')").executeUpdate()
+            if(r != 1l)
+              throw new Exception("Insertion failed")
+          }
+          for(o <- outs){
+            val r: Long = SQL(s"INSERT into ProtocolSampleInStep(step,sample,role) values($step_id,$o,'output')").executeUpdate()
+            if(r != 1l)
+              throw new Exception("Insertion failed")
+          }
+          Right(step_id)
+        }catch{
+          case e: Throwable => Left("DB error: " + e.getMessage)
+        }
+      }
+      case _ =>
+        Left("DB error")
+    }
   }
 
   //@Transaction
@@ -151,23 +179,28 @@ case class ExperimentAccess(owner: Id = 0) {
   }
 
   def getProtocolSamples(eid: Id)(implicit c: Connection): Array[ProtocolSample] = {
-    SQL(s"SELECT * from ProtocolSample where experiment=$eid")().map(ProtocolSample.fromRow).toArray
+    val vs = SQL(s"SELECT * from ProtocolSample LEFT JOIN ProtocolSampleInStep on ProtocolSample.id=ProtocolSampleInStep.sample where ProtocolSample.experiment=$eid")().map{ row =>
+      val ps = ProtocolSample.fromRow(full = true)(row)
+      val role = row[Option[String]]("ProtocolSampleInStep.role")
+      ps.copy(role = role.map(Array(_)).getOrElse(Array()))
+    }.toArray
+    val vs2: Map[Id, Array[ProtocolSample]] = vs.groupBy{ v =>
+      v.id
+    }
+    vs2.values.map{(vs: Array[ProtocolSample]) =>
+      val ps = vs.head
+      val role: Array[String] = vs.flatMap(_.role).distinct
+      ps.copy(role = role)
+    }.toArray
   }
 
   //@Transaction
   def deleteProtocolSample(pid: Id, force: Boolean = false)(implicit c: Connection): Either[String,String] = {
-    if(force){
-      SQL(s"DELETE * from SampleInRun where protocol_sample=$pid").executeUpdate()
-      val r = SQL(s"DELETE * from ProtocolSample where id=$pid").executeUpdate()
-      if(r == 1){
-        Right("Done.")
-      }else if(r ==0){
-        Left("Not found.")
-      }else{
-        Left("Unknown error.")
-      }
-    }else{
-      if(SQL(s"SELECT count(*) as c from SampleInRun where protocol_sample=$pid")().map(_[Long]("c")).headOption == Some(0l)){
+      if(force || SQL(s"SELECT count(*) as c from SampleInRun where protocol_sample=$pid")().map(_[Long]("c")).headOption == Some(0l)){
+        //FIXME: Need to delete all protocol params etc.
+        SQL(s"DELETE from ProtocolSampleInStep where sample=$pid").executeUpdate()
+
+        SQL(s"DELETE from SampleInRun where protocol_sample=$pid").executeUpdate()
         val r = SQL(s"DELETE from ProtocolSample where id=$pid").executeUpdate()
         if(r == 1){
           Right("Done")
@@ -179,7 +212,14 @@ case class ExperimentAccess(owner: Id = 0) {
       }else{
         Left("Run samples still exist.")
       }
-    }
+  }
+
+  def getProtocolSteps(id: Id)(implicit c: Connection): Array[ProtocolStep] = {
+    val step_ids = SQL(s"SELECT * from ProtocolStep where experiment=$id")().map{row =>
+      row[Id]("id")
+    }.toArray
+    Logger.debug(step_ids.mkString(","))
+    step_ids.map(id => models.ProtocolStepAccess().get(id)).flatten
   }
 
   //Run samples
@@ -218,12 +258,12 @@ case class ExperimentAccess(owner: Id = 0) {
   }
 }
 
-case class ProtocolSample(id: Id, name: String, note: String = "", typ: SampleType = SampleType.AnyType)
+case class ProtocolSample(id: Id, name: String, note: String = "", typ: Either[Id,SampleType] = Left(SampleType.AnyType.id), role: Array[String] = Array())
 
 object ProtocolSample {
-  def fromRow(row: Row)(implicit c: Connection): ProtocolSample = {
+  def fromRow(full: Boolean = false)(row: Row)(implicit c: Connection): ProtocolSample = {
     val tid = row[Id]("type")
-    val t = SampleTypeAccess().get(tid).get
+    val t = if(full) Right(SampleTypeAccess().get(tid).get) else Left(tid)
     ProtocolSample(
       row[Id]("id"),
       row[String]("name"),
@@ -266,11 +306,11 @@ case class ProtocolSampleAccess() {
   }
 
   def listInExp(eid: Id)(implicit c: Connection): Stream[ProtocolSample] = {
-      SQL(s"SELECT * from ProtocolSample where experiment=$eid")().map(ProtocolSample.fromRow)
+      SQL(s"SELECT * from ProtocolSample where experiment=$eid")().map(ProtocolSample.fromRow(full = true))
   }
 
   def get(psid: Id)(implicit c: Connection): Option[ProtocolSample] = {
-    SQL(s"SELECT * from ProtocolSample where id=$psid")().map(ProtocolSample.fromRow).headOption
+    SQL(s"SELECT * from ProtocolSample where id=$psid")().map(ProtocolSample.fromRow(full = true)).headOption
   }
 
   def sampleTypeId(psid: Id)(implicit c: Connection): Option[Id] = {
@@ -622,11 +662,11 @@ case class StepParamAccess(owner: Id) {
 case class ProtocolStep(
            id: Id,
            name: String,
-           input: Array[ProtocolSample],
-           output: Array[ProtocolSample],
-           params: Array[ProtocolStepParam])
+           input: Array[Either[Id, ProtocolSample]],
+           output: Array[Either[Id, ProtocolSample]],
+           params: Array[ProtocolStepParam] = Array())
 
-class ProtocolStepAccess {
+case class ProtocolStepAccess() {
   val dbname = "ProtocolStep"
 
   def create(eid: Id, name: String,input: Array[Id],
@@ -644,6 +684,39 @@ class ProtocolStepAccess {
       ps1
     }
   }
+
+  def get(id: Id, full: Boolean = false)(implicit c: Connection): Option[ProtocolStep] = {
+    val vs = SQL(s"SELECT * from ProtocolStep ps inner join ProtocolSampleInStep pss on ps.id=pss.step where ps.id=$id")().map{row =>
+      (row[String]("name"), row[Id]("ProtocolSampleInStep.sample"),row[String]("ProtocolSampleInStep.role"))
+    }.toArray
+    if(vs.isEmpty){
+      None
+    }else{
+      val input_ids: Array[Id] = vs.filter{ v =>
+       v._3 == "input"
+      }.map(_._2)
+      val output_ids: Array[Id] = vs.filter{ v =>
+        v._3 == "output"
+      }.map(_._2)
+      if(full){
+        Some(ProtocolStep(
+          id = id,
+          name = vs.head._1,
+          input = input_ids.map{id =>
+            Right(ProtocolSampleAccess().get(id).get)
+          },
+          output = output_ids.map{id =>
+            Right(ProtocolSampleAccess().get(id).get)
+          }))
+      }else {
+        Some(ProtocolStep(id = id, name = vs.head._1,
+          input = input_ids.map(Left(_)),
+          output = output_ids.map(Left(_))
+        ))
+      }
+    }
+  }
+
 }
 
 case class RunStep(id: Id, run: Id, step: Id, value: String, typ: String, unit: String)
@@ -693,6 +766,19 @@ object JsonWriter {
   implicit val implicitSampleWrites = Json.writes[Sample]
   implicit val implicitProtocolSampleWrites = Json.writes[ProtocolSample]
   implicit val implicitProtocolStepParamWrites = Json.writes[ProtocolStepParam]
+
+  implicit val implicitProtocolStepWrites2 = new Writes[Either[models.Database.Id, models.ProtocolSample]] {
+    def writes(e: Either[models.Database.Id, models.ProtocolSample]): JsValue = {
+      e match {
+        case Left(id) => {
+          Json.toJson(id)
+        }
+        case Right(s) => {
+          Json.toJson(s)
+        }
+      }
+    }
+  }
   implicit val implicitProtocolStepWrites = Json.writes[ProtocolStep]
   implicit val implicitRunStepParamWrites = Json.writes[RunStepParam]
   implicit val implicitRunStepWrites = Json.writes[RunStep]

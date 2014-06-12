@@ -90,6 +90,12 @@ CREATE TABLE ProtocolStep (
     PRIMARY KEY (id)
 );
 
+CREATE TABLE ProtocolSampleInStep (
+    step bigint(20) NOT NULL REFERENCES ProtocolStep(id),
+    sample bigint(20) NOT NULL REFERENCES ProtocolSample(id),
+    role text NOT NULL
+);
+
 CREATE TABLE ProtocolStepParam (
   id bigint(20) NOT NULL AUTO_INCREMENT,
   step bigint(20) NOT NULL REFERENCES ProtocolStep(id),
@@ -125,6 +131,7 @@ DROP TABLE Sample;
 DROP TABLE SampleData;
 DROP TABLE ExpRun;
 DROP TABLE SampleInRun;
+DROP TABLE ProtocolSampleInStep;
 DROP TABLE ProtocolSample;
 DROP TABLE ProtocolStep;
 DROP TABLE ProtocolStepParam;

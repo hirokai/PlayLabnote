@@ -13,10 +13,13 @@ POST          /exps                                     controllers.Experiment.c
 
 GET           /exps.json                                controllers.Experiment.listJson
 
-GET           /exps/$id<[0-9]+>/runs                    controllers.Experiment.getExpRuns(id)
+GET           /exps/$id<[0-9]+>/runs                    controllers.Experiment.getExpRuns(id: models.Database.Id)
 PUT           /exps/$id<[0-9]+>                         controllers.Experiment.update(id: models.Database.Id)
 DELETE        /exps/$id<[0-9]+>                         controllers.Experiment.delete(id: models.Database.Id)
 POST          /exps/$id<[0-9]+>/psamples                controllers.Experiment.createProtocolSample(id: models.Database.Id)
+POST          /exps/$id<[0-9]+>/psteps                  controllers.Experiment.createProtocolStep(id: models.Database.Id)
+GET           /psteps/$id<[0-9]+>.json                  controllers.Experiment.getProtocolStep(id: models.Database.Id)
+PUT           /psteps/$id<[0-9]+>                       controllers.Experiment.updateProtocolStep(id: models.Database.Id)
 
 POST          /exps/$id<[0-9]+>/runs                    controllers.Experiment.createExpRun(id: models.Database.Id)
 GET           /exps/$id<[0-9]+>/samples                 controllers.Experiment.getRunSamples(id: models.Database.Id)
@@ -26,14 +29,14 @@ DELETE        /runsamples/:rid/:pid                     controllers.Experiment.d
 
 
 GET           /runs/$id<[0-9]+>                         controllers.Experiment.getExpRun(id: models.Database.Id)
-DELETE        /runs/$id<[0-9]+>                         controllers.Experiment.deleteExpRun(id)
+DELETE        /runs/$id<[0-9]+>                         controllers.Experiment.deleteExpRun(id: models.Database.Id)
 
 PUT           /psamples/$id<[0-9]+>                     controllers.Experiment.updateProtocolSample(id: models.Database.Id)
 DELETE        /psamples/$id<[0-9]+>                     controllers.Experiment.deleteProtocolSample(id: models.Database.Id)
 
 GET           /exps/$id<[0-9]+>.json                    controllers.Experiment.getJson(id: models.Database.Id)
-GET           /exps/$id<[0-9]+>/note                    controllers.Experiment.stub(id)
-GET           /exps/$id<[0-9]+>/protocol                controllers.Experiment.stub(id)
+GET           /exps/$id<[0-9]+>/note                    controllers.Experiment.stub(id: models.Database.Id)
+GET           /exps/$id<[0-9]+>/protocol                controllers.Experiment.stub(id: models.Database.Id)
 
 
 GET           /samples.json                             controllers.Sample.listJson

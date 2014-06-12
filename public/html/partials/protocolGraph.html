@@ -1,11 +1,12 @@
 
-<div id='graph_buttons'>
+<div class='row'>
+    <div id='graph_buttons' class='col-md-4'>
     <div>
         <span class='btnlabel'>For sample:</span>
-        <button id='newsamplebtn' class="btn btn-xs btn-default" type="button"
+        <button id='newsamplebtn' class="btn btn-xs btn-default" type="button" ng-click='addPSample()'
         {{disabled_if_locked}}>New sample</button>
-        <button id='deletesamplebtn' class="btn btn-xs btn-default"
-        {{oneormorenode_edit_disabled}} {{disabled_if_locked}} type="button">Delete</button>
+        <button id='deletesamplebtn' class="btn btn-xs btn-default" ng-click='deletePSample(selectedPSamples[0].id)'
+        ng-disabled='selectedPSamples.length != 1' {{disabled_if_locked}} type="button">Delete</button>
     </div>
     <div>
 
@@ -17,8 +18,8 @@
     </div>
     <div>
         <span class='btnlabel'>For two samples:</span>
-        <button id='connectnodes' class="btn btn-xs btn-default" ng-disabled='selectedPSamples.length != 2'
-         {{disabled_if_locked}} type="button">Connect nodes</button>
+        <a id='connectnodes' class="btn btn-xs btn-default" ng-disabled='selectedPSamples.length != 2' ng-click='connectNodes()'
+         {{disabled_if_locked}} type="button">Connect nodes</a>
         <button id='insertnode' class="btn btn-xs btn-default" ng-disabled='selectedPSamples.length != 2'
         {{disabled_if_locked}} type="button">Insert</button>
     </div>
@@ -32,18 +33,26 @@
         {{oneedge_edit_disabled}} {{disabled_if_locked}} type="button">Delete</button>
     </div>
     <div style='margin: 8px 0px;'>
-        <button id='deselect' class="btn btn-xs btn-default" type="button">Select none</button>
+        <button id='deselect' class="btn btn-xs btn-default" type="button" ng-click='selectNone()'>Select none</button>
         <button id='resetzoom' class="btn btn-xs btn-default" type="button">Reset zoom</button>
     </div>
     <div style='margin: 8px 0px;'>
-        <input type="checkbox" id='shrink_nodes' {{shrink_nodes}}/>
+        <input type="checkbox" id='shrink_nodes' ng-model='shrinkNodes.val'/>
         <span style='font-size: 12px'>Shrink intermediate samples</span>
     </div>
 
 </div>
-<svg id='protocol_graph'>
+    <div class='col-md-4'>
+        <h4>Info</h4>
+        <span>Name: <input type="text" ng-model='selectedPSampleOrPStep.name'/></span>
+    </div>
+</div>
 
 
-</svg>
-        Hey
-        <span>{{exp.protocolSamples.length}} nodes.</span>
+        <div class='row'>
+            <div id="protocol_graph_wrapper">
+                <svg id='protocol_graph'>
+                </svg>
+
+            </div>
+        </div>

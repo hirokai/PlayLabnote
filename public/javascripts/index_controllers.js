@@ -21,6 +21,12 @@ expsApp.service('listViewSvc', ['$http', function ($http) {
         pageTitle: {
             value: 'Labnotebook'
         },
+        exps: [],
+        samples: [],
+        types: [],
+        showSection: {note: true, sample: true, protocol: true},
+        shrinkNodes: {val: false},
+        expViewMode: {val: 'define'},
         newSubItem: function (scope) {
             console.log(scope);
             var nodeData = scope.$modelValue;

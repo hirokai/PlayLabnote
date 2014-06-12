@@ -1,4 +1,4 @@
-<div class="fade row" ng-class="{in:loaded, 'col-md-8': showList.value, 'rightPane': showList.value, 'col-md-11': !showList.value}" ng-controller='ExpDetailCtrl'>
+<div class="fade" ng-class="{in:loaded}" ng-controller='ExpDetailCtrl'>
     <div ng-class="row" >
         <div editable-name item='item'></div>
     </div>
@@ -6,12 +6,17 @@
         <button type="button" class="btn btn-default btn-sm" ng-model="showDetailJson.value" btn-checkbox >JSON</button>
         <pre class='json' ng-if='showDetailJson.value'>{{item | json}}</pre>
 
-        <a class="btn btn-sm btn-default" ng-href='/exps/{{item.id}}'>See Detail</a>
         <a class="btn btn-sm btn-danger" ng-click='deleteExp(item.id)'>Delete</a>
+        <div class="btn-group">
+            <label class="btn btn-default btn-sm" ng-model="expViewMode.val" btn-radio='"summary"'>Summary</label>
+            <label class="btn btn-default btn-sm" ng-model="expViewMode.val"  btn-radio='"define"'>Define</label>
+            <label class="btn btn-default btn-sm" ng-model="expViewMode.val"  btn-radio='"record"'>Record</label>
+        </div>
         <div class="btn-group">
             <label class="btn btn-default btn-sm" ng-model="showSection.note" btn-checkbox>Note</label>
             <label class="btn btn-default btn-sm" ng-model="showSection.protocol" btn-checkbox>Protocol</label>
             <label class="btn btn-default btn-sm" ng-model="showSection.sample" btn-checkbox>Samples</label>
+            <label class="btn btn-default btn-sm" ng-model="showSection.step" btn-checkbox>Steps</label>
         </div>
     </div>
     <div class='row' >
@@ -28,6 +33,7 @@
     </div>
     <div class='row' >
         <section ng-show='showSection.sample'>
+            <h3>Samples</h3>
             <div>
                 <div>
                     <span>Protocol sample type:
@@ -40,26 +46,26 @@
                          <select ng-disabled='selectedSamples.length != 1' ng-model="selectedSamples[0].typ"
                                  ng-change='' ng-options="type as type.title for type in types"></select>
                     </span>
-                    <span><a ng-disabled='selectedSamples.length != 1'  class='btn btn-sm btn-default' href="#/samples/{{selectedSamples[0].id}}">Detail</a></span>
+                    <span><a ng-disabled='selectedSamples.length != 1'  class='btn btn-sm btn-default' ui-sref="sample_id({id: selectedSamples[0].id})">Detail</a></span>
                 </div>
 
             </div>
-            <table class='table'>
+            <table class='table' id='sample_table'>
                 <thead><tr>
                     <th></th>
                     <th>Name</th>
                     <th>Type</th>
                     <th ng-repeat='run in item.runs' ng-click='clickRun(run,$event)'>{{run.name}}</th>
                     <th>
-                        <a href="" class='btn btn-sm btn-default' ng-click='addRun(item)'>Add</a>
+                        <a class='btn btn-sm btn-default' ng-click='addRun(item)'>Add</a>
                     </th>
                 </tr>
                 </thead>
-                <tbody><tr ng-repeat='psample in item.protocolSamples'>
-                    <td><a href="" class='btn btn-sm btn-default' ng-click='deletePSample(psample.id)'>
+                <tbody><tr ng-repeat='psample in item.protocolSamples' ng-controller='ProtocolSampleCtrl'>
+                    <td><a class='btn btn-xs btn-default' ng-click='deletePSample(psample.id)'>
                         <span class='glyphicon glyphicon-minus'></span>
                     </a></td>
-                    <td ng-click='clickPSample(psample,$event)' ng-class='{selected: isSelectedPS(psample)}'>{{psample.name}}</td>
+                    <td ng-click='clickPSample(psample,$event)' ng-class='{selected: isSelectedPSample(psample)}'>{{psample.name}}</td>
                     <td>{{psample.typ.name}}</td>
                     <td ng-repeat='run in item.runs' ng-class='{cell_runsample: true, selected: runSample.selected}' ng-controller='RunSampleCtrl'>
                         <div class='runsample' ng-if='runSample.id' ng-click='clickRunSample($event)'>{{runSample.name}} <br><small>{{runSample.typ.name}}</small></div>
@@ -70,9 +76,34 @@
                     <td>
                     </td>
                 </tr>
-                <tr><td><a href="" class='btn btn-sm btn-default' ng-click='addPSample(item.id)'>Add</a></td></tr>
+                <tr><td><a class='btn btn-sm btn-default' ng-click='addPSample(item.id)'>Add</a></td></tr>
                 </tbody>
             </table>
         </section>
     </div>
+    <div class='row' >
+        <section ng-show='showSection.step'>
+            <h3>Steps</h3>
+            <table class="table" id="step_table">
+                <thead>
+                <tr>
+                    <th>Name</th>
+                    <th></th>
+                    <th></th>
+                    <th></th>
+                    <th></th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr ng-repeat='pstep in item.protocolSteps' ng-controller='ProtocolStepCtrl'>
+                    <td ng-class='{selected: isSelectedPStep(pstep)}' ng-click='clickPStep(pstep,$event)'>{{pstep.name}}</td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                </tr>
+                </tbody>
+            </table>
+            </section>
+        </div>
 </div>

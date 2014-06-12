@@ -12,7 +12,7 @@
 
         <title>{{pageTitle.value}}</title>
     </head>
-    <body class='container'>
+    <body class='container-fluid'>
         <div id="righttop_tools">
             <button type="button" class="btn btn-default btn-sm" ng-model="showList.value" btn-checkbox >List</button>
         </div>
@@ -25,7 +25,7 @@
                 <div ui-view='list'></div>
             </div>
             @*<div  ng-class='"row " + (showList.value ? "col-md-8 rightPane" : "col-md-11")'>*@
-                 <div ui-view='detail'></div>
+            <div ui-view='detail' ng-class="{'col-md-8': showList.value, 'rightPane': showList.value, 'col-md-12': !showList.value}"></div>
         </div>
         <div id='alertdiv' ng-show='alert.shown'>
             <alert type="danger" close="closeAlert(0)">{{alert.msg}}</alert>

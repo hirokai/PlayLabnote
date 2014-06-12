@@ -5,7 +5,7 @@ expsApp.factory('TypeDataSvc',['$http', 'listViewSvc', function($http, listViewS
         },
         change: function(nv,ov) {
             console.log('type may have changed.')
-            if(ov && nv & ov.id && nv.id == ov.id && !_.isEqual(nv,ov)){
+            if(ov && nv && ov.id && nv.id == ov.id && !_.isEqual(nv,ov)){
                 //This means not selection, but content is changed.
 
                 console.log('item content changed.',nv,ov);
@@ -39,7 +39,7 @@ expsApp.controller('TypeListCtrl', ['$scope', '$state', '$stateParams', 'listVie
 
 
     $scope.isSelectedType = function (id) {
-        return id == $stateParams.id
+        return id == $stateParams.id;
     };
     $scope.selectItem = function (item) {
         listViewSvc.selectedItem.type = item;

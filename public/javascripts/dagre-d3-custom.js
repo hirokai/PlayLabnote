@@ -1,4 +1,4 @@
-;(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);throw new Error("Cannot find module '"+o+"'")}var f=n[o]={exports:{}};t[o][0].call(f.exports,function(e){var n=t[o][1][e];return s(n?n:e)},f,f.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
+;(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a){return a(o,!0)};if(i){return i(o,!0);}throw new Error("Cannot find module '"+o+"'")}var f=n[o]={exports:{}};t[o][0].call(f.exports,function(e){var n=t[o][1][e];return s(n?n:e)},f,f.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 var global=self;/**
  * @license
  * Copyright (c) 2012-2013 Chris Pettitt
@@ -63,9 +63,12 @@ try { d3 = require('d3'); } catch (_) { d3 = window.d3; }
 module.exports = Renderer;
 
     var selection;
-function Renderer(d3obj,sel) {
+    var selection_edges;
+function Renderer(d3obj,sel,sel_edges) {
   d3 = d3obj;
   selection = sel;
+    selection_edges = sel_edges;
+    console.log(selection_edges);
   // Set up defaults...
   this._layout = layout();
 
@@ -270,8 +273,11 @@ function defaultDrawEdgeLabels(g, root) {
     .classed('enter', false)
     .data(g.edges(), function (e) { return e; })
     //Hiro Kai added
-      .attr('data-id',function(e){return g.edge(e).custom_id;})
-//    .attr({'data-selected': function(e){return _.contains(Session.get('selected_edges'),g.edge(e).custom_id) ? 'selected' : null;}});
+    .attr('data-id',function(e){return g.edge(e).custom_id;})
+    .attr({'data-selected': function(e){
+          console.log(selection_edges);
+          return _.contains(selection_edges,g.edge(e).custom_id) ? 'selected' : null;
+      }});
 
     //Hiro Kai added end
 
@@ -284,9 +290,10 @@ function defaultDrawEdgeLabels(g, root) {
       //Hiro Kai added.
         .attr('class', 'edgeLabel enter')
       .attr('data-id',function(e){return g.edge(e).custom_id;})
-//      .attr({'data-selected': function(e){
-//          return _.contains(Session.get('selected_edges'),g.edge(e).custom_id) ? 'selected' : null;
-//      }});
+      .attr({'data-selected': function(e){
+          console.log(selection_edges);
+          return _.contains(selection_edges, g.edge(e).custom_id) ? 'selected' : null;
+      }});
 
   svgEdgeLabels.each(function(e) { addLabel(g.edge(e), d3.select(this), 0, 0); });
 
@@ -418,7 +425,6 @@ function addLabel(node, root, marginX, marginY) {
     //This is only for nodes, not edges.
   root
       .classed('selected',function(d){
-          console.log(selection);
           return _.contains(selection,d);
       })
       .classed('selected-first',function(d){
@@ -2255,7 +2261,7 @@ function acyclic(g) {
   var onStack = {},
       visited = {},
       reverseCount = 0;
-  
+
   function dfs(u) {
     if (u in visited) return;
     visited[u] = onStack[u] = true;
@@ -2701,7 +2707,7 @@ function initCutValues(graph, spanningTree) {
  */
 function computeLowLim(tree) {
   var postOrderNum = 0;
-  
+
   function dfs(n) {
     var children = tree.successors(n);
     var low = postOrderNum;
@@ -3426,7 +3432,7 @@ Digraph.prototype.isDirected = function() {
 /*
  * Returns all successors of the node with the id `u`. That is, all nodes
  * that have the node `u` as their source are returned.
- * 
+ *
  * If no node `u` exists in the graph this function throws an Error.
  *
  * @param {String} u a node id
@@ -3440,7 +3446,7 @@ Digraph.prototype.successors = function(u) {
 /*
  * Returns all predecessors of the node with the id `u`. That is, all nodes
  * that have the node `u` as their target are returned.
- * 
+ *
  * If no node `u` exists in the graph this function throws an Error.
  *
  * @param {String} u a node id

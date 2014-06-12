@@ -63,7 +63,7 @@ object Experiment extends Controller {
           val o_id = ProtocolSampleAccess().create(eid,name,typ)
           o_id match {
             case Some(id) =>{
-              val data: Option[ProtocolSample] = SQL(s"Select * from ProtocolSample where id=$id")().map(ProtocolSample.fromRow).headOption
+              val data: Option[ProtocolSample] = SQL(s"Select * from ProtocolSample where id=$id")().map(ProtocolSample.fromRow(full=true)).headOption
               Ok(Json.obj("exp_id" -> eid, "id" -> id, "success" -> true, "data" -> data))
             }
             case _ =>
@@ -98,7 +98,63 @@ object Experiment extends Controller {
     }
   }
 
-  def getExpRuns(id: String) = Action {
+  def createProtocolStep(id: Id) = Action(parse.tolerantFormUrlEncoded) {request =>
+    DB.withTransaction {implicit c =>
+      try{
+        //Get arrays of input and output. They are string separated by colon.
+        val params = request.body
+        val o_name: Option[String] = params.get("name").flatMap(_.headOption)
+        def collectIds(v: Option[Seq[String]]): Array[Id] = {
+          val s: Option[String] = v.flatMap(_.headOption)
+          s match {
+            case Some(str) => str.split(":").map(toIdOpt).flatten
+            case _ => Array()
+          }
+        }
+        val ins: Array[Id] = collectIds(params.get("input"))
+        val outs: Array[Id] = collectIds(params.get("output"))
+
+        //Execute DB operation
+        o_name match {
+          case Some(name) => {
+            val r = ExperimentAccess().createProtocolStep(id,name,ins,outs)
+            r match {
+              case Right(step_id) =>
+                Ok(Json.obj("exp_id" -> id, "id" -> step_id))
+              case Left(err) =>{
+                c.rollback()
+                Status(500)(Json.obj("message" -> err))
+              }
+            }
+          }
+          case _ =>{
+            c.rollback()
+            Status(500)(Json.obj("message" -> "Missing name."))
+          }
+        }
+      }catch{
+        case e: Throwable => c.rollback()
+        throw e
+        Status(500)(Json.obj("success" -> false, "message" -> e.getMessage))
+      }
+    }
+  }
+
+  def getProtocolStep(id: Id) = Action {
+    DB.withConnection {implicit c =>
+      val r = ProtocolStepAccess().get(id)
+      r match {
+        case Some(dat) => Ok(Json.toJson(dat))
+        case _ => NotFound(Json.obj("id" -> id))
+      }
+    }
+  }
+
+  def updateProtocolStep(id: Id) = Action {
+    Status(500)("Stub")
+  }
+
+  def getExpRuns(id: Id) = Action {
     DB.withConnection {implicit c =>
       val newData = SQL(s"Select * from ExpRun where experiment={e} order by id").on('e -> id)().map( row => {
         ExpRun(
@@ -111,9 +167,9 @@ object Experiment extends Controller {
   }
 
   def getExpRun(id: models.Database.Id) = Action {Ok("stub")}
-  def deleteExpRun(id: String) = Action {
+  def deleteExpRun(id: Id) = Action {
     DB.withConnection {implicit c =>
-      SQL("DELETE from ExpRun where id={id}").on('id -> id).execute()
+      SQL(s"DELETE from ExpRun where id=$id").execute()
       Ok(Json.obj("success" -> true))
     }
   }
@@ -145,10 +201,19 @@ object Experiment extends Controller {
       case Some(n) => {
         DB.withTransaction {implicit c =>
           val o_r: Option[Id] = ExperimentAccess().createRunSample(rid,pid,n,tid)
-          val Right(typ) = SampleAccess().get(o_r.get).get.typ
-          (o_r,typ)
+          o_r match {
+            case Some(r) => {
+              val o_typ = SampleAccess().get(r).map{ sample =>
+                sample.typ match {
+                  case Right(t) => Some(t)
+                  case _ => None
+                }
+              }
+              (o_r,o_typ)
+            }
+          }
         } match {
-          case (Some(id),typ) =>
+          case (Some(id),Some(typ)) =>
             Ok(Json.obj("success" -> true, "id" -> id,
               "data" -> Json.obj("id" -> id, "name" -> n, "run" -> rid, "protocolSample" -> pid, "typ" -> typ)))
           case _ =>
@@ -180,7 +245,7 @@ object Experiment extends Controller {
       }
   }
 
-  def stub(id: String) = Action {
+  def stub(id: Id) = Action {
     Ok("Stub")
   }
 
