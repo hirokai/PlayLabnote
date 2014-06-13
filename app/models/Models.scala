@@ -8,6 +8,7 @@ import play.api.Logger
 import java.sql.Connection
 import javax.transaction.Transaction
 import scala.reflect.ClassTag
+import org.h2.jdbc.JdbcSQLException
 
 object Database {
   type Id = Long
@@ -57,14 +58,23 @@ case class ExperimentAccess(owner: Id = 0) {
     SQL(s"SELECT count(*) as c from Experiment where owner=$owner")().map(_[Long]("c")).headOption.getOrElse(0l)
   }
 
-  def delete(id: Id, owner: Option[Id] = None)(implicit c: Connection): Boolean = {
+  //@Transaction
+  def delete(id: Id, owner: Option[Id] = None)(implicit c: Connection): Either[String,String] = {
+    try{
       val oid: Id = owner.getOrElse(0l) // default is sandbox user.
       val ridstr = SQL(s"SELECT id from ExpRun where experiment=$id")().map(_[Id]("id")).mkString(",")
       SQL(s"DELETE from SampleInRun where run in($ridstr)").executeUpdate()
-      SQL(s"DELETE from ProtocolSample where experiment=$id").executeUpdate()
+      val steps_str = SQL(s"SELECT id from ProtocolStep where experiment=$id")().map(_[Id]("id")).mkString(",")
+      SQL(s"DELETE from ProtocolSampleInStep where step in($steps_str)").executeUpdate()
+      SQL(s"DELETE from ProtocolStepParam where step in($steps_str)").executeUpdate()
       SQL(s"DELETE from ProtocolStep where experiment=$id").executeUpdate()
+      SQL(s"DELETE from ProtocolSample where experiment=$id").executeUpdate()
       SQL(s"DELETE from ExpRun where experiment=$id").executeUpdate()
-      1 == SQL("DELETE from Experiment where owner={o} and id={id}").on('o -> oid, 'id -> id).executeUpdate()
+      SQL(s"DELETE from Experiment where owner=$owner and id=$id").executeUpdate()
+      Right("Done")
+    }catch{
+      case e: Throwable => Left(e.getMessage)
+    }
   }
 
   def getFull(id: Id)(implicit c: Connection): Option[Experiment] = {
@@ -124,6 +134,32 @@ case class ExperimentAccess(owner: Id = 0) {
     }
   }
 
+  //@Transaction
+  def updateProtocolStep(step_id: Id, o_name: Option[String], o_ins: Option[Array[Id]], o_outs: Option[Array[Id]])(implicit c: Connection): Either[String,Id] = {
+    o_name.map{name =>
+      SQL(s"UPDATE ProtocolStep SET name='${escape(name)}' where id=$step_id").executeUpdate()
+    }
+    try{
+      Logger.debug(step_id.toString)
+      println(o_ins)
+      println(o_outs)
+      o_ins.map{ins =>
+        val r: Long = SQL(s"DELETE from ProtocolSampleInStep where step=$step_id and role='input'").executeUpdate()
+        for(i <- ins){
+          val r: Long = SQL(s"INSERT into ProtocolSampleInStep(step,sample,role) values($step_id,$i,'input')").executeUpdate()
+        }
+      }
+      o_outs.map{outs =>
+        val r: Long = SQL(s"DELETE from ProtocolSampleInStep where step=$step_id and role='output'").executeUpdate()
+        for(o <- outs){
+          val r: Long = SQL(s"INSERT into ProtocolSampleInStep(step,sample,role) values($step_id,$o,'output')").executeUpdate()
+        }
+      }
+      Right(step_id)
+    }catch{
+      case e: Throwable => Left("DB error: " + e.getMessage)
+    }
+  }
   //@Transaction
   def createRunSample(rid: Id, pid: Id, name: String, tid2: Option[Id])(implicit c: Connection): Option[Id] = {
       val o_tid = tid2 match {
@@ -283,20 +319,24 @@ case class ProtocolSampleAccess() {
 
   //@Transaction
   def update(psid: Id, o_name: Option[String], o_typ: Option[Id])(implicit c: Connection): Either[String, ProtocolSample] = {
-    val s_name: Array[String] = o_name.map(name => Array(s"name=${escape(name)}")).getOrElse(Array())
+    val s_name: Array[String] = o_name.map(name => Array(s"name='${escape(name)}'")).getOrElse(Array())
     val s_typ: Array[String] = o_typ.map(typ => Array(s"type=${typ}")).getOrElse(Array())
     val str = (s_name++s_typ).mkString(",")
-    try{
-      if(1 == SQL(s"UPDATE ProtocolSample SET $str where id=$psid").executeUpdate()){
-        val ps = ProtocolSampleAccess().get(psid)
-        ps.map(s => Right(s)).getOrElse(Left("Error"))
-      }else{
-        Left("Not found.")
-      }
-    }catch{
-      case e: Throwable =>{
-        println(e.getMessage)
-        Left("DB error.")
+    if(str == ""){
+      Left("Params missing.")
+    }else{
+      try{
+        if(1 == SQL(s"UPDATE ProtocolSample SET $str where id=$psid").executeUpdate()){
+          val ps = ProtocolSampleAccess().get(psid)
+          ps.map(s => Right(s)).getOrElse(Left("Error"))
+        }else{
+          Left("Not found.")
+        }
+      }catch{
+        case e: Throwable =>{
+          println(e.getMessage)
+          Left("DB error.")
+        }
       }
     }
   }
@@ -652,7 +692,7 @@ case class SampleAccess(owner: Id = 0) {
   }
 }
 
-case class ProtocolStepParam(id: Id, name: String, typ: String, unit: String)
+case class ProtocolStepParam(id: Id, name: String, typ: ParamType.ParamType, unit: Option[String])
 case class RunStepParam(id: Id, name: String, value: String, typ: String, unit: String)
 
 case class StepParamAccess(owner: Id) {
@@ -665,6 +705,29 @@ case class ProtocolStep(
            input: Array[Either[Id, ProtocolSample]],
            output: Array[Either[Id, ProtocolSample]],
            params: Array[ProtocolStepParam] = Array())
+
+object ParamType extends Enumeration {
+    type ParamType = Value
+    val Text, Number, Mass, Volume, Area, Length, Time, Duration, Temperature = Value
+
+  def read(s: String): Option[ParamType] = {
+    s match {
+      case "text" => Some(Text)
+      case "number" => Some(Number)
+      case "mass" => Some(Mass)
+      case "volume" => Some(Volume)
+      case "area" => Some(Area)
+      case "length" => Some(Length)
+      case "time" => Some(Time)
+      case "duration" => Some(Duration)
+      case "temperature" => Some(Temperature)
+      case _ => None
+    }
+  }
+  def show(s: ParamType): String = {
+    s.toString.toLowerCase
+  }
+}
 
 case class ProtocolStepAccess() {
   val dbname = "ProtocolStep"
@@ -707,14 +770,83 @@ case class ProtocolStepAccess() {
           },
           output = output_ids.map{id =>
             Right(ProtocolSampleAccess().get(id).get)
-          }))
+          },
+          params = getParams(id)))
       }else {
         Some(ProtocolStep(id = id, name = vs.head._1,
           input = input_ids.map(Left(_)),
-          output = output_ids.map(Left(_))
+          output = output_ids.map(Left(_)),
+          params = getParams(id)
         ))
       }
     }
+  }
+
+  def getParam(param_id: Id)(implicit c: Connection): Option[ProtocolStepParam] = {
+    import ParamType._
+    SQL(s"SELECT * from ProtocolStepParam where id=$param_id")().map{row =>
+      ProtocolStepParam(id = row[Long]("id"),
+        name = row[String]("name"),
+        typ = row[Option[String]]("param_type").flatMap(read).getOrElse(Text),
+        unit = row[Option[String]]("unit"))
+    }.headOption
+  }
+
+  def getParams(step_id: Id)(implicit c: Connection): Array[ProtocolStepParam] = {
+    import ParamType._
+    SQL(s"SELECT * from ProtocolStepParam where step=$step_id")().map{row =>
+      ProtocolStepParam(id = row[Long]("id"),
+        name = row[String]("name"),
+        typ = row[Option[String]]("param_type").flatMap(read).getOrElse(Text),
+        unit = row[Option[String]]("unit"))
+    }.toArray
+  }
+
+  def deleteParam(param_id: Id)(implicit c: Connection): Either[String,String] = {
+    if(1 == SQL(s"DELETE ProtocolStepParam where id=$param_id").executeUpdate()){
+      Right("done")
+    }else{
+      Left("Deletion failed.")
+    }
+  }
+
+  //@Transaction
+  def delete(id: Id)(implicit c: Connection): Either[String,String] = {
+    try{
+      val r = SQL(s"DELETE ProtocolSampleInStep where step=$id").executeUpdate()
+      val r2 = SQL(s"DELETE ProtocolStep where id=$id").executeUpdate()
+      Right("")
+    }catch{
+      case e: JdbcSQLException =>
+        Left(e.getMessage)
+    }
+  }
+
+  import ParamType._
+
+  def createParam(step: Id, name: String,
+                  typ: ParamType = Text, unit: String = "")(implicit c: Connection): Either[String,Id] = {
+    val r: Option[Id] = SQL("INSERT into ProtocolStepParam(step,name,param_type,unit) "+
+      s"values ($step,'${escape(name)}','${escape(typ.toString)}','${escape(unit)}')").executeInsert()
+    r match {
+      case Some(id) => Right(id)
+      case _ => Left("DB error.")
+    }
+  }
+
+  def updateParam(param_id: Id, o_name: Option[String],
+                  o_typ: Option[ParamType],
+                  o_unit: Option[String])(implicit c: Connection): Either[String,ProtocolStepParam] = {
+    val s_name: Array[String] = o_name.map(name => Array(s"name='${escape(name)}'")).getOrElse(Array())
+    val s_typ: Array[String] = o_typ.map(typ => Array(s"param_type='${show(typ)}'")).getOrElse(Array())
+    val s_unit: Array[String] = o_unit.map(typ => Array(s"unit='${escape(typ)}'")).getOrElse(Array())
+    val str = (s_name++s_typ++s_unit).mkString(",")
+    if(1l == SQL(s"UPDATE ProtocolStepParam SET $str where id=$param_id").executeUpdate()){
+      Right(getParam(param_id).get)
+    }else{
+      Left("Update failed.")
+    }
+
   }
 
 }
@@ -732,8 +864,8 @@ class RunStepAccess {
         s"values($rid,$pid$tf_v$tt_v)").executeInsert()
       for(p <- params){
         val pp: Option[Id] = SQL(
-          "INSERT into ProtocolStepParam(step,name,ptype,unit) " +
-            s"values($ps1,'$p.name','$p.typ','$p.unit')")
+          "INSERT into ProtocolStepParam(step,name,param_type,unit) " +
+            s"values($ps1,'${escape(p.name)}','$p.typ','$p.unit')")
           .executeInsert()
       }
       ps1
@@ -765,6 +897,12 @@ object JsonWriter {
   implicit val implicitSampleDataWrites = Json.writes[SampleData]
   implicit val implicitSampleWrites = Json.writes[Sample]
   implicit val implicitProtocolSampleWrites = Json.writes[ProtocolSample]
+
+  import ParamType._
+  implicit val implicitParamTypeWrites = new Writes[ParamType.ParamType] {
+    def writes(p: ParamType.ParamType): JsValue = Json.toJson(show(p))
+  }
+
   implicit val implicitProtocolStepParamWrites = Json.writes[ProtocolStepParam]
 
   implicit val implicitProtocolStepWrites2 = new Writes[Either[models.Database.Id, models.ProtocolSample]] {
@@ -779,6 +917,8 @@ object JsonWriter {
       }
     }
   }
+
+
   implicit val implicitProtocolStepWrites = Json.writes[ProtocolStep]
   implicit val implicitRunStepParamWrites = Json.writes[RunStepParam]
   implicit val implicitRunStepWrites = Json.writes[RunStep]

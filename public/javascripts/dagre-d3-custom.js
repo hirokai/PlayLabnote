@@ -68,7 +68,6 @@ function Renderer(d3obj,sel,sel_edges) {
   d3 = d3obj;
   selection = sel;
     selection_edges = sel_edges;
-    console.log(selection_edges);
   // Set up defaults...
   this._layout = layout();
 
@@ -258,7 +257,9 @@ function defaultDrawNodes(g, root) {
         .attr('class', 'node enter');
 
 
-  svgNodes.each(function(u) { addLabel(g.node(u), d3.select(this), 10, 10); });
+//    svgNodes.each(function(u) { addLabel(g.node(u), d3.select(this), 10, 10); });
+// Hiro Kai changed.
+    svgNodes.each(function(u) { addLabel(g.node(u), d3.select(this), 5, 5); });
 
   this._transition(svgNodes.exit())
       .style('opacity', 0)
@@ -275,7 +276,7 @@ function defaultDrawEdgeLabels(g, root) {
     //Hiro Kai added
     .attr('data-id',function(e){return g.edge(e).custom_id;})
     .attr({'data-selected': function(e){
-          console.log(selection_edges);
+//          console.log(selection_edges);
           return _.contains(selection_edges,g.edge(e).custom_id) ? 'selected' : null;
       }});
 
@@ -291,7 +292,7 @@ function defaultDrawEdgeLabels(g, root) {
         .attr('class', 'edgeLabel enter')
       .attr('data-id',function(e){return g.edge(e).custom_id;})
       .attr({'data-selected': function(e){
-          console.log(selection_edges);
+//          console.log(selection_edges);
           return _.contains(selection_edges, g.edge(e).custom_id) ? 'selected' : null;
       }});
 

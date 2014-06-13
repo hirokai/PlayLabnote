@@ -128,10 +128,12 @@ expsApp.controller('entireCtrl',
         }, true);
 
         $scope.alert = listViewSvc.alert;
-        $scope.showMessage = function(msg) {
-            $scope.alert.msg = msg;
+        $scope.showMessage = function(msg,type) {
             $scope.alert.shown = true;
-            $timeout(function(){
+            $scope.alert.type = type || "success"
+            $scope.alert.msg = msg;
+            $timeout.cancel($scope.alertId);
+            $scope.alertId = $timeout(function(){
                 $scope.alert.shown = false;
                 $scope.alert.msg = '';
             },3000);
@@ -179,10 +181,6 @@ findIndex = function(vs, id) {
             return i;
     }
     return -1;
-}
-
-function showMessage(msg) {
-    console.log(msg);
 }
 
 showGet = function(url){

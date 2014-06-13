@@ -100,7 +100,7 @@ CREATE TABLE ProtocolStepParam (
   id bigint(20) NOT NULL AUTO_INCREMENT,
   step bigint(20) NOT NULL REFERENCES ProtocolStep(id),
   name text NOT NULL,
-  ptype text,
+  param_type text,
   unit text,
   PRIMARY KEY (id)
 );

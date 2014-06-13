@@ -117,15 +117,13 @@ input[disabled] {
 }
 
 
- svg {
-    width: 400px;
-    height: 500px;
+svg#protocol_graph {
+    width: 100%;
+    height: 300px;
 }
 
 #protocol_graph_wrapper {
     background: #fff4f4;
-    width: 400px;
-    height: 600px;
 }
 
 .nav, .pagination, .carousel, .panel-title a { cursor: pointer; }

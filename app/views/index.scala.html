@@ -28,7 +28,7 @@
             <div ui-view='detail' ng-class="{'col-md-8': showList.value, 'rightPane': showList.value, 'col-md-12': !showList.value}"></div>
         </div>
         <div id='alertdiv' ng-show='alert.shown'>
-            <alert type="danger" close="closeAlert(0)">{{alert.msg}}</alert>
+            <alert type="alert.type" close="closeAlert(0)">{{alert.msg}}</alert>
         </div>
 
         <script src="//cdnjs.cloudflare.com/ajax/libs/underscore.js/1.6.0/underscore-min.js"></script>
@@ -53,6 +53,7 @@
 
             <!-- Library -->
         <script src='/public/libs/angular-ui-tree/dist/angular-ui-tree.min.js'></script>
+        <script src='http://cdnjs.cloudflare.com/ajax/libs/moment.js/2.6.0/moment.min.js'></script>
 
             <!-- My own scripts -->
 <!--        <script src="/public/javascripts/dagre-d3-custom.js"></script>

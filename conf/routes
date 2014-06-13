@@ -18,8 +18,14 @@ PUT           /exps/$id<[0-9]+>                         controllers.Experiment.u
 DELETE        /exps/$id<[0-9]+>                         controllers.Experiment.delete(id: models.Database.Id)
 POST          /exps/$id<[0-9]+>/psamples                controllers.Experiment.createProtocolSample(id: models.Database.Id)
 POST          /exps/$id<[0-9]+>/psteps                  controllers.Experiment.createProtocolStep(id: models.Database.Id)
+GET           /exps/$id<[0-9]+>/socket                  controllers.Experiment.socket(id: models.Database.Id)
+
 GET           /psteps/$id<[0-9]+>.json                  controllers.Experiment.getProtocolStep(id: models.Database.Id)
 PUT           /psteps/$id<[0-9]+>                       controllers.Experiment.updateProtocolStep(id: models.Database.Id)
+POST          /psteps/$id<[0-9]+>/params                controllers.Experiment.createProtocolStepParam(id: models.Database.Id)
+PUT           /pparams/$id<[0-9]+>                      controllers.Experiment.updateProtocolStepParam(id: models.Database.Id)
+DELETE        /pparams/$id<[0-9]+>                      controllers.Experiment.deleteProtocolStepParam(id: models.Database.Id)
+DELETE        /psteps/$id<[0-9]+>                       controllers.Experiment.deleteProtocolStep(id: models.Database.Id)
 
 POST          /exps/$id<[0-9]+>/runs                    controllers.Experiment.createExpRun(id: models.Database.Id)
 GET           /exps/$id<[0-9]+>/samples                 controllers.Experiment.getRunSamples(id: models.Database.Id)

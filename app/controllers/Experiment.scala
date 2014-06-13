@@ -10,6 +10,10 @@ import play.api.Play.current
 import models._
 
 import models.Database.Id
+import play.api.libs.iteratee.{Enumerator, Iteratee}
+import scala.concurrent.ExecutionContext
+import play.libs.Akka
+import akka.io.Udp.SO.Broadcast
 
 object Experiment extends Controller {
   import Database._
@@ -33,7 +37,7 @@ object Experiment extends Controller {
   def delete(id: Id) = Action {
     DB.withTransaction { implicit c =>
       val r = ExperimentAccess().delete(id)
-      Ok(Json.obj("success" -> r, "id" -> id))
+      Ok(Json.obj("success" -> r.isRight, "id" -> id, "message" -> r.fold(l => l, r => r)))
     }
   }
 
@@ -93,7 +97,7 @@ object Experiment extends Controller {
     DB.withTransaction {implicit c =>
       models.ExperimentAccess().deleteProtocolSample(pid) match {
         case Right(_) =>    Ok(Json.obj("id" -> pid, "success" -> true))
-        case Left(err) => Ok(Json.obj("id" -> pid, "success" -> false, "message" -> err))
+        case Left(err) => Status(200)(Json.obj("id" -> pid, "success" -> false, "message" -> err))
       }
     }
   }
@@ -119,8 +123,10 @@ object Experiment extends Controller {
           case Some(name) => {
             val r = ExperimentAccess().createProtocolStep(id,name,ins,outs)
             r match {
-              case Right(step_id) =>
-                Ok(Json.obj("exp_id" -> id, "id" -> step_id))
+              case Right(step_id) =>{
+                val ps = ProtocolStepAccess().get(step_id)
+                Ok(Json.obj("exp_id" -> id, "id" -> step_id, "data" -> ps))
+              }
               case Left(err) =>{
                 c.rollback()
                 Status(500)(Json.obj("message" -> err))
@@ -140,6 +146,52 @@ object Experiment extends Controller {
     }
   }
 
+  def createProtocolStepParam(step: Id) = Action(parse.tolerantFormUrlEncoded) { request =>
+    import ParamType._
+    val params = request.body
+    val o_name = params.get("name").flatMap(_.headOption)
+    val o_typ = params.get("type").flatMap(_.headOption)
+    val o_unit = params.get("unit").flatMap(_.headOption)
+    o_name match {
+      case Some(name) =>
+        val typ = o_typ.flatMap(read).getOrElse(Text)
+        val unit = o_unit.getOrElse("")
+        DB.withConnection { implicit c =>
+          ProtocolStepAccess().createParam(step,name,typ,unit).fold(
+            l => Status(500)(l),
+            r => {
+              val d = ProtocolStepAccess().getParam(r)
+              Ok(Json.obj("id" -> r, "data" -> d))
+            }
+          )
+        }
+      case _ => Status(500)("Param is missing.")
+    }
+  }
+
+  def updateProtocolStepParam(param_id: Id) = Action(parse.tolerantFormUrlEncoded) { request =>
+    import ParamType._
+    val params = request.body
+    val o_name: Option[String] = params.get("name").flatMap(_.headOption)
+    val o_typ: Option[ParamType] = params.get("type").flatMap(_.headOption).flatMap(read)
+    val o_unit: Option[String] = params.get("unit").flatMap(_.headOption)
+    DB.withConnection {implicit c =>
+      ProtocolStepAccess().updateParam(param_id,o_name,o_typ,o_unit).fold(
+      l => Status(400)(l),
+      r => Ok(Json.obj("id" -> param_id, "data" -> r))
+      )
+    }
+  }
+
+  def deleteProtocolStepParam(id: Id) = Action {
+    DB.withConnection { implicit c =>
+      ProtocolStepAccess().deleteParam(id).fold(
+      l => Status(400)(l),
+      r => Ok(Json.obj("id" -> id))
+      )
+    }
+  }
+
   def getProtocolStep(id: Id) = Action {
     DB.withConnection {implicit c =>
       val r = ProtocolStepAccess().get(id)
@@ -150,8 +202,57 @@ object Experiment extends Controller {
     }
   }
 
-  def updateProtocolStep(id: Id) = Action {
-    Status(500)("Stub")
+  //ToDo: Add params updates.
+  def updateProtocolStep(id: Id) = Action(parse.tolerantFormUrlEncoded) {request =>
+    DB.withTransaction {implicit c =>
+      try{
+        //Get arrays of input and output. They are string separated by colon.
+        val params = request.body
+        val o_name: Option[String] = params.get("name").flatMap(_.headOption)
+        def collectIds(v: Seq[String]): Option[Array[Id]] = {
+          val s: Option[String] = v.headOption
+          println(s)
+          s match {
+            case Some(str) => Some(str.split(":").map(toIdOpt).flatten)
+            case _ => None
+          }
+        }
+        println(params.get("input").get)
+        val ins: Option[Array[Id]] = params.get("input").flatMap(collectIds)
+        val outs: Option[Array[Id]] = params.get("output").flatMap(collectIds)
+        println(ins.get.mkString(","))
+
+        //Execute DB operation
+        val r = ExperimentAccess().updateProtocolStep(id,o_name,ins,outs)
+        r match {
+          case Right(step_id) =>{
+            val ps = ProtocolStepAccess().get(step_id)
+            Ok(Json.obj("exp_id" -> id, "id" -> step_id, "data" -> ps))
+          }
+          case Left(err) =>{
+            c.rollback()
+            Status(400)(Json.obj("message" -> err))
+          }
+        }
+      }catch{
+        case e: Throwable => c.rollback()
+          throw e
+          Status(400)(Json.obj("success" -> false, "message" -> e.getMessage))
+      }
+    }
+  }
+
+  def deleteProtocolStep(id: Id) = Action {
+    DB.withConnection {implicit c =>
+      ProtocolStepAccess().delete(id).fold (
+        l => {
+          Status(500)(l)
+        },
+        r => {
+          Ok("")
+        }
+      )
+    }
   }
 
   def getExpRuns(id: Id) = Action {
@@ -298,6 +399,35 @@ object Experiment extends Controller {
         }
         Ok(Json.obj("success" -> true))
       }
+    }
+  }
+
+  import scala.concurrent.duration._
+  import akka.actor._
+  import scala.concurrent.ExecutionContext.Implicits.global
+
+  def socket(id: Id) = WebSocket.acceptWithActor[String, String] { request => out =>
+      val props: Props = MyWebSocketActor.props(id, out)
+
+      props
+    }
+
+  object MyWebSocketActor {
+    def props(id: Id, out: ActorRef) = Props(new MyWebSocketActor(id, out))
+  }
+
+  class MyWebSocketActor(id: Id, out: ActorRef) extends Actor {
+    val sche = Akka.system.scheduler.schedule(0 seconds, 5 seconds) {
+      Logger.debug("Timer for: "+id.toString)
+      out ! ("Timer invoked: "+id.toString)
+    }
+    override def postStop() = {
+      sche.cancel()
+      Logger.debug("Websocket closed.")
+    }
+    def receive = {
+      case msg: String =>
+        out ! ("I received your message: " + id.toString + " " + msg)
     }
   }
 }

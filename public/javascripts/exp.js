@@ -55,40 +55,50 @@ expsApp.controller('ExpListCtrl', ['$scope', '$state', '$stateParams', 'listView
 
 expsApp.controller('ExpDetailCtrl', ['$scope', '$http', '$state', '$stateParams', 'listViewSvc', 'ExpDataSvc', '$timeout',
     function ($scope, $http, $state, $stateParams, listViewSvc, ExpDataSvc, $timeout) {
-        //   $scope.exps = convertData(data);
-        //     console.log(data[0],$scope.exps[0]);
+        var initData = function(){
+            $scope.pageTitle = listViewSvc.pageTitle;
+            $scope.selectedItem = listViewSvc.selectedItem;
+//            $scope.selectedType = 0;
+//            $scope.selectedPS = {};
+            $scope.selectedSample = {};
+//            $scope.selectedPSampleType = null;
+            $scope.selectedPSamples = [];
+            $scope.selectedPSteps = [];
 
-        //These two are decoupled...
-        $scope.selectedItem = listViewSvc.selectedItem;
-        var id = $stateParams.id;
-        $http({url: '/exps/'+id+'.json', method: 'GET', params: {full: true}}).success(function(r){
-            console.log(r);
-            $scope.item = r;
-            $scope.$watch('item.name', function (nv, ov) {
-                if($scope.loaded && nv && nv != ov)
-                    ExpDataSvc.changeName($scope.item.id,nv, function(r){
-                        var d = r.data;
-                        console.log(d);
-                        $scope.item.name = d.name;
-                        $scope.selectedItem.exp.name = d.name;
-                    })
-            }, false);
-            listViewSvc.pageTitle.value = $scope.item.name + ' - Labnotebook';
-            $scope.loaded = true;
-        });
-        $scope.pageTitle = listViewSvc.pageTitle;
+//            $scope.selectedSampleType = null;
+            $scope.selectedSamples = [];
 
-        $scope.selectedSample = {};
+            var id = $stateParams.id;
+            $http({url: '/exps/'+id+'.json', method: 'GET', params: {full: true}}).success(function(r){
+                console.log(r);
+                $scope.item = r;
+                $scope.$watch('item.name', function (nv, ov) {
+                    if($scope.loaded && nv && nv != ov)
+                        ExpDataSvc.changeName($scope.item.id,nv, function(r){
+                            var d = r.data;
+                            console.log(d);
+                            $scope.item.name = d.name;
+                            $scope.selectedItem.exp.name = d.name;
+                        })
+                }, false);
+                listViewSvc.pageTitle.value = $scope.item.name + ' - Labnotebook';
+                $scope.loaded = true;
+            });
+        }
 
+        initData();
+
+        // View configs
+        $scope.showSection = listViewSvc.showSection;
+        $scope.shrinkNodes = listViewSvc.shrinkNodes;
+        $scope.expViewMode = listViewSvc.expViewMode;
         $scope.showList = listViewSvc.showList;
         $scope.showDetailJson = listViewSvc.showDetailJson;
 
-        $scope.showSection = listViewSvc.showSection;
+        // View helpers
 
-        $scope.shrinkNodes = listViewSvc.shrinkNodes;
 
-        $scope.expViewMode = listViewSvc.expViewMode;
-
+        // Set up observers
         $scope.$watch('expViewMode.val',function(nv){
             if(nv == 'summary'){
                 listViewSvc.showSection.note = true;
@@ -98,18 +108,22 @@ expsApp.controller('ExpDetailCtrl', ['$scope', '$http', '$state', '$stateParams'
             }else if(nv == 'define'){
                 listViewSvc.showSection.note = false;
                 listViewSvc.showSection.protocol = true;
-                listViewSvc.showSection.sample = false;
+                listViewSvc.showSection.sample = true;
                 listViewSvc.showSection.step = false;
             }else if(nv == 'record'){
-                listViewSvc.showSection.note = true;
-                listViewSvc.showSection.protocol = true;
-                listViewSvc.showSection.sample = false;
+                listViewSvc.showSection.note = false;
+                listViewSvc.showSection.protocol = false;
+                listViewSvc.showSection.sample = true;
                 listViewSvc.showSection.step = true;
-                listViewSvc.showSection.step = sheet;
             }
         });
 
 
+//        $scope.$watch('selectedPSOne',function(){
+//            $scope.selectedType = $scope.selectedPSOne ? $scope.selectedPSOne.typ.id : null;
+//        }, false);
+
+        // Action handlers
         $scope.deleteExp = function (id) {
             $http({url: '/exps/' + id, method: 'DELETE'}).then(function (r) {
                 var res = r.data;
@@ -140,21 +154,13 @@ expsApp.controller('ExpDetailCtrl', ['$scope', '$http', '$state', '$stateParams'
             });
         };
 
-        $scope.selectedType = 0;
-
-        $scope.$watch('selectedPSOne',function(){
-            $scope.selectedType = $scope.selectedPSOne ? $scope.selectedPSOne.typ.id : null;
-        }, false);
-
-
-        $scope.selectedPS = {};
-
         var mkName = function(vs){
             return _.map(vs,function(v){
                 v.name = v.title;
                 return v;
             });
         }
+
         if(listViewSvc.types && listViewSvc.types[0]){
             $scope.types = mkName(flattenTree(listViewSvc.types[0]));
         }else{
@@ -164,38 +170,22 @@ expsApp.controller('ExpDetailCtrl', ['$scope', '$http', '$state', '$stateParams'
             });
         }
 
-        $scope.selectedPSample = function(){
-            try{
-                var r = null;
-                _.map($scope.selectedPS,function(v,k){
-                    if(v){
-                        r = k;
-                        throw "found";
-                    }
-                });
-            }catch(e){
-                return r;
-            }
-            return null;
-        };
+//        $scope.selectedPSample = function(){
+//            try{
+//                var r = null;
+//                _.map($scope.selectedPS,function(v,k){
+//                    if(v){
+//                        r = k;
+//                        throw "found";
+//                    }
+//                });
+//            }catch(e){
+//                return r;
+//            }
+//            return null;
+//        };
 
-        $scope.selectedPSampleType = null;
-        $scope.selectedPSamples = [];
 
-        $scope.selectedSampleType = null;
-        $scope.selectedSamples = [];
-
-        $scope.$watch('selectedPSamples[0].typ',function(nv,ov){
-            if(ov && nv != ov){
-                console.log(nv);
-                var sid = $scope.selectedPSamples[0].id;
-                $http({url: '/psamples/'+sid, method: 'PUT', data: $.param({type: nv.id})}).success(function(r){
-                    console.log(r);
-                }).error(function(r){
-                        console.log('Error. has to roll back.');
-                    });
-            }
-        });
 
         $scope.addRun = function(exp) {
             var url = '/exps/' + exp.id  + '/runs';
@@ -218,9 +208,6 @@ expsApp.controller('ExpDetailCtrl', ['$scope', '$http', '$state', '$stateParams'
                 });
             }
         };
-
-        $scope.selectedType = {};
-
 
         $scope.selectRunSample = function(s,adding){
             console.log(s);
@@ -269,6 +256,7 @@ expsApp.controller('ExpDetailCtrl', ['$scope', '$http', '$state', '$stateParams'
                         s.selected = false;
                     });
                     $scope.selectedPSamples = [s];
+                    $scope.selectedPSteps = [];
                     s.selected = true;
                 }
             }else{
@@ -305,16 +293,39 @@ expsApp.controller('ProtocolSampleCtrl',['$scope','$http', function($scope, $htt
         var url = '/psamples/' + id
         $http({url: url, method: 'DELETE'}).success(function(r){
             console.log(r);
-            if(r.success){
-                var idx = findIndex($scope.item.protocolSamples,id);
-                if(idx >= 0){
-                    $scope.item.protocolSamples.splice(idx,1);
-                }
+            var idx = findIndex($scope.item.protocolSamples,id);
+            if(idx >= 0){
+                $scope.item.protocolSamples.splice(idx,1);
             }
+            $scope.showMessage('Sample deleted.')
         }).error(function(r){
                 console.log(r);
+                $scope.showMessage('Could not delete sample: '+ r.message,'danger');
             });
     };
+    $scope.$watch('psample',function(nv,ov){
+        if(!nv || !ov || nv.id != ov.id || nv == ov)return;
+        console.log('PSample changed',nv,ov);
+
+        var obj = {};
+        if(nv.name != ov.name){
+            obj.name = nv.name;
+        }
+        if(nv.typ.id != ov.typ.id){
+            obj.type = nv.typ.id;
+        }
+        console.log(obj);
+        if(Object.keys(obj).length == 0){
+            console.log('Something has changed on psample('+nv.id+'), but nothing has changed for update.')
+            return;
+        }
+        $http({url: '/psamples/'+nv.id, method: 'PUT', data: $.param(obj)}).success(function(r){
+            console.log(r);
+        }).error(function(){
+                console.log(r);
+            });
+
+    },true);
 }]);
 
 expsApp.controller('ProtocolStepCtrl',['$scope',function($scope){
@@ -327,10 +338,8 @@ expsApp.controller('ProtocolStepCtrl',['$scope',function($scope){
 }]);
 
 expsApp.controller('RunSampleCtrl',['$scope','$http', '$timeout', 'listViewSvc', function($scope,$http,$timeout,listViewSvc){
-    console.log('Hoge');
-
-        var key = $scope.run.id + ':' + $scope.psample.id;
-        console.log(key,$scope.item.runSamples,$scope.item.runSamples[key]);
+    var key = $scope.run.id + ':' + $scope.psample.id;
+//        console.log(key,$scope.item.runSamples,$scope.item.runSamples[key]);
     $scope.runSample =  $scope.item.runSamples[key] || {};
     $scope.runSample.rid = $scope.run.id;
     $scope.runSample.psid = $scope.psample.id;
@@ -367,7 +376,7 @@ expsApp.controller('RunSampleCtrl',['$scope','$http', '$timeout', 'listViewSvc',
             $http({url: '/samples/'+sid, method: 'PUT', data: $.param({type: nv.id})}).success(function(r){
                 console.log(r);
             }).error(function(r){
-                   console.log('Error. has to roll back.');
+                    console.log('Error. has to roll back.');
                 });
         }
     });
@@ -382,7 +391,7 @@ expsApp.controller('RunSampleCtrl',['$scope','$http', '$timeout', 'listViewSvc',
                     listViewSvc.samples[idx] = r.data;
                 }
             }).error(function(r){
-                  showMessage('Error.')
+                    showMessage('Error.')
 //                   location.reload();
                 });
         }
@@ -398,7 +407,8 @@ expsApp.controller('RunSampleCtrl',['$scope','$http', '$timeout', 'listViewSvc',
     $scope.addRunSample = function(psample,run){
         var rid = run.id;
         var pid = psample.id;
-        $http({url: '/runsamples/'+rid+'/'+pid, method: 'POST', data: $.param({name: 'New sample'})}).success(function(r){
+        var name = psample.typ.name + moment().format("-M/D/YY");
+        $http({url: '/runsamples/'+rid+'/'+pid, method: 'POST', data: $.param({name: name})}).success(function(r){
             var d = r.data;
             console.log(r,d);
             var key = d.run + ':' + d.protocolSample;
