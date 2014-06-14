@@ -21,7 +21,9 @@ expsApp.service('listViewSvc', ['$http', function ($http) {
         pageTitle: {
             value: 'Labnotebook'
         },
-        exps: [],
+        exps: {
+            value: []
+        },
         samples: [],
         types: [],
         showSection: {note: true, sample: true, protocol: true},
@@ -100,7 +102,7 @@ expsApp.controller('entireCtrl',
         var init = function () {
             //Common data store. This enables background loading.
             $http({url: '/exps.json', method: 'GET'}).success(function(r){
-               listViewSvc.exps = r;
+               listViewSvc.exps.value = r;
             });
             $http({url: '/samples.json', method: 'GET'}).success(function(r){
                 listViewSvc.samples = r;

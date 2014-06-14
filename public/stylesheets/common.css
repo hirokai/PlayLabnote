@@ -24,6 +24,10 @@ pre.json {
 
 .link {
     cursor: pointer;
+    color: midnightblue;
+}
+.link:hover {
+    text-decoration: underline;
 }
 
 .fade {
@@ -42,4 +46,30 @@ rect {
     fill: #f8fff1;
     stroke-width: 1;
     stroke: black;
+}
+
+.edgeLabel rect {
+    fill: #fdf8ff;
+    stroke-width: 1;
+    stroke: black;
+}
+
+
+ul.flatlist {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+ul.flatlist li {
+    display: inline;
+}
+
+ul.flatlist li:after {
+    content: ", ";
+//    margin-right: 5px;
+}
+
+ul.flatlist li:last-child:after {
+    content: "";
 }

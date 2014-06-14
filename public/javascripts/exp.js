@@ -20,22 +20,27 @@ expsApp.factory('ExpDataSvc',['$http', 'listViewSvc', function($http, listViewSv
 }]);
 
 expsApp.controller('ExpListCtrl', ['$scope', '$state', '$stateParams', 'listViewSvc', 'ExpDataSvc', '$http', function ($scope, $state, $stateParams, listViewSvc, ExpDataSvc, $http) {
-    $scope.exps = listViewSvc.exps;
+    $scope.exps = listViewSvc.exps.value;
+    $scope.loaded = false;
     $scope.selectedItem = listViewSvc.selectedItem;
 
     listViewSvc.current.mode = 'exp';
     listViewSvc.current.id = $stateParams.id;
 
+    $scope.$watchCollection('exps',function(nv,ov){
+       if((!ov || ov.length == 0) && nv && !$scope.loaded)
+           $scope.loaded = true;
+    });
+
     if(!$stateParams.id){
         listViewSvc.pageTitle.value = 'List of experiments';
     }
-
-    $scope.sp = $stateParams; // For debug purpose.
 
     $scope.addExp = function(){
         var name = 'New exp ' + ($scope.exps.length + 1);
         ExpDataSvc.addExp({name: name},function(r){
             $scope.exps.push(r);
+            $state.go('exp_id',{id: r.id});
         },function(r){
             console.log('Error');
         });
@@ -108,7 +113,7 @@ expsApp.controller('ExpDetailCtrl', ['$scope', '$http', '$state', '$stateParams'
             }else if(nv == 'define'){
                 listViewSvc.showSection.note = false;
                 listViewSvc.showSection.protocol = true;
-                listViewSvc.showSection.sample = true;
+                listViewSvc.showSection.sample = false;
                 listViewSvc.showSection.step = false;
             }else if(nv == 'record'){
                 listViewSvc.showSection.note = false;
@@ -130,11 +135,10 @@ expsApp.controller('ExpDetailCtrl', ['$scope', '$http', '$state', '$stateParams'
                 console.log(res);
                 if (res.success) {
                     console.log($scope.exps);
-                    var idx = findIndex(listViewSvc.exps, res.id);
-                    listViewSvc.exps.splice(idx, 1);
-                    var exp = listViewSvc.exps[idx];
+                    var idx = findIndex(listViewSvc.exps.value, res.id);
+                    listViewSvc.exps.value.splice(idx, 1);
+                    var exp = listViewSvc.exps.value[idx];
                     var id = exp ? exp.id : null;
-                    console.log(idx, listViewSvc.exps,id);
                     if(id){
                         $state.go('exp_id',{id: id});
                     }else{
@@ -147,7 +151,7 @@ expsApp.controller('ExpDetailCtrl', ['$scope', '$http', '$state', '$stateParams'
         $scope.addPSample = function(){
             var id = $scope.item.id;
             var url = '/exps/' + id + '/psamples'
-            var name = 'PSample ' + ($scope.item.protocolSamples.length + 1);
+            var name = 'Sample ' + ($scope.item.protocolSamples.length + 1);
             var typ = 0;
             $http({url: url, method: 'POST',data: $.param({name: name, type: typ})}).success(function(r){
                 $scope.item.protocolSamples.push(r.data);
@@ -244,6 +248,7 @@ expsApp.controller('ExpDetailCtrl', ['$scope', '$http', '$state', '$stateParams'
         };
 
         $scope.selectPSample = function(s,adding){
+            console.log(s);
             var newt = _.findWhere($scope.types,{id: s.typ.id});
             console.log(s,newt);
             if(newt){
@@ -273,7 +278,9 @@ expsApp.controller('ExpDetailCtrl', ['$scope', '$http', '$state', '$stateParams'
                 _.map($scope.selectedPSteps,function(s){
                     s.selected = false;
                 });
-                $scope.selectedPSteps = [s];
+                $scope.selectedPSteps.length = 0;
+                $scope.selectedPSteps.push(s);
+                $scope.selectedPSamples.length = 0;
                 s.selected = true;
             }
         };

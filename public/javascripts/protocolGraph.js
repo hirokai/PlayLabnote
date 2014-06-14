@@ -31,18 +31,7 @@ angular.module('myGraph',['d3'])
     .controller('protocolGraphCtrl',['$scope',function($scope){
         //   $scope.nodes = [{},{},{}]; //$scope.exp;
         //   console.log($scope);
-        $scope.$watch('exp',function(nv,ov){
-            console.log(nv);
-            $scope.nodes = [{x: Math.random()*100, y: 100}];
-        },true);
-        $scope.x = function(scope){
-            console.log(scope);
-            return Math.random()*100;
-        }
-        $scope.y = function(scope){
-            //console.log(scope);
-            return Math.random()*100;
-        }
+
     }])
     .controller('PStepParamCtrl',['$scope','$http', function($scope, $http){
         $scope.units = [
@@ -123,15 +112,6 @@ angular.module('myGraph',['d3'])
                             scope.$apply(function(){
                                 var adding = d3.event.metaKey;
                                 scope.selectPSample(getPSample(id),adding);
-//                                if(adding){
-//                                    scope.sel_ids = scope.sel_ids || [];
-//                                    scope.sel_ids.push(scope.selection_id);
-//                                    scope.sel_ids = _.uniq(scope.sel_ids);
-//                                    scope.$parent.selectedPSamples = _.map(scope.sel_ids,getPSample);
-//                                }else{
-//                                    scope.$parent.selectedPSteps = [];
-//                                    scope.$parent.selectedPSamples = [getPSample(id)];
-//                                }
                                 scope.render();
                             });
                         });
@@ -145,13 +125,14 @@ angular.module('myGraph',['d3'])
                                     scope.sel_edge_ids = scope.sel_edge_ids || [];
                                     scope.sel_edge_ids.push(scope.selection_edge_id);
                                     scope.sel_edge_ids = _.uniq(scope.sel_edge_ids);
-                                    scope.$parent.selectedPSteps = _.map(scope.sel_edge_ids,getPStep);
+                                    scope.selectedPSteps.push(getPStep(id));
                                 }else{
                                     var pstep = getPStep(scope.selection_edge_id);
                                     if(pstep){
                                         scope.sel_edge_ids = [scope.selection_edge_id];
-                                        scope.$parent.selectedPSteps = [pstep];
-                                        scope.$parent.selectedPSamples = [];
+                                        scope.selectedPSteps.length = 0;
+                                        scope.selectedPSteps.push(pstep);
+                                        scope.selectedPSamples.length = 0;
                                     }else{
                                         console.log('pstep not found: '+id);
                                     }
@@ -162,14 +143,22 @@ angular.module('myGraph',['d3'])
 
                         scope.graphZoom = scope.graphZoom || {};
                         var el = $('svg');
-                        scope.graphZoom.scale = scope.graphZoom.scale || getDefaultScale(layout,el.width(),el.height());
-                        scope.graphZoom.translate = scope.graphZoom.translate || getDefaultTranslate(layout);
+                        if(scope.autoZoom.val){
+                            scope.graphZoom.scale = getDefaultScale(layout,el.width(),el.height());
+                            scope.graphZoom.translate = getDefaultTranslate(layout);
+                        }else{
+                            scope.graphZoom.scale = scope.graphZoom.scale || getDefaultScale(layout,el.width(),el.height());
+                            scope.graphZoom.translate = scope.graphZoom.translate || getDefaultTranslate(layout);
+                        }
                         var scale = scope.graphZoom.scale;
                         var translate = scope.graphZoom.translate;
 
                         // https://github.com/cpettitt/dagre-d3/issues/27#issuecomment-36707912
-                        svg.attr("width", layout.graph().width + 40)
-                            .attr("height", layout.graph().height + 40)
+                        var w = layout.graph().width + 40;
+                        var h = layout.graph().height + 40;
+                        svg
+                           // .attr("width", layout.graph().width + 40)
+                           // .attr("height", layout.graph().height + 40)
                             .call(d3.behavior.zoom().scaleExtent([0.2, 2]).scale(scale).translate(translate).on("zoom", function() {
                                 var ev = d3.event;
                                 scope.graphZoom.scale = ev.scale;
@@ -181,6 +170,10 @@ angular.module('myGraph',['d3'])
                     };
                     scope.$watch('item.protocolSamples',function(nv,ov){
                         if(_.isEqual(nv,ov))return;
+//                        if(nv.length = 1){
+//                            scope.graphZoom.scale = 1;
+//                            scope.graphZoom.translate = [0,0];
+//                        }
                         scope.render();
                     },true);
 
@@ -188,14 +181,62 @@ angular.module('myGraph',['d3'])
                        scope.render();
                     });
 
+                    scope.autoZoom = {val: true};
+
                     scope.selectNone = function(){
-                        scope.$parent.selectedPSamples = [];
-                        scope.$parent.selectedPSteps = [];
-                    }
+                        scope.selectedPSamples.length = 0;
+                        scope.selectedPSteps.length = 0;
+                    };
+
+                    scope.selectDelta = function(delta){
+                        var findIndexOfEntity = function(vs,id,isSample){
+                            for(var i=0;i<vs.length;i++){
+                                if(vs[i].id == id){
+                                    if((vs[i].typ && isSample) || (vs[i].params && !isSample))
+                                        return i;
+                                }
+                            }
+                            return -1;
+                        };
+                        var cycle = function(v,from,until){
+                          if(v < from) return until - 1;
+                          else if(v >= until) return from;
+                          else return v;
+                        };
+
+                        var sel = scope.selectedEntities[0];
+                        sel = sel || scope.item.protocolSamples[0];
+                        if(!sel) return;
+
+                        var objs = scope.allEntities;
+                        var idx = findIndexOfEntity(objs, sel.id,!!sel.typ);
+                        console.log(sel,idx,objs.length);
+
+                        if(idx >= 0){
+                            var new_idx = cycle(idx+delta,0,objs.length);
+                            var e = objs[new_idx];
+                            if(e.typ){
+                                scope.selectedPSamples.length = 0;
+                                scope.selectedPSteps.length = 0;
+                                scope.selectedPSamples.push(e);
+                            }else{
+                                scope.selectedPSamples.length = 0;
+                                scope.selectedPSteps.length = 0;
+                                scope.selectedPSteps.push(e);
+                            }
+                        }
+                    };
+
+                    scope.selectNext = function(){
+                        scope.selectDelta(1);
+                    };
+                    scope.selectPrev = function(){
+                        scope.selectDelta(-1);
+                    };
 
                     scope.connectNodes = function(){
                         var id = scope.item.id;
-                        var name = 'Step 1';
+                        var name = 'Step ' + (scope.item.protocolSteps.length + 1);
                         var from = scope.selectedPSamples[0].id;
                         var to = scope.selectedPSamples[1].id;
                         var req = {url: '/exps/'+id+'/psteps',method:'POST',data: $.param({name: name, input: from, output: to})};
@@ -209,17 +250,25 @@ angular.module('myGraph',['d3'])
                       });
                     };
 
-                    scope.addNextStep = function(){
+                    scope.addNextOrPrevStep = function(which){
+                        if(which != 'next' && which != 'prev') return;
+
                         var eid = scope.item.id;
                         var s = scope.selectedPSamples[0];
                         if(eid && s){
-                            $http({url: '/exps/'+eid+'/psamples', method: 'POST', data: $.param({name: 'Sample',type: s.typ.id})}).success(function(r){
+                            var sname = 'Sample ' + (scope.item.protocolSamples.length + 1);
+                            $http({url: '/exps/'+eid+'/psamples', method: 'POST', data: $.param({name: sname,type: s.typ.id})}).success(function(r){
                                 console.log(r);
-                                $http({url: '/exps/'+eid+'/psteps', method: 'POST', data: $.param({name: 'Step',input: s.id, output: r.data.id})}).success(function(r2){
+                                var obj = {name: 'Step '+(scope.item.protocolSteps.length+1)};
+                                if(which == 'next'){
+                                    obj.input = s.id; obj.output = r.data.id;
+                                }else if(which == 'prev'){
+                                    obj.output = s.id; obj.input = r.data.id;
+                                }
+                                $http({url: '/exps/'+eid+'/psteps', method: 'POST', data: $.param(obj)}).success(function(r2){
                                     scope.item.protocolSamples.push(r.data);
                                     scope.item.protocolSteps.push(r2.data);
-                                    scope.selectedPSamples.length = 0;
-                                    scope.selectedPSamples.push(r.data);
+                                    scope.selectPSample(scope.getPSample(r.data.id));
                                     scope.render();
                                 }).error(function(r2){
 
@@ -228,23 +277,12 @@ angular.module('myGraph',['d3'])
                         }
                     };
 
-                    scope.addPrevStep = function(){
-                        var eid = scope.item.id;
-                        var s = scope.selectedPSamples[0];
-                        if(eid && s){
-                            $http({url: '/exps/'+eid+'/psamples', method: 'POST', data: $.param({name: 'Sample',type: s.typ.id})}).success(function(r){
-                                console.log(r);
-                                $http({url: '/exps/'+eid+'/psteps', method: 'POST', data: $.param({name: 'Step',output: s.id, input: r.data.id})}).success(function(r2){
-                                    scope.item.protocolSamples.push(r.data);
-                                    scope.item.protocolSteps.push(r2.data);
-                                    scope.selectedPSamples.length = 0;
-                                    scope.selectedPSamples.push(r.data);
-                                    scope.render();
-                                }).error(function(r2){
+                    scope.addNextStep = function(){
+                        scope.addNextOrPrevStep('next');
+                    };
 
-                                    });
-                            });
-                        }
+                    scope.addPrevStep = function(){
+                        scope.addNextOrPrevStep('prev');
                     };
 
                     scope.deletePSamples = function(){
@@ -295,6 +333,7 @@ angular.module('myGraph',['d3'])
                                 scope.render()
                             }).error(function(r){
                                     console.log(r);
+                                    scope.showMessage("Failed to delete step.","danger");
                                 });
                         });
                     };
@@ -302,12 +341,13 @@ angular.module('myGraph',['d3'])
                     scope.editingParams = false;
 
                     scope.addParam = function(){
-                        var id = scope.selectedPSteps[0].id;
-                        var name = 'Param';
+                        var pstep = scope.selectedPSteps[0];
+                        var id = pstep.id;
+                        var name = 'Param ' + (pstep.params.length+1);
                         $http({url: '/psteps/'+id+'/params', method: 'POST', data: $.param({name: name, type: 'text'})}).success(function(r){
                             console.log(r);
                             scope.selectedPSteps[0].params.push(r.data);
-                            scope.showMessage("Param deleted.");
+                            scope.showMessage("Param added.");
                         }).error(function(r){
                                 console.log(r);
                             });
@@ -331,12 +371,10 @@ angular.module('myGraph',['d3'])
                     };
 
                     scope.newInput = function(){
-                        console.log('newInput');
                         scope.newInputOrOutput('input');
                     };
 
                     scope.newOutput = function(){
-                        console.log('newOutput');
                         scope.newInputOrOutput('output');
                     };
 
@@ -367,12 +405,52 @@ angular.module('myGraph',['d3'])
                         }
                     };
 
+                    scope.addInput = function(){scope.addInputOrOutput('input');};
+                    scope.addOutput = function(){scope.addInputOrOutput('output');};
+
+                    scope.addInputOrOutput = function(which) {
+                        if(which != 'input' && which != 'output') return;
+
+                        var step = scope.selectedPSteps[0];
+                        var samples = scope.selectedPSamples;
+
+                        // From: http://stackoverflow.com/a/17511398/1461206.
+                        // This keeps reference of step.input intact, which is important for watching variables.
+                        var sids = _.uniq(step[which].concat(_.map(samples,function(s){return s.id;})));
+                        Array.prototype.splice.apply(step[which], [0, sids.length].concat(sids));
+
+                        $http({url: '/psteps/'+ step.id, method: 'PUT', data: $.param({input: step.input.join(':'), output: step.output.join(':')})}).success(function(r2){
+                            scope.render();
+                            console.log(r2);
+                        }).error(function(r2){
+                                console.log(r2);
+                                scope.showMessage('Error occured.','danger');
+                            });
+                    }
+
+                    scope.clickStepSample = function(sid){
+                        scope.selectPSample(scope.getPSample(sid));
+                    }
+
+                    scope.getPSample = function(id){
+                        return _.findWhere(scope.item.protocolSamples,{id:id});
+                    };
+
                     scope.resetZoom = function(){
                         var el = $('svg');
                         scope.graphZoom.scale = getDefaultScale(scope.layout,el.width(),el.height());
                         scope.graphZoom.translate = getDefaultTranslate(scope.layout);
                         scope.render();
                     };
+
+                    scope.$watchCollection('item.protocolSamples',function(nv,ov){
+                        scope.allEntities = scope.item.protocolSamples.concat(scope.item.protocolSteps);
+                    });
+                    scope.$watchCollection('item.protocolSteps',function(nv,ov){
+                        scope.allEntities = scope.item.protocolSamples.concat(scope.item.protocolSteps);
+                    });
+
+                    scope.selectedEntities = [];
 
                     scope.$watch('selectedPSamples',function(nv,ov){
                         if(_.isEqual(nv,ov))return;
@@ -389,9 +467,15 @@ angular.module('myGraph',['d3'])
                         scope.render();
                     },true);
 
-                    scope.$watch('selectedPSteps[0].params',function(nv,ov){
-                        if(_.isEqual(nv,ov))return;
-                        console.log(nv);
+                    scope.$watch('selectedPSteps[0].name',function(nv,ov){
+                        if(_.isEqual(nv,ov) || !ov)return;
+                        if(_.trim(nv)==''){
+                            scope.selectedPSteps[0].name = ov;
+                            scope.showMessage('Empty name cannot be used.','warning');
+                            return;
+                        }
+                        var id = scope.selectedPSteps[0].id;
+                        $http({url: '/psteps/'+id, method: 'PUT', data: $.param({name: nv})});
                     },true);
 
                     scope.$watch('sel_ids',function(nv,ov){
@@ -399,10 +483,7 @@ angular.module('myGraph',['d3'])
                         console.log(nv);
 //                        scope.render();
                     },true);
-                    scope.$watch('exp',function(nv){
-                        console.log(nv);
-                        scope.render();
-                    });
+
                     scope.render();
                 });
             }
@@ -417,24 +498,31 @@ var isIntermediate = function(ps){
 }
 
 var getDefaultScale = function(layout,svg_w,svg_h){
+    console.log(layout._nodes);
+//    if(layout._nodes.length <= 1){
+//        console.log('No node.');
+//        return 1;
+//    }
     svg_w = svg_w || 300;
     svg_h = svg_h || 500;
     var ranks = _.map(layout._nodes,function(n){return n.value.rank;});
     var orders = _.map(layout._nodes,function(n){return n.value.order;});
-//    var xs = _.map(layout._nodes,function(n){return n.value.x;});
-//    var ys = _.map(layout._nodes,function(n){return n.value.y;});
+    var xs = _.map(layout._nodes,function(n){return n.value.x;});
+    var ys = _.map(layout._nodes,function(n){return n.value.y;});
 //    console.log(ranks,xs,ys);
-    var width = function(vs) {return _.max(vs) - _.min(vs) + 0.1;};  // + 0.1 to avoid NaN.
+    var width = function(vs) {return (vs && vs.length > 0) ? _.max(vs) - _.min(vs) : 0;};
 //    var xscale = 300 / width(xs) + 0.1;
 //    var yscale = 500 / width(ys) + 0.1;
     var factor_x = svg_w/130, factor_y = svg_h/45;
     console.log(layout,svg_w,svg_h,factor_x,factor_y);
-    var scale = Math.min(factor_x/(width(orders)+1),factor_y/(width(ranks)+1));
+    var scale = Math.min(factor_x*75/(width(xs)+1),factor_y*35/(width(ys)+1));
+//    var scale = Math.min(factor_x/(width(orders)+1),factor_y/(width(ranks)+1));
+    console.log(scale);
     return Math.max(Math.min(scale,2),0.2);
 }
 
 var getDefaultTranslate = function(layout){
-    return [0,0];
+    return [30,30];
 }
 
 var mkProtocolGraph = function(exp,shrink){

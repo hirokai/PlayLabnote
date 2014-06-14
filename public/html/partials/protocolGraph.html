@@ -1,45 +1,57 @@
-
 <div class='row'>
     <div class='col-md-8'>
         <div id='graph_buttons'>
             <div>
                 <span class='btnlabel'>For sample:</span>
-                <button id='newsamplebtn' class="btn btn-xs btn-default" type="button" ng-click='addPSample()'
-                {{disabled_if_locked}}>New sample</button>
-                <button id='deletesamplebtn' class="btn btn-xs btn-default" ng-click='deletePSamples()'
-                        ng-disabled='selectedPSamples.length == 0' {{disabled_if_locked}} type="button">Delete</button>
+                <a class="btn btn-xs btn-default" ng-click='addPSample()' ng-disabled='item.locked'>New sample</a>
+                <a class="btn btn-xs btn-default" ng-click='deletePSamples()'
+                   ng-disabled='selectedPSamples.length == 0 || item.locked' type="button">Delete</a>
             </div>
             <div>
 
                 <span class='btnlabel'>For sample:</span>
-                <button id='addprevstepbtn' class="btn btn-xs btn-default" ng-click='addPrevStep()'
-                        ng-disabled='selectedPSamples.length != 1' {{disabled_if_locked}} type="button">Add prev step</button>
-                <button id='addnextstepbtn' class="btn btn-xs btn-default" ng-click='addNextStep()'
-                        ng-disabled='selectedPSamples.length != 1' {{disabled_if_locked}} type="button">Add next step</button>
+                <a class="btn btn-xs btn-default" ng-click='addPrevStep()'
+                   ng-disabled='selectedPSamples.length != 1 || item.locked' type="button">Add prev step</a>
+                <a class="btn btn-xs btn-default" ng-click='addNextStep()'
+                   ng-disabled='selectedPSamples.length != 1 || item.locked' type="button">Add next step</a>
             </div>
             <div>
                 <span class='btnlabel'>For two samples:</span>
-                <a id='connectnodes' class="btn btn-xs btn-default" ng-disabled='selectedPSamples.length != 2' ng-click='connectNodes()'
-                {{disabled_if_locked}} type="button">Connect nodes</a>
-                <button id='insertnode' class="btn btn-xs btn-default" ng-disabled='selectedPSamples.length != 2'
-                {{disabled_if_locked}} type="button">Insert</button>
+                <a id='connectnodes' class="btn btn-xs btn-default"
+                   ng-disabled='selectedPSamples.length != 2 || item.locked'
+                   ng-click='connectNodes()' type="button">Connect nodes</a>
+                <a class="btn btn-xs btn-default" ng-disabled='selectedPSamples.length != 2 || item.locked'
+                   type="button">Insert</a>
             </div>
             <div>
                 <span class='btnlabel'>For operation:</span>
-                <button id='newinputbtn' class="btn btn-xs btn-default" ng-click='newInput()'
-                        ng-disabled='selectedPSteps.length != 1' {{disabled_if_locked}} type="button">New input</button>
-                <button id='newoutputbtn' class="btn btn-xs btn-default" ng-click='newOutput()'
-                        ng-disabled='selectedPSteps.length != 1' {{disabled_if_locked}} type="button">New output</button>
-                <button id='deleteopbtn' class="btn btn-xs btn-default" ng-click='deleteStep()'
-                        ng-disabled='selectedPSteps.length == 0' type="button">Delete</button>
+                <a class="btn btn-xs btn-default" ng-click='newInput()'
+                   ng-disabled='selectedPSteps.length != 1 || item.locked' type="button">New input</a>
+                <a class="btn btn-xs btn-default" ng-click='newOutput()'
+                   ng-disabled='selectedPSteps.length != 1 || item.locked' type="button">New output</a>
+                <a class="btn btn-xs btn-default" ng-click='addInput()'
+                   ng-disabled='selectedPSteps.length != 1 || selectedPSamples.length == 0 || item.locked' type="button">Add input</a>
+                <a class="btn btn-xs btn-default" ng-click='addOutput()'
+                   ng-disabled='selectedPSteps.length != 1 || selectedPSamples.length == 0 || item.locked' type="button">Add output</a>
+                <a class="btn btn-xs btn-default" ng-click='deleteStep()'
+                   ng-disabled='selectedPSteps.length == 0' type="button">Delete</a>
             </div>
-            <div style='margin: 8px 0px;'>
-                <button id='deselect' class="btn btn-xs btn-default" type="button" ng-click='selectNone()'>Select none</button>
-                <button id='resetzoom' class="btn btn-xs btn-default" type="button" ng-click='resetZoom()'>Reset zoom</button>
+            <div style='margin: 8px 0;'>
+                <a class="btn btn-xs btn-default" ng-click='selectNone()'>Select none</a>
+                <a class="btn btn-xs btn-default" ng-click='resetZoom()'>Reset zoom</a>
+                <span>Selection:</span>
+                <a class="btn btn-xs btn-default" ng-click='selectPrev()'>
+                    <span class="glyphicon glyphicon-backward" style='margin-left: 10px;margin-right: 14px;'></span>
+                </a>
+                <a class="btn btn-xs btn-default" ng-click='selectNext()'>
+                    <span class="glyphicon glyphicon-forward" style='margin-left: 14px;margin-right: 12px;'></span>
+                </a>
             </div>
-            <div style='margin: 8px 0px;'>
+            <div style='margin: 8px 0;'>
                 <input type="checkbox" id='shrink_nodes' ng-model='shrinkNodes.val'/>
                 <span style='font-size: 12px'>Shrink intermediate samples</span>
+                <input type="checkbox" id='auto_zoom' ng-model='autoZoom.val'/>
+                <span style='font-size: 12px'>Auto zoom</span>
             </div>
 
         </div>
@@ -59,8 +71,10 @@
             </div>
             <div ng-show='selectedEntities[0].typ && selectedEntities.length == 1'>
                 <h5>Sample</h5>
+
                 <div>
-                    Name: <input type="text" ng-disabled='selectedEntities.length != 1' ng-model='selectedEntities[0].name' ng-model-options="{ updateOn: 'blur' }"/>
+                    Name: <input type="text" ng-disabled='selectedEntities.length != 1'
+                                 ng-model='selectedEntities[0].name' ng-model-options="{ updateOn: 'blur' }"/>
                 </div>
                 <div>
                     Sample type: <select ng-model="selectedEntities[0].typ"
@@ -69,12 +83,14 @@
             </div>
             <div ng-show='selectedEntities[0].params && selectedEntities.length == 1'>
                 <h5>Step</h5>
+
                 <div>
-                    Name: <input type="text" ng-disabled='selectedEntities.length != 1' ng-model='selectedEntities[0].name' ng-model-options="{ updateOn: 'blur' }"/>
+                    Name: <input type="text" ng-disabled='selectedEntities.length != 1'
+                                 ng-model='selectedEntities[0].name' ng-model-options="{ updateOn: 'blur' }"/>
                 </div>
                 <div><h5>Input and output</h5>
-                    Input: {{selectedEntities[0].input}}<br>
-                    Output: {{selectedEntities[0].output}}
+                    Input: <ul class='flatlist'><li ng-repeat='input in selectedEntities[0].input' ng-click='clickStepSample(input)' class='link'>{{getPSample(input).name}}</li></ul><br>
+                    Output: <ul class='flatlist'><li ng-repeat='output in selectedEntities[0].output' ng-click='clickStepSample(output)' class='link'>{{getPSample(output).name}}</li></ul><br>
 
                 </div>
 
@@ -84,7 +100,8 @@
                     <table class="table">
                         <thead>
                         <tr>
-                            <th></th>
+                            <th><a ng-if='editingParams' class='btn btn-xs btn-default' ng-click='addParam()'><span
+                                    class='glyphicon glyphicon-plus'></span></a></th>
                             <th>Name</th>
                             <th>Type/Unit</th>
                         </tr>
@@ -92,19 +109,17 @@
                         <tbody>
                         <tr ng-repeat='param in selectedEntities[0].params' ng-controller='PStepParamCtrl'>
                             <td>
-                                <a class='btn btn-xs btn-default' ng-if='editingParams' ng-click='deleteParam(param)'><span class='glyphicon glyphicon-minus'></span></a>
+                                <a class='btn btn-xs btn-default' ng-if='editingParams'
+                                   ng-click='deleteParam(param)'><span class='glyphicon glyphicon-minus'></span></a>
                             </td>
-                            <td ng-if='editingParams'><input type="text" ng-model='param.name' ng-model-options="{ updateOn: 'blur' }"/></td>
+                            <td ng-if='editingParams'><input type="text" ng-model='param.name'
+                                                             ng-model-options="{ updateOn: 'blur' }"/></td>
                             <td ng-if='!editingParams'>{{param.name}}</td>
                             <td ng-if='editingParams'>
-                                <select ng-model="param.type_unit" ng-options='unit.value as unit.name for unit in units'></select>
+                                <select ng-model="param.type_unit"
+                                        ng-options='unit.value as unit.name for unit in units'></select>
                             </td>
                             <td ng-if='!editingParams'>{{getParamUnitName(param.type_unit)}}</td>
-                        </tr>
-                        <tr ng-if='editingParams'>
-                            <td><a class='btn btn-xs btn-default' ng-click='addParam()'><span class='glyphicon glyphicon-plus'></span></a></td>
-                            <td></td>
-                            <td></td>
                         </tr>
                         </tbody>
                     </table>

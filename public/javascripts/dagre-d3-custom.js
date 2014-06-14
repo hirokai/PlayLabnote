@@ -276,7 +276,6 @@ function defaultDrawEdgeLabels(g, root) {
     //Hiro Kai added
     .attr('data-id',function(e){return g.edge(e).custom_id;})
     .attr({'data-selected': function(e){
-//          console.log(selection_edges);
           return _.contains(selection_edges,g.edge(e).custom_id) ? 'selected' : null;
       }});
 

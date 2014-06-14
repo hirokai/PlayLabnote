@@ -125,3 +125,5 @@ guid = function () {
             s4() + '-' + s4() + s4() + s4();
     }
 };
+
+_.mixin(_.str.exports());

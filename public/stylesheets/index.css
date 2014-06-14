@@ -119,11 +119,15 @@ input[disabled] {
 
 svg#protocol_graph {
     width: 100%;
-    height: 300px;
+    height: 600px;
 }
 
 #protocol_graph_wrapper {
-    background: #fff4f4;
+//    background: #fff4f4;
+    border: 1px #636a77 solid;
+    -webkit-box-shadow: 10px 10px 30px -10px rgba(0,0,0,0.75);
+    -moz-box-shadow: 10px 10px 30px -10px rgba(0,0,0,0.75);
+    box-shadow: 10px 10px 30px -10px rgba(0,0,0,0.75);
 }
 
 .nav, .pagination, .carousel, .panel-title a { cursor: pointer; }

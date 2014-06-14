@@ -211,16 +211,13 @@ object Experiment extends Controller {
         val o_name: Option[String] = params.get("name").flatMap(_.headOption)
         def collectIds(v: Seq[String]): Option[Array[Id]] = {
           val s: Option[String] = v.headOption
-          println(s)
           s match {
             case Some(str) => Some(str.split(":").map(toIdOpt).flatten)
             case _ => None
           }
         }
-        println(params.get("input").get)
         val ins: Option[Array[Id]] = params.get("input").flatMap(collectIds)
         val outs: Option[Array[Id]] = params.get("output").flatMap(collectIds)
-        println(ins.get.mkString(","))
 
         //Execute DB operation
         val r = ExperimentAccess().updateProtocolStep(id,o_name,ins,outs)
@@ -246,7 +243,7 @@ object Experiment extends Controller {
     DB.withConnection {implicit c =>
       ProtocolStepAccess().delete(id).fold (
         l => {
-          Status(500)(l)
+          Status(400)(l)
         },
         r => {
           Ok("")

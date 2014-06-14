@@ -13,10 +13,12 @@ import org.h2.jdbc.JdbcSQLException
 object Database {
   type Id = Long
   def escape(s: String) = s.replace("'","''")
+  def escapeName(s: String) = if(!validName(s)) throw new IllegalArgumentException("Name is invalid.") else s.replace("'","''")
+  def validName(s: String) = s.trim != ""
 }
 
 import Database.Id
-import Database.escape
+import Database.{escape,escapeName}
 
 case class Experiment (
                        id: Id,
@@ -42,7 +44,7 @@ object Experiment {
 case class ExperimentAccess(owner: Id = 0) {
   def create(name: String, owner: Option[Id] = None)(implicit c: Connection): Option[Id] = {
       val oid: Id = owner.getOrElse(0l) // default is sandbox user.
-      SQL(s"INSERT into Experiment(owner,name) values($oid,'${escape(name)}')").executeInsert()
+      SQL(s"INSERT into Experiment(owner,name) values($oid,'${escapeName(name)}')").executeInsert()
   }
 
   def setName(id: Id, name: String, owner: Option[Id] = None)(implicit c: Connection): Boolean = {
@@ -50,7 +52,7 @@ case class ExperimentAccess(owner: Id = 0) {
     if(name.trim == ""){
       false
     }else{
-      1 == SQL(s"UPDATE Experiment SET name='${escape(name)}' where owner=$oid and id=$id").executeUpdate()
+      1 == SQL(s"UPDATE Experiment SET name='${escapeName(name)}' where owner=$oid and id=$id").executeUpdate()
     }
   }
 
@@ -70,7 +72,7 @@ case class ExperimentAccess(owner: Id = 0) {
       SQL(s"DELETE from ProtocolStep where experiment=$id").executeUpdate()
       SQL(s"DELETE from ProtocolSample where experiment=$id").executeUpdate()
       SQL(s"DELETE from ExpRun where experiment=$id").executeUpdate()
-      SQL(s"DELETE from Experiment where owner=$owner and id=$id").executeUpdate()
+      SQL(s"DELETE from Experiment where owner=$oid and id=$id").executeUpdate()
       Right("Done")
     }catch{
       case e: Throwable => Left(e.getMessage)
@@ -110,7 +112,7 @@ case class ExperimentAccess(owner: Id = 0) {
 
   //@Transaction
   def createProtocolStep(id: Id, name: String, ins: Array[Id], outs: Array[Id])(implicit c: Connection): Either[String,Id] = {
-    val o_step_id: Option[Id] = SQL(s"INSERT into ProtocolStep(experiment,name) values($id,'${escape(name)}')").executeInsert()
+    val o_step_id: Option[Id] = SQL(s"INSERT into ProtocolStep(experiment,name) values($id,'${escapeName(name)}')").executeInsert()
     o_step_id match {
       case Some(step_id) => {
         try{
@@ -137,7 +139,7 @@ case class ExperimentAccess(owner: Id = 0) {
   //@Transaction
   def updateProtocolStep(step_id: Id, o_name: Option[String], o_ins: Option[Array[Id]], o_outs: Option[Array[Id]])(implicit c: Connection): Either[String,Id] = {
     o_name.map{name =>
-      SQL(s"UPDATE ProtocolStep SET name='${escape(name)}' where id=$step_id").executeUpdate()
+      SQL(s"UPDATE ProtocolStep SET name='${escapeName(name)}' where id=$step_id").executeUpdate()
     }
     try{
       Logger.debug(step_id.toString)
@@ -168,7 +170,7 @@ case class ExperimentAccess(owner: Id = 0) {
       }
       o_tid.flatMap{tid =>
         try{
-          val o_id: Option[Id] = SQL(s"INSERT into Sample(owner,name,type) values($owner,'${escape(name)}',$tid)").executeInsert()
+          val o_id: Option[Id] = SQL(s"INSERT into Sample(owner,name,type) values($owner,'${escapeName(name)}',$tid)").executeInsert()
           o_id.flatMap{ id =>
             SQL(s"INSERT into SampleInRun(sample,protocol_sample,run) values($id,$pid,$rid)").executeInsert()
           }
@@ -313,13 +315,13 @@ case class ProtocolSampleAccess() {
   val dbname = "ProtocolSample"
 
   def create(eid: Id, name: String, tid: Id)(implicit c: Connection): Option[Id] = {
-     SQL(s"INSERT into ProtocolSample(name,experiment,type) values('${escape(name)}',$eid,$tid)").executeInsert()
+     SQL(s"INSERT into ProtocolSample(name,experiment,type) values('${escapeName(name)}',$eid,$tid)").executeInsert()
   }
 
 
   //@Transaction
   def update(psid: Id, o_name: Option[String], o_typ: Option[Id])(implicit c: Connection): Either[String, ProtocolSample] = {
-    val s_name: Array[String] = o_name.map(name => Array(s"name='${escape(name)}'")).getOrElse(Array())
+    val s_name: Array[String] = o_name.map(name => Array(s"name='${escapeName(name)}'")).getOrElse(Array())
     val s_typ: Array[String] = o_typ.map(typ => Array(s"type=${typ}")).getOrElse(Array())
     val str = (s_name++s_typ).mkString(",")
     if(str == ""){
@@ -342,7 +344,7 @@ case class ProtocolSampleAccess() {
   }
 
   def setName(id: Id, name: String, owner: Option[Id] = None)(implicit c: Connection): Boolean = {
-        1 == SQL(s"UPDATE ProtocolSample SET name='${escape(name)}' where id=$id").executeUpdate()
+        1 == SQL(s"UPDATE ProtocolSample SET name='${escapeName(name)}' where id=$id").executeUpdate()
   }
 
   def listInExp(eid: Id)(implicit c: Connection): Stream[ProtocolSample] = {
@@ -385,9 +387,9 @@ case class SampleTypeAccess(owner: Id = 0) {
 
   def create(name: String, parent: Id, system: Boolean = false)(implicit c: Connection): Option[Id] = {
     val exists = 0 < SQL(s"SELECT count(*) as c from SampleType where exists" +
-       s" (SELECT * from SampleType where owner=$owner and name='${escape(name)}')")().map(_[Long]("c")).head
+       s" (SELECT * from SampleType where owner=$owner and name='${escapeName(name)}')")().map(_[Long]("c")).head
     if(!exists) {
-      SQL(s"INSERT into SampleType(owner,name,parent,system) values($owner,'${escape(name)}',$parent,$system)").executeInsert()
+      SQL(s"INSERT into SampleType(owner,name,parent,system) values($owner,'${escapeName(name)}',$parent,$system)").executeInsert()
     }else{
       None
     }
@@ -438,7 +440,7 @@ case class SampleTypeAccess(owner: Id = 0) {
   }
 
   def getOrCreate(name: String, parent: Id)(implicit c: Connection): Option[Id] = {
-    val o_st = SQL(s"SELECT * from SampleType where owner=$owner and name='${escape(name)}'")()
+    val o_st = SQL(s"SELECT * from SampleType where owner=$owner and name='${escapeName(name)}'")()
       .map(SampleType.fromRow).headOption
     o_st match {
       case None => {
@@ -527,14 +529,14 @@ case class ExpRunAccess() {
   val dbname = "ExpRun"
 
   def create(eid: Id, name: String)(implicit c: Connection): Option[Id] = {
-    SQL(s"INSERT into ExpRun(name,experiment) values('${escape(name)}',$eid)").executeInsert()
+    SQL(s"INSERT into ExpRun(name,experiment) values('${escapeName(name)}',$eid)").executeInsert()
   }
 
   def setName(id: Id, name: String, owner: Option[Id] = None)(implicit c: Connection): Boolean = {
     if(name.trim == ""){
       false
     }else{
-      1 == SQL(s"UPDATE Experiment SET name='${escape(name)}' where id=$id").executeUpdate()
+      1 == SQL(s"UPDATE Experiment SET name='${escapeName(name)}' where id=$id").executeUpdate()
     }
   }
 
@@ -609,7 +611,7 @@ case class SampleAccess(owner: Id = 0) {
     if(name.trim == ""){
       None
     }else{
-      SQL(s"INSERT into Sample(owner,name,type) values($owner,'${escape(name)}',$tid)").executeInsert()
+      SQL(s"INSERT into Sample(owner,name,type) values($owner,'${escapeName(name)}',$tid)").executeInsert()
     }
   }
 
@@ -636,7 +638,7 @@ case class SampleAccess(owner: Id = 0) {
     if(name.trim == ""){
       false
     }else{
-      1 == SQL(s"UPDATE Sample SET name='${escape(name)}' where id=$id").executeUpdate()
+      1 == SQL(s"UPDATE Sample SET name='${escapeName(name)}' where id=$id").executeUpdate()
     }
   }
 
@@ -737,7 +739,7 @@ case class ProtocolStepAccess() {
     if(name.trim == ""){
       None
     }else{
-      val ps1: Option[Id] = SQL(s"INSERT into ProtocolStep(experiment,name) values($eid,'${escape(name)}')").executeInsert()
+      val ps1: Option[Id] = SQL(s"INSERT into ProtocolStep(experiment,name) values($eid,'${escapeName(name)}')").executeInsert()
       for(p <- params){
         val pp: Option[Id] = SQL(
           "INSERT into ProtocolStepParam(step,name,ptype,unit) " +
@@ -813,8 +815,9 @@ case class ProtocolStepAccess() {
   //@Transaction
   def delete(id: Id)(implicit c: Connection): Either[String,String] = {
     try{
-      val r = SQL(s"DELETE ProtocolSampleInStep where step=$id").executeUpdate()
-      val r2 = SQL(s"DELETE ProtocolStep where id=$id").executeUpdate()
+      val r1 = SQL(s"DELETE ProtocolStepParam where step=$id").executeUpdate()
+      val r2 = SQL(s"DELETE ProtocolSampleInStep where step=$id").executeUpdate()
+      val r3 = SQL(s"DELETE ProtocolStep where id=$id").executeUpdate()
       Right("")
     }catch{
       case e: JdbcSQLException =>
@@ -827,7 +830,7 @@ case class ProtocolStepAccess() {
   def createParam(step: Id, name: String,
                   typ: ParamType = Text, unit: String = "")(implicit c: Connection): Either[String,Id] = {
     val r: Option[Id] = SQL("INSERT into ProtocolStepParam(step,name,param_type,unit) "+
-      s"values ($step,'${escape(name)}','${escape(typ.toString)}','${escape(unit)}')").executeInsert()
+      s"values ($step,'${escapeName(name)}','${escape(typ.toString)}','${escape(unit)}')").executeInsert()
     r match {
       case Some(id) => Right(id)
       case _ => Left("DB error.")
@@ -837,7 +840,7 @@ case class ProtocolStepAccess() {
   def updateParam(param_id: Id, o_name: Option[String],
                   o_typ: Option[ParamType],
                   o_unit: Option[String])(implicit c: Connection): Either[String,ProtocolStepParam] = {
-    val s_name: Array[String] = o_name.map(name => Array(s"name='${escape(name)}'")).getOrElse(Array())
+    val s_name: Array[String] = o_name.map(name => Array(s"name='${escapeName(name)}'")).getOrElse(Array())
     val s_typ: Array[String] = o_typ.map(typ => Array(s"param_type='${show(typ)}'")).getOrElse(Array())
     val s_unit: Array[String] = o_unit.map(typ => Array(s"unit='${escape(typ)}'")).getOrElse(Array())
     val str = (s_name++s_typ++s_unit).mkString(",")
