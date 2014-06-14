@@ -265,10 +265,15 @@ object Experiment extends Controller {
   }
 
   def getExpRun(id: models.Database.Id) = Action {Ok("stub")}
+
   def deleteExpRun(id: Id) = Action {
     DB.withConnection {implicit c =>
-      SQL(s"DELETE from ExpRun where id=$id").execute()
-      Ok(Json.obj("success" -> true))
+      try {
+        SQL(s"DELETE from ExpRun where id=$id").execute()
+        Ok(Json.obj("success" -> true))
+      }catch {
+        case e: Throwable => Status(400)("Run not deleted: "+e.getMessage)
+      }
     }
   }
 
@@ -341,6 +346,25 @@ object Experiment extends Controller {
           Ok(Json.obj("success" -> false))
         }
       }
+  }
+
+  def createRunStep(run: Id) = Action(parse.tolerantFormUrlEncoded) {request =>
+    val params = request.body
+    val o_pstep: Option[Id] = params.get("pstep").flatMap(_.headOption).flatMap(toIdOpt)
+    val o_time_at: Option[Id] = params.get("time").flatMap(_.headOption).flatMap(toLongOpt)
+    o_pstep match {
+      case Some(pstep) => {
+        DB.withTransaction { implicit c =>
+          ExpRunAccess().createRunStep(run,pstep,o_time_at) match {
+            case Right(id) => {
+              Ok(Json.obj("success" -> true, "id" -> id, "data" -> RunStepAccess().get(id)))
+            }
+            case Left(err) => Status(400)(Json.obj("success" -> false, "message" -> err))
+          }
+        }
+      }
+      case _ => Status(400)("Param 'pstep' missing.")
+    }
   }
 
   def stub(id: Id) = Action {

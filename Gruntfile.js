@@ -27,6 +27,16 @@ module.exports = function(grunt) {
                 dest: 'public/javascripts/dist/<%= pkg.name %>.js'
             }
         },
+        htmlmin: {                                     // Task
+            dist: {                                      // Target
+                options: {                                 // Target options
+                    removeComments: true,
+                    collapseWhitespace: true
+                },
+                src: ["public/html/index.html"],
+                dest: 'public/html/dist/index.html'
+            }
+        },
         watch: {
             dev: {
                 files: jsfiles,
@@ -38,11 +48,13 @@ module.exports = function(grunt) {
     // Load the plugin that provides the "uglify" task.
     grunt.loadNpmTasks('grunt-contrib-uglify');
     grunt.loadNpmTasks('grunt-contrib-concat');
+    grunt.loadNpmTasks('grunt-contrib-uglify');
+    grunt.loadNpmTasks('grunt-contrib-htmlmin');
     grunt.loadNpmTasks('grunt-contrib-watch');
 
     grunt.file.delete("public/javascripts/dist")
 
     // Default task(s).
-    grunt.registerTask('default', ['uglify']);
+    grunt.registerTask('default', ['uglify','htmlmin']);
 
 };

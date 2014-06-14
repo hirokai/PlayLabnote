@@ -12,14 +12,14 @@ angular.module('d3', [])
             var scriptTag = $document[0].createElement('script');
             scriptTag.type = 'text/javascript';
             scriptTag.async = true;
-            scriptTag.src = 'http://d3js.org/d3.v3.min.js';
+            scriptTag.src = '//cdnjs.cloudflare.com/ajax/libs/d3/3.4.8/d3.min.js';
             scriptTag.onreadystatechange = function () {
                 if (this.readyState == 'complete') onScriptLoad();
             }
             scriptTag.onload = onScriptLoad;
 
             var s = $document[0].getElementsByTagName('body')[0];
-            s.appendChild(scriptTag);
+            s.appendChild(scriptTag); 
 
             return {
                 d3: function() { return d.promise; }
@@ -34,16 +34,7 @@ angular.module('myGraph',['d3'])
 
     }])
     .controller('PStepParamCtrl',['$scope','$http', function($scope, $http){
-        $scope.units = [
-            {value: 'text', name: 'Text', typ: 'text', unit: '-'},
-            {value: 'L', name: 'Volume/L', typ: 'volume', unit: 'L'},
-            {value: 'mL', name: 'Volume/mL', typ: 'volume', unit: 'mL'},
-            {value: 'uL', name: 'Volume/uL', typ: 'volume', unit: 'uL'},
-            {value: 'g', name: 'Mass/g', typ: 'mass', unit: 'g'},
-            {value: 'mg', name: 'Mass/mg', typ: 'mass', unit: 'mg'},
-            {value: 'ug', name: 'Mass/ug', typ: 'mass', unit: 'ug'},
-            {value: 'degC', name: 'Temperature/C', typ: 'temperature', unit: 'degC'}
-        ];
+        $scope.units = unitList;
 
         $scope.getParamUnitName = function(type_unit){
             return _.findWhere($scope.units,{value: type_unit}).name;
@@ -178,6 +169,7 @@ angular.module('myGraph',['d3'])
                     },true);
 
                     scope.$watch('shrinkNodes.val',function(nv,ov){
+                       if(nv == ov) return;
                        scope.render();
                     });
 
@@ -526,7 +518,6 @@ var getDefaultTranslate = function(layout){
 }
 
 var mkProtocolGraph = function(exp,shrink){
-    console.log(exp);
     var graph = new dagreD3.Digraph();
     _.map(exp.protocolSamples,function(ps){
         var l = (shrink && isIntermediate(ps)) ? ' ' : ps.name;

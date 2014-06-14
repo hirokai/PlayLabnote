@@ -1,4 +1,4 @@
-<div class="fade" ng-class="{in:loaded}" ng-controller='ExpDetailCtrl'>
+<div class="fade" ng-class="{in:loaded}">
     <div ng-class="row" >
         <div editable-name item='item'></div>
     </div>
@@ -26,7 +26,7 @@
         </section>
     </div>
     <div class='row' >
-        <section ng-show='showSection.protocol'>
+        <section ng-show='showSection.protocol'> <!-- ng-if does not work. The controller in this section is necessary to keep track of updates.-->
             <h4>Protocol</h4>
             <protocol-graph ng-if='loaded' exp='item' selection='selectedPSamples'></protocol-graph>
         </section>
@@ -55,7 +55,7 @@
                     <th></th>
                     <th>Name</th>
                     <th>Type</th>
-                    <th ng-repeat='run in item.runs' ng-click='clickRun(run,$event)'>{{run.name}}</th>
+                    <th ng-repeat='run in item.runs' ng-click='clickRun(run,$event)' class='run_header'>{{run.name}}</th>
                     <th>
                         <a class='btn btn-sm btn-default' ng-click='addRun(item)'>Add</a>
                     </th>
@@ -82,28 +82,41 @@
         </section>
     </div>
     <div class='row' >
-        <section ng-show='showSection.step'>
+        <section ng-show='showSection.step' ng-if='loaded'>
             <h3>Steps</h3>
             <table class="table" id="step_table">
                 <thead>
                 <tr>
                     <th>Name</th>
-                    <th></th>
-                    <th></th>
-                    <th></th>
-                    <th></th>
+                    <th ng-repeat='run in item.runs' class='run_header'>{{run.name}}({{run.id}})</th>
                 </tr>
                 </thead>
-                <tbody>
-                <tr ng-repeat='pstep in item.protocolSteps' ng-controller='ProtocolStepCtrl'>
-                    <td ng-class='{selected: isSelectedPStep(pstep)}' ng-click='clickPStep(pstep,$event)'>{{pstep.name}}</td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
+                <tbody ng-repeat='pstep in item.protocolSteps' ng-controller='ProtocolStepCtrl'>
+                <tr class='run_time'>
+                    <td ng-class='{selected: isSelectedPStep(pstep)}' ng-click='clickPStep(pstep,$event)'>{{pstep.name}}({{pstep.id}})</td>
+                    <td ng-repeat='run in item.runs' ng-class='{runsample_cell: true, runsample_stub: !runStep(run,pstep)}'>
+                        <div ng-if='runStep(run,pstep)'>
+                            Done: {{time(run,pstep)}}
+                        </div>
+                        <div ng-if='!runStep(run,pstep)'>
+                            <a class='btn btn-xs btn-primary' ng-click='addRunStep(run,pstep)'><span class='glyphicon-plus glyphicon'></span></a>
+                        </div>
+                    </td>
+                </tr>
+                <tr ng-repeat='param in pstep.params'>
+                    <td>{{param.name}} <small>({{unit(param)}})</small></td>
+                    <td ng-repeat='run in item.runs' ng-class='{runsample_cell: true, runsample_stub: !runStep(run,pstep)}'>
+                        <input class='paraminput' type='{{inputType(param)}}' step='{{inputType(param) =="number" ? "0.1" : ""}}' ng-model='runStepParam(run,pstep,param).value' ng-model-options="{ updateOn: 'blur' }"/>
+                    </td>
                 </tr>
                 </tbody>
             </table>
-            </section>
+            <pre class="json">{{item.runSteps|json}}</pre>
+            <pre class="json">{{messageHistory | json}}</pre>
+
+            <!--<div class="gridStyle" ng-grid="gridOptions"></div>-->
+            <!--<pre class="json">{{gridData|json}}</pre>-->
+
+        </section>
         </div>
 </div>

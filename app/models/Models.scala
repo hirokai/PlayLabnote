@@ -15,6 +15,7 @@ object Database {
   def escape(s: String) = s.replace("'","''")
   def escapeName(s: String) = if(!validName(s)) throw new IllegalArgumentException("Name is invalid.") else s.replace("'","''")
   def validName(s: String) = s.trim != ""
+  val sandboxUserId: Id = 0l
 }
 
 import Database.Id
@@ -28,7 +29,8 @@ case class Experiment (
                        protocolSteps: Array[ProtocolStep] = Array(),
                        runs: Array[ExpRun] = Array(),
                        note: String = "",
-                       runSamples: Map[(Id,Id),Sample] = Map()
+                       runSamples: Map[(Id,Id),Sample] = Map(),
+                       runSteps: Map[(Id,Id),RunStep] = Map()
                        )
 
 object Experiment {
@@ -69,6 +71,7 @@ case class ExperimentAccess(owner: Id = 0) {
       val steps_str = SQL(s"SELECT id from ProtocolStep where experiment=$id")().map(_[Id]("id")).mkString(",")
       SQL(s"DELETE from ProtocolSampleInStep where step in($steps_str)").executeUpdate()
       SQL(s"DELETE from ProtocolStepParam where step in($steps_str)").executeUpdate()
+      SQL(s"DELETE from RunStep where protocol_step in($steps_str)").executeUpdate()
       SQL(s"DELETE from ProtocolStep where experiment=$id").executeUpdate()
       SQL(s"DELETE from ProtocolSample where experiment=$id").executeUpdate()
       SQL(s"DELETE from ExpRun where experiment=$id").executeUpdate()
@@ -87,7 +90,8 @@ case class ExperimentAccess(owner: Id = 0) {
         val pss: Array[ProtocolSample] = getProtocolSamples(id)
         val steps: Array[ProtocolStep] = getProtocolSteps(id)
         val rss: Map[(Id,Id),Sample] = getRunSamplesKeyValue(id)
-        Some(exp.copy(runs = runs, protocolSamples = pss, protocolSteps = steps, runSamples = rss))
+        val rsteps: Map[(Id,Id),RunStep] = getRunStepsKeyValue(id)
+        Some(exp.copy(runs = runs, protocolSamples = pss, protocolSteps = steps, runSamples = rss, runSteps = rsteps))
       }
       case _ =>
         None
@@ -202,6 +206,16 @@ case class ExperimentAccess(owner: Id = 0) {
 
   def getRunSamples(eid: Id)(implicit c: Connection): Array[Sample] = {
     getRunSamplesKeyValue(eid).values.toArray
+  }
+
+  def getRunStepsKeyValue(eid: Id)(implicit c: Connection): Map[(Id,Id),RunStep] = {
+    val ids = SQL(s"SELECT id from ExpRun where experiment=$eid")().map(_[Id]("id"))
+    ids.map{run_id =>
+      val steps: Array[RunStep] = ExpRunAccess().getRunSteps(run_id)
+      steps.map{step =>
+        ((run_id,step.step),step)
+      }
+    }.flatten.toMap
   }
 
   def addRun(eid: Id, name: String)(implicit c: Connection): Option[Id] = {
@@ -568,6 +582,18 @@ case class ExpRunAccess() {
       false
     }
   }
+
+  def createRunStep(run: Id, pstep: Id, o_time: Option[Long])(implicit c: Connection): Either[String,Id] = {
+    val tk = o_time.map(_ => ",time_at").getOrElse("")
+    val tv = o_time.map(","+_.toString).getOrElse("")
+    val id: Option[Id] = SQL(s"INSERT into RunStep(run,protocol_step$tk) values($run,$pstep$tv)").executeInsert()
+    id.map(Right(_)).getOrElse(Left("Insertion failed."))
+  }
+
+  def getRunSteps(run_id: Id)(implicit c: Connection): Array[RunStep] = {
+    SQL(s"SELECT * from RunStep where run=$run_id")().map(RunStep.fromRow(full = true)).toArray
+  }
+
 }
 
 case class SampleData(id: Id, name: String, url: String, note: String, typ: String)
@@ -695,7 +721,6 @@ case class SampleAccess(owner: Id = 0) {
 }
 
 case class ProtocolStepParam(id: Id, name: String, typ: ParamType.ParamType, unit: Option[String])
-case class RunStepParam(id: Id, name: String, value: String, typ: String, unit: String)
 
 case class StepParamAccess(owner: Id) {
   val dbname = "StepParam"
@@ -854,25 +879,74 @@ case class ProtocolStepAccess() {
 
 }
 
-case class RunStep(id: Id, run: Id, step: Id, value: String, typ: String, unit: String)
+case class RunStep(id: Id, run: Id, step: Id, note: Option[String] = None,
+                   timeAt: Option[Long] = None, timeEnd: Option[Long] = None,
+                    params: Option[Array[RunStepParam]] = None)
 
-class RunStepAccess {
-  def create(rid: Id, pid: Id, time_from: Option[Int], time_to: Option[Int],
-             params: Array[RunStepParam] = Array())(implicit c: Connection): Option[Id] = {
-      val tf_k: String = time_from.map(_ => ",time_from").getOrElse("")
-      val tf_v: String = time_from.map(",%d".format(_)).getOrElse("")
-      val tt_k: String = time_from.map(_ => ",time_to").getOrElse("")
-      val tt_v: String = time_to.map(",%d".format(_)).getOrElse("")
-      val ps1: Option[Id] = SQL(s"INSERT into RunStep(run,protocol_step$tf_k$tt_k) " +
-        s"values($rid,$pid$tf_v$tt_v)").executeInsert()
-      for(p <- params){
-        val pp: Option[Id] = SQL(
-          "INSERT into ProtocolStepParam(step,name,param_type,unit) " +
-            s"values($ps1,'${escape(p.name)}','$p.typ','$p.unit')")
-          .executeInsert()
-      }
-      ps1
-    }
+case class RunStepParam(id: Id, protocolParam: Id, name: String, value: String, typ: ParamType.ParamType, unit: String)
+
+object RunStep {
+  def fromRow(full: Boolean)(row: Row)(implicit c: Connection): RunStep = {
+    val id = row[Id]("id")
+    val params: Option[Array[RunStepParam]] = if(full) Some(RunStepAccess().getParams(id)) else None
+    RunStep(
+      id = id,
+      run = row[Id]("run"),
+      step = row[Id]("protocol_step"),
+      note = row[Option[String]]("note"),
+      timeAt = row[Option[Long]]("time_at"),
+      timeEnd = row[Option[Long]]("time_end"),
+      params = params
+    )
+  }
+}
+
+case class RunStepAccess(owner: Option[Id] = None) {
+//  def create(rid: Id, pid: Id, time_at: Option[Int], time_to: Option[Int],
+//             params: Array[RunStepParam] = Array())(implicit c: Connection): Option[Id] = {
+//      val tf_k: String = time_at.map(_ => ",time_at").getOrElse("")
+//      val tf_v: String = time_at.map(",%d".format(_)).getOrElse("")
+//      val tt_k: String = time_to.map(_ => ",time_end").getOrElse("")
+//      val tt_v: String = time_to.map(",%d".format(_)).getOrElse("")
+//      val ps1: Option[Id] = SQL(s"INSERT into RunStep(run,protocol_step$tf_k$tt_k) " +
+//        s"values($rid,$pid$tf_v$tt_v)").executeInsert()
+//      for(p <- params){
+//        val pp: Option[Id] = SQL(
+//          "INSERT into ProtocolStepParam(step,name,param_type,unit) " +
+//            s"values($ps1,'${escape(p.name)}','$p.typ','$p.unit')")
+//          .executeInsert()
+//      }
+//      ps1
+//    }
+  val oid: Id = owner.getOrElse(Database.sandboxUserId)
+
+  def get(id: Id)(implicit c: Connection): Option[RunStep] = {
+    SQL(s"SELECT * from RunStep where id=$id")().map(RunStep.fromRow(full = true)).headOption
+  }
+
+  /*
+
+  SELECT * from RunStepParam INNER JOIN ProtocolStepParam
+      ON RunStepParam.param=ProtocolStepParam.id INNER JOIN ProtocolStep
+      ON ProtocolStepParam.step=ProtocolStep.id INNER JOIN Experiment
+      ON ProtocolStep.experiment=Experiment.id where RunStepParam.step=0 and Experiment.owner=0
+
+   */
+  def getParams(runStep: Id)(implicit c: Connection): Array[RunStepParam] = {
+    SQL("SELECT * from RunStepParam INNER JOIN ProtocolStepParam "+
+      "ON RunStepParam.param=ProtocolStepParam.id INNER JOIN ProtocolStep " +
+      "ON ProtocolStepParam.step=ProtocolStep.id INNER JOIN Experiment " +
+      s"ON ProtocolStep.experiment=Experiment.id where RunStepParam.step=$runStep and Experiment.owner=$oid")().map{row =>
+      RunStepParam(
+        id = row[Id]("RunStepParam.id"),
+        protocolParam = row[Id]("ProtocolStepParam,id"),
+        name = row[String]("ProtocolStepParam.name"),
+        value = row[String]("RunStepParam.value"),
+        typ = ParamType.read(row[String]("ProtocolStepParam.param_type")).getOrElse(ParamType.Text),
+        unit = row[Option[String]]("ProtocolStepParam.unit").getOrElse("")
+      )
+    }.toArray
+  }
 }
 
 
@@ -927,6 +1001,14 @@ object JsonWriter {
   implicit val implicitRunStepWrites = Json.writes[RunStep]
   implicit val implicitExpRunWrites = Json.writes[ExpRun]
 
+  implicit val implicitRunStepsWrites = new Writes[Map[(Id,Id),RunStep]] {
+    def writes(m: Map[(Id,Id),RunStep]): JsValue = {
+      Json.toJson(for((k,v) <- m) yield {
+        val kk = k._1.toString + ":" + k._2.toString
+        (kk -> v)
+      })
+    }
+  }
 
   implicit val implicitRunSamplesWrites = new Writes[Map[(Id,Id),Sample]] {
     def writes(m: Map[(Id,Id),Sample]): JsValue = {

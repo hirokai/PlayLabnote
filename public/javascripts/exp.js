@@ -72,11 +72,12 @@ expsApp.controller('ExpDetailCtrl', ['$scope', '$http', '$state', '$stateParams'
 
 //            $scope.selectedSampleType = null;
             $scope.selectedSamples = [];
+            console.log('initData()');
 
             var id = $stateParams.id;
             $http({url: '/exps/'+id+'.json', method: 'GET', params: {full: true}}).success(function(r){
                 console.log(r);
-                $scope.item = r;
+                $scope.item = createRunParams(r);
                 $scope.$watch('item.name', function (nv, ov) {
                     if($scope.loaded && nv && nv != ov)
                         ExpDataSvc.changeName($scope.item.id,nv, function(r){
@@ -134,6 +135,7 @@ expsApp.controller('ExpDetailCtrl', ['$scope', '$http', '$state', '$stateParams'
                 var res = r.data;
                 console.log(res);
                 if (res.success) {
+                    $scope.showMessage('Exp deleted.');
                     console.log($scope.exps);
                     var idx = findIndex(listViewSvc.exps.value, res.id);
                     listViewSvc.exps.value.splice(idx, 1);
@@ -144,6 +146,8 @@ expsApp.controller('ExpDetailCtrl', ['$scope', '$http', '$state', '$stateParams'
                     }else{
                         $state.go('exps');
                     }
+                }else{
+                    $scope.showMessage('Delete failed.','danger');
                 }
             });
         };
@@ -203,15 +207,21 @@ expsApp.controller('ExpDetailCtrl', ['$scope', '$http', '$state', '$stateParams'
 
         $scope.clickRun = function(run,$event) {
             if($event.altKey){
-                var url = '/runs/' + run.id;
-                $http({url: url, method: 'DELETE'}).success(function(r){
-                    var idx = findIndex($scope.item.runs,run.id);
-                    if(idx >= 0){
-                        $scope.item.runs.splice(idx,1);
-                    }
-                });
+                $scope.deleteRun(run.id);
             }
         };
+
+        $scope.deleteRun = function(rid) {
+            var url = '/runs/' + rid;
+            $http({url: url, method: 'DELETE'}).success(function(r){
+                var idx = findIndex($scope.item.runs,rid);
+                if(idx >= 0){
+                    $scope.item.runs.splice(idx,1);
+                }
+            }).error(function(r){
+                    $scope.showMessage('Run was not deleted: '+ r, 'danger')
+                });
+        }
 
         $scope.selectRunSample = function(s,adding){
             console.log(s);
@@ -288,6 +298,7 @@ expsApp.controller('ExpDetailCtrl', ['$scope', '$http', '$state', '$stateParams'
 
     }]);
 
+
 expsApp.controller('ProtocolSampleCtrl',['$scope','$http', function($scope, $http){
     $scope.isSelectedPSample = function(ps){
         return _.findWhere($scope.selectedPSamples,{id: ps.id});
@@ -297,14 +308,22 @@ expsApp.controller('ProtocolSampleCtrl',['$scope','$http', function($scope, $htt
         $scope.selectPSample(item,$event.metaKey);
     };
     $scope.deletePSample = function(id){
-        var url = '/psamples/' + id
+        var url = '/psamples/' + id;
+        if(_.filter(Object.keys($scope.item.runSamples),function(k){return k.split(':')[1] == ""+id}).length > 0){
+            $scope.showMessage('Cannot delete. run samples still exist.','warning');
+            return;
+        }
         $http({url: url, method: 'DELETE'}).success(function(r){
             console.log(r);
-            var idx = findIndex($scope.item.protocolSamples,id);
-            if(idx >= 0){
-                $scope.item.protocolSamples.splice(idx,1);
+            if(r.success){
+                var idx = findIndex($scope.item.protocolSamples,id);
+                if(idx >= 0){
+                    $scope.item.protocolSamples.splice(idx,1);
+                }
+                $scope.showMessage('Sample deleted.')
+            }else{
+                $scope.showMessage('Could not delete sample: '+ r.message,'danger');
             }
-            $scope.showMessage('Sample deleted.')
         }).error(function(r){
                 console.log(r);
                 $scope.showMessage('Could not delete sample: '+ r.message,'danger');
@@ -335,13 +354,76 @@ expsApp.controller('ProtocolSampleCtrl',['$scope','$http', function($scope, $htt
     },true);
 }]);
 
-expsApp.controller('ProtocolStepCtrl',['$scope',function($scope){
+expsApp.controller('ProtocolStepCtrl',['$scope', '$http', function($scope, $http){
     $scope.isSelectedPStep = function(pstep){
         return _.findWhere($scope.selectedPSteps,{id: pstep.id});
     };
     $scope.clickPStep = function(item,$event){
         $scope.selectPStep(item,$event.metaKey);
     }
+    var init = function(){
+        $scope.runSteps = {};
+        var pid = $scope.pstep.id;
+        _.map($scope.item.runs,function(run){
+            var k = run.id + ':' + pid;
+            $scope.runSteps[run.id] = $scope.item.runSteps[k];
+        });
+        console.log($scope.runSteps);
+    }
+    init();
+
+    $scope.runs = $scope.item.runs;
+
+    $scope.runStep = function(run,pstep) {
+        var k = run.id + ':' + pstep.id;
+//        console.log(k,$scope.item.runSteps[k]);
+        return $scope.item.runSteps[k];
+    };
+
+    $scope.addRunStep = function(run,pstep) {
+        var psid = pstep.id;
+        $http({url: '/runs/'+run.id+'/steps', method: 'POST', data: $.param({pstep: psid, time: moment().valueOf()})}).success(function(r){
+            console.log(r);
+            var k = run.id + ':' + pstep.id;
+            $scope.item.runSteps[k] = r.data;
+        });
+    };
+
+    $scope.time = function(run,pstep){
+        var step = $scope.runStep(run,pstep);
+        return step ? moment(step.timeAt).format("h:m") : '';
+    };
+
+    $scope.unit = function(param){
+        //       console.log(param,unitList);
+        var u = param.unit == "" ? '-' : param.unit;
+        var p = _.findWhere(unitList, {typ: param.typ, unit: u});
+        return p ? p.name : '';
+    }
+
+    $scope.runStepParam = function(run,pstep,param){
+        var runstep = $scope.runStep(run,pstep);
+        if(runstep){
+            return _.findWhere(runstep.params,{protocolParam: param.id});
+        }else{
+            return null;
+        }
+        //    console.log(runstep,param);
+    };
+
+    $scope.inputType = function(param){
+//        console.log(param);
+        if(param.typ == 'volume'){
+            return 'number';
+        }else{
+            return 'text';
+        }
+    }
+
+    $scope.$watch('',function(){
+
+    },true);
+
 }]);
 
 expsApp.controller('RunSampleCtrl',['$scope','$http', '$timeout', 'listViewSvc', function($scope,$http,$timeout,listViewSvc){
@@ -432,3 +514,23 @@ expsApp.controller('RunSampleCtrl',['$scope','$http', '$timeout', 'listViewSvc',
             });
     };
 }]);
+
+expsApp.controller('RunStepCtrl',['$scope','$http', 'listViewSvc', function($scope, $http, listViewSvc){
+
+
+
+}]);
+
+
+function createRunParams(exp){
+    _.map(exp.runSteps,function(step,k){
+        var psid = parseInt(k.split(':')[1]);
+        var params = _.findWhere(exp.protocolSteps,{id: psid}).params;
+        _.map(params,function(param){
+            if(!_.findWhere(step.params,{id: param.id})){
+                step.params.push({protocolParam: param.id, value: null});
+            }
+        })
+    });
+    return exp;
+}

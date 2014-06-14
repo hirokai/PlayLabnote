@@ -1,4 +1,4 @@
-var expsApp = angular.module('expsApp', ['editableTitleModule', 'ui.bootstrap', 'ui.tree','ngResource','ui.router','myGraph']);
+var expsApp = angular.module('expsApp', ['editableTitleModule', 'ui.bootstrap', 'ui.tree', 'ui.router','myGraph']);
 
 expsApp.factory('helper',function(){
     return {
@@ -127,3 +127,15 @@ guid = function () {
 };
 
 _.mixin(_.str.exports());
+
+
+unitList = [
+    {value: 'text', name: 'Text', typ: 'text', unit: '-'},
+    {value: 'L', name: 'Volume/L', typ: 'volume', unit: 'L'},
+    {value: 'mL', name: 'Volume/mL', typ: 'volume', unit: 'mL'},
+    {value: 'uL', name: 'Volume/uL', typ: 'volume', unit: 'uL'},
+    {value: 'g', name: 'Mass/g', typ: 'mass', unit: 'g'},
+    {value: 'mg', name: 'Mass/mg', typ: 'mass', unit: 'mg'},
+    {value: 'ug', name: 'Mass/ug', typ: 'mass', unit: 'ug'},
+    {value: 'degC', name: 'Temperature/C', typ: 'temperature', unit: 'degC'}
+];

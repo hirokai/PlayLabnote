@@ -123,7 +123,6 @@ svg#protocol_graph {
 }
 
 #protocol_graph_wrapper {
-//    background: #fff4f4;
     border: 1px #636a77 solid;
     -webkit-box-shadow: 10px 10px 30px -10px rgba(0,0,0,0.75);
     -moz-box-shadow: 10px 10px 30px -10px rgba(0,0,0,0.75);
@@ -206,4 +205,47 @@ marker {
 
 #sample_table {
     font-size: 12px;
+}
+
+.gridStyle {
+    border: 1px solid rgb(212,212,212);
+    width: 100%;
+    height: 500px;
+}
+
+td {
+    padding: 0;
+}
+
+td.runsample_cell {
+    padding: 0 ! important;
+
+}
+
+td.runsample_cell div {
+    padding: 0 ! important;
+    width: 100%;
+    height: 100%;
+}
+
+.runsample_stub div {
+   visibility: hidden;
+}
+
+.runsample_stub:hover div {
+    visibility: visible ! important;
+    background: pink;
+}
+
+th.run_header {
+    cursor: pointer;
+}
+
+.paraminput {
+    width: 80px;
+    border: none;
+}
+
+.paraminput:hover {
+    border: 1px gray dotted;
 }

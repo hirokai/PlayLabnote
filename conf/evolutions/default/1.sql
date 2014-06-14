@@ -109,17 +109,17 @@ CREATE TABLE RunStep (
   id bigint(20) NOT NULL AUTO_INCREMENT,
   run bigint(20) NOT NULL REFERENCES ExpRun(id),
   protocol_step bigint(20) NOT NULL REFERENCES ProtocolStep(id),
-  time_from bigint(32),
-  time_to bigint(32),
+  note text,
+  time_at bigint(32),
+  time_end bigint(32),
   PRIMARY KEY (id)
 );
 
 CREATE TABLE RunStepParam (
   id bigint(20) NOT NULL AUTO_INCREMENT,
   step bigint(20) NOT NULL REFERENCES RunStep(id),
-  name text NOT NULL,
-  ptype text,
-  unit text,
+  param bigint(20) NOT NULL REFERENCES ProtocolStep(id),
+  value text NOT NULL,
   PRIMARY KEY (id)
 );
 

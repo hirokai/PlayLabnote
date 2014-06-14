@@ -3,6 +3,7 @@
     <head>
         <link rel="stylesheet" media="screen" href="/public/libs/bootstrap/dist/css/bootstrap.min.css">
         <link rel="stylesheet" media="screen" href="/public/libs/angular-ui-tree/dist/angular-ui-tree.min.css">
+        <link rel="stylesheet" media="screen" href="/public/libs/ng-grid/ng-grid.min.css">
 
             <!-- My own stylesheets -->
         <link rel="stylesheet" media="screen" href="/public/stylesheets/common.css">
@@ -24,7 +25,6 @@
                 <a class='btn btn-sm btn-default' href='#/types'>Type</a>
                 <div ui-view='list'></div>
             </div>
-            @*<div  ng-class='"row " + (showList.value ? "col-md-8 rightPane" : "col-md-11")'>*@
             <div ui-view='detail' ng-class="{'col-md-8': showList.value, 'rightPane': showList.value, 'col-md-12': !showList.value}"></div>
         </div>
         <div id='alertdiv' ng-show='alert.shown'>

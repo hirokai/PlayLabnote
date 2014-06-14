@@ -1,7 +1,0 @@
-<div>
-    <h3>Inspector</h3>
-    <input type="text" ng-model='sampleInfo.name' ng-disabled='!sampleInfo.id' />
-    {{selectedType.id}}
-    <select ng-model='sampleType.id' ng-change='changeType(sampleType.id)' ng-options='type.name for type in allTypes'
-            ng-disabled='!sampleInfo.id'></select>
-</div>

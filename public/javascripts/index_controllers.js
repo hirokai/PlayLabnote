@@ -28,7 +28,7 @@ expsApp.service('listViewSvc', ['$http', function ($http) {
         types: [],
         showSection: {note: true, sample: true, protocol: true},
         shrinkNodes: {val: false},
-        expViewMode: {val: 'define'},
+        expViewMode: {val: 'record'},
         newSubItem: function (scope) {
             console.log(scope);
             var nodeData = scope.$modelValue;
@@ -130,7 +130,9 @@ expsApp.controller('entireCtrl',
         }, true);
 
         $scope.alert = listViewSvc.alert;
+        $scope.messageHistory = [];
         $scope.showMessage = function(msg,type) {
+            $scope.messageHistory.push({message: msg, type: type});
             $scope.alert.shown = true;
             $scope.alert.type = type || "success"
             $scope.alert.msg = msg;

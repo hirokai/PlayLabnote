@@ -5,13 +5,14 @@ import play.api.mvc._
 
 object Application extends Controller {
 
-  def index = Action {
-    Ok(views.html.index())
-  }
+
+
 }
 
 object Util {
-  def toIdOpt(s: String): Option[models.Database.Id] = {
+  def toIdOpt(s: String): Option[models.Database.Id] = toLongOpt(s)
+
+  def toLongOpt(s: String): Option[models.Database.Id] = {
     try{
       Some(s.toLong)
     }catch {

@@ -32,11 +32,11 @@ pre.json {
 
 .fade {
     opacity: 0;
-    -webkit-transition: opacity 0.25s ease-in;
-    -moz-transition: opacity 0.25s ease-in;
-    -o-transition: opacity 0.25s ease-in;
-    -ms-transition: opacity 0.25s ease-in;
-    transition: opacity 0.25s ease-in;
+    -webkit-transition: opacity 0.15s ease-in;
+    -moz-transition: opacity 0.15s ease-in;
+    -o-transition: opacity 0.15s ease-in;
+    -ms-transition: opacity 0.15s ease-in;
+    transition: opacity 0.15s ease-in;
 }
 .fade.in{
     opacity: 1;
@@ -72,4 +72,14 @@ ul.flatlist li:after {
 
 ul.flatlist li:last-child:after {
     content: "";
+}
+
+input.ng-invalid {
+    border-color: red;
+    outline-color: red;
+}
+
+input.ng-dirty {
+    border-color: orange;
+    outline-color: orange;
 }
