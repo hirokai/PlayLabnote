@@ -1,6 +1,9 @@
 module.exports = function(grunt) {
 
     var jsfiles = ['public/javascripts/*.js', '!public/javascripts/index_module.js', '!public/javascripts/dagre-d3-custom.js'];
+    var htmlfiles = ['public/html/*.html','public/html/partials/*.html'];
+
+    var jshtml = jsfiles.concat(htmlfiles);
 
     // Project configuration.
     grunt.initConfig({
@@ -37,10 +40,20 @@ module.exports = function(grunt) {
                 dest: 'public/html/dist/index.html'
             }
         },
+        ngtemplates:  {
+            app:        {
+                src:      'public/html/partials/**.html',
+                dest:     'public/javascripts/dist/templates.js',
+                options:    {
+                    module:   'expsApp',
+                    htmlmin:  { collapseWhitespace: true, collapseBooleanAttributes: true }
+                }
+            }
+        },
         watch: {
             dev: {
-                files: jsfiles,
-                tasks: ['uglify']
+                files: jshtml,
+                tasks: ['uglify','htmlmin','ngtemplates']
             }
         }
     });
@@ -51,10 +64,9 @@ module.exports = function(grunt) {
     grunt.loadNpmTasks('grunt-contrib-uglify');
     grunt.loadNpmTasks('grunt-contrib-htmlmin');
     grunt.loadNpmTasks('grunt-contrib-watch');
-
-    grunt.file.delete("public/javascripts/dist")
+    grunt.loadNpmTasks('grunt-angular-templates');
 
     // Default task(s).
-    grunt.registerTask('default', ['uglify','htmlmin']);
+    grunt.registerTask('default', ['uglify','htmlmin','ngtemplates']);
 
 };

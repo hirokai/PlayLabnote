@@ -39,6 +39,9 @@ DELETE        /runsamples/:rid/:pid                     controllers.Experiment.d
 GET           /runs/$id<[0-9]+>                         controllers.Experiment.getExpRun(id: models.Database.Id)
 DELETE        /runs/$id<[0-9]+>                         controllers.Experiment.deleteExpRun(id: models.Database.Id)
 POST          /runs/$id<[0-9]+>/steps                   controllers.Experiment.createRunStep(id: models.Database.Id)
+DELETE        /steps/$id<[0-9]+>                        controllers.Experiment.deleteRunStep(id: models.Database.Id)
+POST          /pparams/$pid<[0-9]+>/run/$rid<[0-9]+>    controllers.Experiment.createRunStepParam(pid: models.Database.Id, rid: models.Database.Id)
+PUT           /pparams/$pid<[0-9]+>/run/$rid<[0-9]+>    controllers.Experiment.updateRunStepParam(pid: models.Database.Id, rid: models.Database.Id)
 
 PUT           /psamples/$id<[0-9]+>                     controllers.Experiment.updateProtocolSample(id: models.Database.Id)
 DELETE        /psamples/$id<[0-9]+>                     controllers.Experiment.deleteProtocolSample(id: models.Database.Id)

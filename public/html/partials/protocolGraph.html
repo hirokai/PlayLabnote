@@ -39,13 +39,6 @@
             <div style='margin: 8px 0;'>
                 <a class="btn btn-xs btn-default" ng-click='selectNone()'>Select none</a>
                 <a class="btn btn-xs btn-default" ng-click='resetZoom()'>Reset zoom</a>
-                <span>Selection:</span>
-                <a class="btn btn-xs btn-default" ng-click='selectPrev()'>
-                    <span class="glyphicon glyphicon-backward" style='margin-left: 10px;margin-right: 14px;'></span>
-                </a>
-                <a class="btn btn-xs btn-default" ng-click='selectNext()'>
-                    <span class="glyphicon glyphicon-forward" style='margin-left: 14px;margin-right: 12px;'></span>
-                </a>
             </div>
             <div style='margin: 8px 0;'>
                 <input type="checkbox" id='shrink_nodes' ng-model='shrinkNodes.val'/>
@@ -63,6 +56,12 @@
     <div class='col-md-4'>
 
         <span>
+                            <a class="btn btn-xs btn-default" ng-click='selectPrev()'>
+                                <span class="glyphicon glyphicon-backward" style='margin-left: 10px;margin-right: 14px;'></span>
+                            </a>
+                <a class="btn btn-xs btn-default" ng-click='selectNext()'>
+                    <span class="glyphicon glyphicon-forward" style='margin-left: 14px;margin-right: 12px;'></span>
+                </a>
             <div ng-show='!selectedEntities.length'>
                 (Not selected)
             </div>
@@ -100,7 +99,7 @@
                     <table class="table">
                         <thead>
                         <tr>
-                            <th><a ng-if='editingParams' class='btn btn-xs btn-default' ng-click='addParam()'><span
+                            <th><a ng-if='editingParams' class='btn btn-xs btn-default' ng-click='addParam(selectedPSteps[0])'><span
                                     class='glyphicon glyphicon-plus'></span></a></th>
                             <th>Name</th>
                             <th>Type/Unit</th>

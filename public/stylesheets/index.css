@@ -242,10 +242,15 @@ th.run_header {
 }
 
 .paraminput {
-    width: 80px;
-    border: none;
+    width: 100%;
+    max-width: 200px;
 }
 
-.paraminput:hover {
-    border: 1px gray dotted;
+
+.paraminput {
+    border: 1px #d1d1d1 dotted;
+}
+
+.title_col {
+    width: 150px;
 }

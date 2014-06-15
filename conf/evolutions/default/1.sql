@@ -118,9 +118,10 @@ CREATE TABLE RunStep (
 CREATE TABLE RunStepParam (
   id bigint(20) NOT NULL AUTO_INCREMENT,
   step bigint(20) NOT NULL REFERENCES RunStep(id),
-  param bigint(20) NOT NULL REFERENCES ProtocolStep(id),
+  param bigint(20) NOT NULL REFERENCES ProtocolStepParam(id),
   value text NOT NULL,
-  PRIMARY KEY (id)
+  PRIMARY KEY (id),
+  UNIQUE (step,param)
 );
 
 # --- !Downs

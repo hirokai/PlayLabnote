@@ -63,21 +63,17 @@ expsApp.controller('ExpDetailCtrl', ['$scope', '$http', '$state', '$stateParams'
         var initData = function(){
             $scope.pageTitle = listViewSvc.pageTitle;
             $scope.selectedItem = listViewSvc.selectedItem;
-//            $scope.selectedType = 0;
-//            $scope.selectedPS = {};
-            $scope.selectedSample = {};
-//            $scope.selectedPSampleType = null;
+
             $scope.selectedPSamples = [];
             $scope.selectedPSteps = [];
 
-//            $scope.selectedSampleType = null;
             $scope.selectedSamples = [];
             console.log('initData()');
 
             var id = $stateParams.id;
             $http({url: '/exps/'+id+'.json', method: 'GET', params: {full: true}}).success(function(r){
-                console.log(r);
-                $scope.item = createRunParams(r);
+                $scope.item = prepareExpData(r);
+                console.log($scope.item);
                 $scope.$watch('item.name', function (nv, ov) {
                     if($scope.loaded && nv && nv != ov)
                         ExpDataSvc.changeName($scope.item.id,nv, function(r){
@@ -159,7 +155,20 @@ expsApp.controller('ExpDetailCtrl', ['$scope', '$http', '$state', '$stateParams'
             var typ = 0;
             $http({url: url, method: 'POST',data: $.param({name: name, type: typ})}).success(function(r){
                 $scope.item.protocolSamples.push(r.data);
+                $scope.showMessage('Sample added.')
             });
+        };
+
+        $scope.addParam = function(pstep){
+            var id = pstep.id;
+            var name = 'Param ' + (pstep.params.length+1);
+            $http({url: '/psteps/'+id+'/params', method: 'POST', data: $.param({name: name, type: 'text'})}).success(function(r){
+                console.log(r);
+                pstep.params.push(r.data);
+                $scope.showMessage("Param added.");
+            }).error(function(r){
+                    console.log(r);
+                });
         };
 
         var mkName = function(vs){
@@ -362,36 +371,38 @@ expsApp.controller('ProtocolStepCtrl',['$scope', '$http', function($scope, $http
         $scope.selectPStep(item,$event.metaKey);
     }
     var init = function(){
-        $scope.runSteps = {};
-        var pid = $scope.pstep.id;
-        _.map($scope.item.runs,function(run){
-            var k = run.id + ':' + pid;
-            $scope.runSteps[run.id] = $scope.item.runSteps[k];
-        });
-        console.log($scope.runSteps);
     }
     init();
 
     $scope.runs = $scope.item.runs;
 
     $scope.runStep = function(run,pstep) {
-        var k = run.id + ':' + pstep.id;
-//        console.log(k,$scope.item.runSteps[k]);
-        return $scope.item.runSteps[k];
+        var obj = $scope.item.runSteps[run.id];
+        return obj ? obj[pstep.id] : null;
     };
 
     $scope.addRunStep = function(run,pstep) {
         var psid = pstep.id;
         $http({url: '/runs/'+run.id+'/steps', method: 'POST', data: $.param({pstep: psid, time: moment().valueOf()})}).success(function(r){
             console.log(r);
-            var k = run.id + ':' + pstep.id;
-            $scope.item.runSteps[k] = r.data;
+            $scope.item.runSteps[run.id][pstep.id] = createRunParams(r.data,pstep.id,$scope.item.protocolSteps);
+            console.log($scope.item);
         });
     };
 
     $scope.time = function(run,pstep){
         var step = $scope.runStep(run,pstep);
-        return step ? moment(step.timeAt).format("h:m") : '';
+        return step ? moment(step.timeAt).format("H:mm") : '';
+    };
+
+    $scope.clickTime = function(run,pstep,$event){
+        if($event.altKey) {
+            $scope.removeTime(run,pstep);
+        }
+    }
+
+    $scope.removeTime = function(run,pstep){
+
     };
 
     $scope.unit = function(param){
@@ -419,10 +430,55 @@ expsApp.controller('ProtocolStepCtrl',['$scope', '$http', function($scope, $http
             return 'text';
         }
     }
+//
+//    $scope.$watch('item.runSteps',function(nv,ov){
+//        console.log(nv,ov);
+//    },true);
+//
+//    $scope.$watch('item.runs',function(nv,ov){
+//        console.log(nv,ov);
+//    });
 
-    $scope.$watch('',function(){
+    $scope.clickRunStep = function(run,pstep,$event){
+        var step = $scope.runStep(run,pstep);
+        if($event.altKey){
+            $scope.deleteRunStep(step);
+        }
+    };
 
-    },true);
+    $scope.deleteRunStep = function(step){
+       $http({url: '/steps/'+step.id, method: 'DELETE'}).success(function(r){
+           var k = step.run + ':' + step.step;
+           delete $scope.item.runSteps[k];
+
+           $scope.showMessage('Step recorded was deleted.');
+           console.log(r);
+       }).error(function(r){
+               $scope.showMessage('Step recorded was not deleted.','danger');
+           });
+    };
+
+
+    $scope.addParamInTable = function(pstep,$event) {
+        $scope.addParam(pstep);
+      $event.stopPropagation();
+    };
+
+    $scope.deleteParam = function(param){
+        console.log(param);
+        $http({url: '/pparams/'+param.id, method: 'DELETE',data: $.param({force: true})}).success(function(r){
+            console.log(r);
+            var idx = findIndex($scope.pstep.params,param.id);
+            if(idx >= 0){
+                $scope.pstep.params.splice(idx,1);
+            }
+            $scope.showMessage('Param deleted.');
+
+        }).error(function(r){
+                console.log(r);
+
+            });
+    };
 
 }]);
 
@@ -489,7 +545,7 @@ expsApp.controller('RunSampleCtrl',['$scope','$http', '$timeout', 'listViewSvc',
     $scope.selectedRunSample = function(run,psample){
         var k = run.id + ':' + psample.id;
         var sample = $scope.item.runSamples[k];
-        var ss = $scope.selectedSample;
+        var ss = $scope.selectedSamples[0];
         return ss && sample && (ss.id == sample.id);
     };
 
@@ -515,22 +571,65 @@ expsApp.controller('RunSampleCtrl',['$scope','$http', '$timeout', 'listViewSvc',
     };
 }]);
 
-expsApp.controller('RunStepCtrl',['$scope','$http', 'listViewSvc', function($scope, $http, listViewSvc){
+expsApp.controller('ParamCtrl',['$scope','$http',function($scope, $http){
 
+   $scope.runparam = $scope.runStepParam($scope.run,$scope.pstep,$scope.param);
 
+   $scope.$watchGroup(['run','pstep','param'],function(nv,ov){
+       $scope.runparam = $scope.runStepParam($scope.run,$scope.pstep,$scope.param);
+    //   console.log(nv,ov);
+   });
 
+    $scope.$watch('runparam',function(nv,ov){
+        if(!nv || !ov || nv == ov) return;
+        console.log(nv,ov);
+        if(ov.value == null){
+            $http({url: '/pparams/'+nv.protocolParam+'/run/'+$scope.run.id,
+                method: 'POST', data: $.param({value: nv.value})}).success(function(r){
+                console.log(r);
+            }).error(function(r){
+                    $scope.showMessage('Error: '+r,'danger');
+                    console.log(r);
+                });
+        }else{
+            $http({url: '/pparams/'+nv.protocolParam+'/run/'+$scope.run.id,
+                method: 'PUT', data: $.param({value: nv.value})}).success(function(r){
+                    console.log(r);
+                }).error(function(r){
+                    $scope.showMessage('Error: '+r,'danger');
+                    console.log(r);
+                });        }
+    },true);
 }]);
 
-
-function createRunParams(exp){
+function prepareExpData(exp){
     _.map(exp.runSteps,function(step,k){
-        var psid = parseInt(k.split(':')[1]);
-        var params = _.findWhere(exp.protocolSteps,{id: psid}).params;
-        _.map(params,function(param){
-            if(!_.findWhere(step.params,{id: param.id})){
-                step.params.push({protocolParam: param.id, value: null});
-            }
-        })
+        createRunParams(step,parseInt(k.split(':')[1]),exp.protocolSteps);
     });
+    var keys = _.zip.apply(null,_.map(Object.keys(exp.runSteps),function(k){return k.split(':');}));
+    var runs = _.map(exp.runs,function(run){return run.id;});
+    var psteps = _.map(exp.protocolSteps,function(pstep){return pstep.id;});
+    var res = {};
+    _.map(runs,function(run){
+        var obj = {};
+        _.map(psteps,function(pstep){
+            var o = exp.runSteps[run + ':' + pstep];
+            if(o)
+                obj[pstep] = o;
+        });
+        res[run] = obj;
+    });
+    exp.runSteps = res;
     return exp;
+}
+
+function createRunParams(step,psid,protocolSteps){
+    var params = _.findWhere(protocolSteps,{id: psid}).params;
+//    console.log(params);
+    _.map(params,function(param){
+        if(!_.findWhere(step.params,{id: param.id})){
+            step.params.push({protocolParam: param.id, value: null});
+        }
+    });
+    return step;
 }

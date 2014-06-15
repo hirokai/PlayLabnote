@@ -74,12 +74,16 @@ ul.flatlist li:last-child:after {
     content: "";
 }
 
-input.ng-invalid {
-    border-color: red;
-    outline-color: red;
-}
+/*input.ng-invalid {*/
+    /*border-color: red;*/
+    /*outline-color: red;*/
+/*}*/
 
-input.ng-dirty {
-    border-color: orange;
-    outline-color: orange;
+/*input.ng-dirty {*/
+    /*border-color: orange;*/
+    /*outline-color: orange;*/
+/*}*/
+
+input[disabled] {
+    background: #dadada;
 }

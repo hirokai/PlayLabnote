@@ -54,6 +54,7 @@ expsApp.config(['$stateProvider', '$urlRouterProvider', function($stateProvider,
                     controller: 'ExpListCtrl'
                 },
                 detail: {
+//                    template: $templateCache.get('public/html/partials/exp_detail.html'),
                     templateUrl: "/public/html/partials/exp_detail.html",
                     controller: 'ExpDetailCtrl'
                 }

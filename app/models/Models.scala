@@ -829,17 +829,37 @@ case class ProtocolStepAccess() {
     }.toArray
   }
 
-  def deleteParam(param_id: Id)(implicit c: Connection): Either[String,String] = {
-    if(1 == SQL(s"DELETE ProtocolStepParam where id=$param_id").executeUpdate()){
-      Right("done")
-    }else{
-      Left("Deletion failed.")
+  def deleteParam(param_id: Id, force: Boolean = false)(implicit c: Connection): Either[String,String] = {
+    try{
+      val runparams: Array[Id] = SQL(s"SELECT id from RunStepParam where param=$param_id")().map(_[Id]("id")).toArray
+      if(runparams.length > 0){
+        if(force){
+          SQL(s"DELETE RunStepParam where param=$param_id").executeUpdate()
+        }else{
+          return Left("There are still run params.")
+        }
+      }
+      val r3 = SQL(s"DELETE ProtocolStepParam where id=$param_id").executeUpdate()
+      Right("")
+    }catch{
+      case e: JdbcSQLException =>
+        Left(e.getMessage)
     }
   }
 
   //@Transaction
-  def delete(id: Id)(implicit c: Connection): Either[String,String] = {
+  def delete(id: Id, force: Boolean = false)(implicit c: Connection): Either[String,String] = {
     try{
+      val runsteps: Array[Id] = SQL(s"SELECT id RunStep where protocol_step=$id")().map(_[Id]("id")).toArray
+      if(runsteps.length > 0){
+        if(force){
+          val str = runsteps.mkString(",")
+          SQL(s"DELETE RunStepParam where protocol_step in ($str)").executeUpdate()
+          SQL(s"DELETE RunStep where protocol_step=$id").executeUpdate()
+        }else{
+          return Left("There are still run steps.")
+        }
+      }
       val r1 = SQL(s"DELETE ProtocolStepParam where step=$id").executeUpdate()
       val r2 = SQL(s"DELETE ProtocolSampleInStep where step=$id").executeUpdate()
       val r3 = SQL(s"DELETE ProtocolStep where id=$id").executeUpdate()
@@ -854,11 +874,16 @@ case class ProtocolStepAccess() {
 
   def createParam(step: Id, name: String,
                   typ: ParamType = Text, unit: String = "")(implicit c: Connection): Either[String,Id] = {
-    val r: Option[Id] = SQL("INSERT into ProtocolStepParam(step,name,param_type,unit) "+
-      s"values ($step,'${escapeName(name)}','${escape(typ.toString)}','${escape(unit)}')").executeInsert()
-    r match {
-      case Some(id) => Right(id)
-      case _ => Left("DB error.")
+    try{
+      val r: Option[Id] = SQL("INSERT into ProtocolStepParam(step,name,param_type,unit) "+
+        s"values ($step,'${escapeName(name)}','${escape(typ.toString)}','${escape(unit)}')").executeInsert()
+      r match {
+        case Some(id) => Right(id)
+        case _ => Left("DB error.")
+      }
+    }catch{
+      case e: Throwable =>
+        Left(e.getMessage)
     }
   }
 
@@ -924,6 +949,54 @@ case class RunStepAccess(owner: Option[Id] = None) {
     SQL(s"SELECT * from RunStep where id=$id")().map(RunStep.fromRow(full = true)).headOption
   }
 
+  //@Transaction
+  def delete(id: Id)(implicit c: Connection): Either[String,String] = {
+    try{
+      SQL(s"DELETE RunStepParam where step=$id").executeUpdate()
+      SQL(s"DELETE RunStep where id=$id").executeUpdate()
+      Right("Done")
+    }catch{
+      case e: Throwable => {
+        c.rollback()
+        Left("DB error: "+e.getMessage)
+      }
+    }
+  }
+
+  def createParam(rid: Id, pid: Id, value: String)(implicit c: Connection): Either[String,Id] = {
+    val step = SQL("SELECT RunStep.id from RunStep INNER JOIN ProtocolStep ON RunStep.protocol_step=ProtocolStep.id " +
+      s"INNER JOIN ProtocolStepParam ON ProtocolStep.id=ProtocolStepParam.step where RunStep.run=$rid and ProtocolStepParam.id=$pid"
+    )().map(_[Id]("RunStep.id")).headOption
+    step match {
+      case Some(s) =>
+        try {
+          val id: Option[Id] = SQL(s"INSERT into RunStepParam(step,param,value) values($s,$pid,'${escape(value)}')").executeInsert()
+          id match {
+            case Some(i) => Right(i)
+            case _ => Left("DB error.")
+          }
+        }catch {
+          case e: Throwable => Left(e.getMessage)
+        }
+      case _ => Left("DB error.")
+    }
+  }
+
+  def updateParam(rid: Id, pid: Id, value: String)(implicit c: Connection): Either[String,String] = {
+    val step: Option[Id] = SQL("SELECT RunStep.id from RunStep INNER JOIN ProtocolStep ON RunStep.protocol_step=ProtocolStep.id " +
+      s"INNER JOIN ProtocolStepParam ON ProtocolStep.id=ProtocolStepParam.step where ProtocolStepParam.id=$pid"
+    )().map(_[Id]("RunStep.id")).headOption
+    step match {
+      case Some(s) =>
+        if(1 == SQL(s"UPDATE RunStepParam SET value='${escape(value)}' where step=$s and param=$pid").executeUpdate()){
+          Right("Done")
+        }else{
+          Left("DB error")
+        }
+      case _ => Left("DB error.")
+    }
+  }
+
   /*
 
   SELECT * from RunStepParam INNER JOIN ProtocolStepParam
@@ -939,7 +1012,7 @@ case class RunStepAccess(owner: Option[Id] = None) {
       s"ON ProtocolStep.experiment=Experiment.id where RunStepParam.step=$runStep and Experiment.owner=$oid")().map{row =>
       RunStepParam(
         id = row[Id]("RunStepParam.id"),
-        protocolParam = row[Id]("ProtocolStepParam,id"),
+        protocolParam = row[Id]("ProtocolStepParam.id"),
         name = row[String]("ProtocolStepParam.name"),
         value = row[String]("RunStepParam.value"),
         typ = ParamType.read(row[String]("ProtocolStepParam.param_type")).getOrElse(ParamType.Text),

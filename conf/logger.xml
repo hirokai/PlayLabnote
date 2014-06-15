@@ -17,7 +17,7 @@
 
 
     <logger name="com.jolbox.bonecp" level="DEBUG">
-        <appender-ref ref="STDOUT" />
+        <!--<appender-ref ref="STDOUT" />-->
         <appender-ref ref="FILE" />
     </logger>
 

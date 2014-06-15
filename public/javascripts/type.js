@@ -137,7 +137,7 @@ flattenTree = function (t) {
     ].concat(_.flatten(_.map(t.nodes, flattenTree)));
 }
 
-var diffChange = function (newval, oldval) {
+var diffChangeTree = function (newval, oldval) {
     var vs1 = flattenTree(newval);
     var vs2 = flattenTree(oldval);
     var vs1_2 = _.filter(vs1, function (obj) {

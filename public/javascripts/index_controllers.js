@@ -132,9 +132,10 @@ expsApp.controller('entireCtrl',
         $scope.alert = listViewSvc.alert;
         $scope.messageHistory = [];
         $scope.showMessage = function(msg,type) {
+            type = type || "success";
             $scope.messageHistory.push({message: msg, type: type});
             $scope.alert.shown = true;
-            $scope.alert.type = type || "success"
+            $scope.alert.type = type
             $scope.alert.msg = msg;
             $timeout.cancel($scope.alertId);
             $scope.alertId = $timeout(function(){

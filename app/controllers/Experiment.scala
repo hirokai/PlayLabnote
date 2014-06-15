@@ -158,14 +158,14 @@ object Experiment extends Controller {
         val unit = o_unit.getOrElse("")
         DB.withConnection { implicit c =>
           ProtocolStepAccess().createParam(step,name,typ,unit).fold(
-            l => Status(500)(l),
+            l => Status(400)(l),
             r => {
               val d = ProtocolStepAccess().getParam(r)
               Ok(Json.obj("id" -> r, "data" -> d))
             }
           )
         }
-      case _ => Status(500)("Param is missing.")
+      case _ => Status(400)("Param is missing.")
     }
   }
 
@@ -183,9 +183,11 @@ object Experiment extends Controller {
     }
   }
 
-  def deleteProtocolStepParam(id: Id) = Action {
+  def deleteProtocolStepParam(id: Id) = Action(parse.tolerantFormUrlEncoded) { request =>
+    val params = request.body
+    val force = params.get("force").flatMap(_.headOption) == Some("true")
     DB.withConnection { implicit c =>
-      ProtocolStepAccess().deleteParam(id).fold(
+      ProtocolStepAccess().deleteParam(id,force).fold(
       l => Status(400)(l),
       r => Ok(Json.obj("id" -> id))
       )
@@ -366,6 +368,47 @@ object Experiment extends Controller {
       case _ => Status(400)("Param 'pstep' missing.")
     }
   }
+
+  def deleteRunStep(step: Id) = Action {
+    DB.withTransaction {implicit c =>
+      RunStepAccess().delete(step).fold(
+        l => Status(400)(l),
+        r => Ok(Json.obj("id" -> step))
+      )
+    }
+  }
+
+  def createRunStepParam(pid: Id, rid: Id) = Action(parse.tolerantFormUrlEncoded) {request =>
+    val params = request.body
+    val o_value: Option[String] = params.get("value").flatMap(_.headOption)
+    o_value match {
+      case Some(value) =>
+        DB.withConnection {implicit c =>
+          Logger.debug("%d %d %s\n".format(rid,pid,value))
+          RunStepAccess().createParam(rid,pid,value).fold(
+            l => Status(400)(l),
+            r => Ok(Json.obj("id" -> r))
+          )
+        }
+      case _ => Status(400)("Param not found.")
+    }
+  }
+
+  def updateRunStepParam(pid: Id, rid: Id) = Action(parse.tolerantFormUrlEncoded) {request =>
+    val params = request.body
+    val o_value: Option[String] = params.get("value").flatMap(_.headOption)
+    o_value match {
+      case Some(value) =>
+        DB.withConnection {implicit c =>
+          RunStepAccess().updateParam(rid,pid,value).fold(
+            l => Status(400)(l),
+            r => Ok(Json.obj("data" -> Json.obj("protocolParam" -> pid, "value" -> value)))
+          )
+        }
+      case _ => Status(400)("Param not found.")
+    }
+  }
+
 
   def stub(id: Id) = Action {
     Ok("Stub")

@@ -19,7 +19,7 @@ angular.module('d3', [])
             scriptTag.onload = onScriptLoad;
 
             var s = $document[0].getElementsByTagName('body')[0];
-            s.appendChild(scriptTag); 
+            s.appendChild(scriptTag);
 
             return {
                 d3: function() { return d.promise; }
@@ -332,18 +332,9 @@ angular.module('myGraph',['d3'])
 
                     scope.editingParams = false;
 
-                    scope.addParam = function(){
-                        var pstep = scope.selectedPSteps[0];
-                        var id = pstep.id;
-                        var name = 'Param ' + (pstep.params.length+1);
-                        $http({url: '/psteps/'+id+'/params', method: 'POST', data: $.param({name: name, type: 'text'})}).success(function(r){
-                            console.log(r);
-                            scope.selectedPSteps[0].params.push(r.data);
-                            scope.showMessage("Param added.");
-                        }).error(function(r){
-                                console.log(r);
-                            });
-                    };
+
+
+
 
                     scope.deleteParam = function(param){
                         var id = param.id;

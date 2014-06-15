@@ -3,8 +3,8 @@
         <div editable-name item='item'></div>
     </div>
     <div class="row">
-        <button type="button" class="btn btn-default btn-sm" ng-model="showDetailJson.value" btn-checkbox >JSON</button>
-        <pre class='json' ng-if='showDetailJson.value'>{{item | json}}</pre>
+        <!--<button type="button" class="btn btn-default btn-sm" ng-model="showDetailJson.value" btn-checkbox >JSON</button>-->
+        <!--<pre class='json' ng-if='showDetailJson.value'>{{item | json}}</pre>-->
 
         <a class="btn btn-sm btn-danger" ng-click='deleteExp(item.id)'>Delete</a>
         <div class="btn-group">
@@ -52,13 +52,13 @@
             </div>
             <table class='table' id='sample_table'>
                 <thead><tr>
-                    <th></th>
+                    <th style='width: 100px;'>
+                        <a class='btn btn-xs btn-default' ng-click='addPSample(item.id)'>+Sample</a>
+                        <a class='btn btn-xs btn-default' ng-click='addRun(item)'>+Run</a>
+                    </th>
                     <th>Name</th>
                     <th>Type</th>
                     <th ng-repeat='run in item.runs' ng-click='clickRun(run,$event)' class='run_header'>{{run.name}}</th>
-                    <th>
-                        <a class='btn btn-sm btn-default' ng-click='addRun(item)'>Add</a>
-                    </th>
                 </tr>
                 </thead>
                 <tbody><tr ng-repeat='psample in item.protocolSamples' ng-controller='ProtocolSampleCtrl'>
@@ -73,10 +73,7 @@
                             <a class="btn btn-sm btn-primary" ng-click='addRunSample(psample,run)'><span class='glyphicon glyphicon-plus'></span></a>
                         </div>
                     </td>
-                    <td>
-                    </td>
                 </tr>
-                <tr><td><a class='btn btn-sm btn-default' ng-click='addPSample(item.id)'>Add</a></td></tr>
                 </tbody>
             </table>
         </section>
@@ -88,14 +85,18 @@
                 <thead>
                 <tr>
                     <th>Name</th>
-                    <th ng-repeat='run in item.runs' class='run_header'>{{run.name}}({{run.id}})</th>
+                    <th ng-repeat='run in item.runs' class='run_header'>{{run.name}}</th>
                 </tr>
                 </thead>
+
                 <tbody ng-repeat='pstep in item.protocolSteps' ng-controller='ProtocolStepCtrl'>
                 <tr class='run_time'>
-                    <td ng-class='{selected: isSelectedPStep(pstep)}' ng-click='clickPStep(pstep,$event)'>{{pstep.name}}({{pstep.id}})</td>
+                    <td ng-class='{title_col: true, selected: isSelectedPStep(pstep)}' ng-click='clickPStep(pstep,$event)'><b>{{pstep.name}}</b>
+                        <a class='btn btn-xs btn-default' ng-click='addParamInTable(pstep,$event)'>+Param</a>
+
+                    </td>
                     <td ng-repeat='run in item.runs' ng-class='{runsample_cell: true, runsample_stub: !runStep(run,pstep)}'>
-                        <div ng-if='runStep(run,pstep)'>
+                        <div ng-if='runStep(run,pstep)' ng-click='clickRunStep(run,pstep,$event)'>
                             Done: {{time(run,pstep)}}
                         </div>
                         <div ng-if='!runStep(run,pstep)'>
@@ -103,16 +104,26 @@
                         </div>
                     </td>
                 </tr>
+                <tr>
+                    <td style='padding-left: 30px;'>Note</td>
+                    <td ng-repeat='run in item.runs'>
+                        <textarea type="" ng-disabled='!runStep(run,pstep)' ng-model='runStep(run,pstep).note'></textarea>
+                    </td>
+                </tr>
                 <tr ng-repeat='param in pstep.params'>
-                    <td>{{param.name}} <small>({{unit(param)}})</small></td>
-                    <td ng-repeat='run in item.runs' ng-class='{runsample_cell: true, runsample_stub: !runStep(run,pstep)}'>
-                        <input class='paraminput' type='{{inputType(param)}}' step='{{inputType(param) =="number" ? "0.1" : ""}}' ng-model='runStepParam(run,pstep,param).value' ng-model-options="{ updateOn: 'blur' }"/>
+                    <td>
+                        <span class='glyphicon glyphicon-remove' ng-click='deleteParam(param)'></span>
+
+                        {{param.name}} <small>({{unit(param)}})</small></td>
+                    <td ng-repeat='run in item.runs' ng-controller='ParamCtrl' ng-class='{runsample_cell: true, runsample_stub: !runStep(run,pstep)}'>
+                        <input class='paraminput' type='{{inputType(param)}}' step='{{inputType(param) =="number" ? "0.1" : ""}}'
+                               ng-disabled='!runStep(run,pstep)' ng-model='runStepParam(run,pstep,param).value' ng-model-options="{ updateOn: 'blur' }"/>
                     </td>
                 </tr>
                 </tbody>
+
             </table>
             <pre class="json">{{item.runSteps|json}}</pre>
-            <pre class="json">{{messageHistory | json}}</pre>
 
             <!--<div class="gridStyle" ng-grid="gridOptions"></div>-->
             <!--<pre class="json">{{gridData|json}}</pre>-->
