@@ -9,4 +9,4 @@ before_script:
   - npm install
   - bower install
   - grunt
-script: play-${PLAY_VERSION}/play test
+script: play-${PLAY_VERSION}/play test-only

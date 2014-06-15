@@ -209,6 +209,7 @@ expsApp.controller('ExpDetailCtrl', ['$scope', '$http', '$state', '$stateParams'
             var name = 'Run ' + ($scope.item.runs.length + 1);
             $http({url: url, method: 'POST',data: $.param({name: name})}).success(function(r){
                 $scope.item.runs.push(r.data);
+                $scope.item.runSteps[r.data.id] = {};
             });
         };
 
@@ -385,8 +386,10 @@ expsApp.controller('ProtocolStepCtrl',['$scope', '$http', function($scope, $http
         var psid = pstep.id;
         $http({url: '/runs/'+run.id+'/steps', method: 'POST', data: $.param({pstep: psid, time: moment().valueOf()})}).success(function(r){
             console.log(r);
-            $scope.item.runSteps[run.id][pstep.id] = createRunParams(r.data,pstep.id,$scope.item.protocolSteps);
             console.log($scope.item);
+            var step = createRunParams(r.data,pstep.id,$scope.item.protocolSteps);
+            console.log(step,run.id,pstep.id,$scope.item.runSteps);
+            $scope.item.runSteps[run.id][pstep.id] = step;
         });
     };
 
@@ -624,6 +627,7 @@ function prepareExpData(exp){
 }
 
 function createRunParams(step,psid,protocolSteps){
+    console.log(step,psid,protocolSteps);
     var params = _.findWhere(protocolSteps,{id: psid}).params;
 //    console.log(params);
     _.map(params,function(param){
@@ -631,5 +635,6 @@ function createRunParams(step,psid,protocolSteps){
             step.params.push({protocolParam: param.id, value: null});
         }
     });
+    console.log(step,psid,protocolSteps);
     return step;
 }

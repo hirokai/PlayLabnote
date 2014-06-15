@@ -316,6 +316,7 @@ object Experiment extends Controller {
               }
               (o_r,o_typ)
             }
+            case _ => (o_r, None)
           }
         } match {
           case (Some(id),Some(typ)) =>

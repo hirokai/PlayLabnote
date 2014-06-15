@@ -112,7 +112,8 @@ CREATE TABLE RunStep (
   note text,
   time_at bigint(32),
   time_end bigint(32),
-  PRIMARY KEY (id)
+  PRIMARY KEY (id),
+  UNIQUE (run,protocol_step)
 );
 
 CREATE TABLE RunStepParam (
