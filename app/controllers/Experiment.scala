@@ -370,6 +370,23 @@ object Experiment extends Controller {
     }
   }
 
+  def updateRunStep(rsid: Id) = Action(parse.tolerantFormUrlEncoded) {request =>
+    val params = request.body
+    val o_note: Option[String] = params.get("note").flatMap(_.headOption)
+    o_note match {
+      case Some(note) =>
+        DB.withConnection {implicit c =>
+          RunStepAccess().updateNote(rsid,note).fold(
+            l => Status(400)(l),
+            r => {
+              val dat = RunStepAccess().get(rsid)
+              Ok(Json.obj("id" -> rsid, "data" -> dat))
+            }
+          )
+        }
+    }
+  }
+
   def deleteRunStep(step: Id) = Action {
     DB.withTransaction {implicit c =>
       RunStepAccess().delete(step).fold(

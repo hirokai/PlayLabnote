@@ -4,76 +4,77 @@
 
 # Home page
 # GET           /                                         controllers.Application.index
-GET           /                                         controllers.Assets.at(path="/public/html/dist", file="index.html")
+GET           /                                             controllers.Assets.at(path="/public/html/dist", file="index.html")
 
 
 # Map static resources from the /public folder to the /assets URL path
-GET           /assets/*file                             controllers.Assets.at(path="/public", file)
-GET           /public/*file                             controllers.Assets.at(path="/public", file)
+GET           /assets/*file                                 controllers.Assets.at(path="/public", file)
+GET           /public/*file                                 controllers.Assets.at(path="/public", file)
 
-POST          /exps                                     controllers.Experiment.create
+POST          /exps                                         controllers.Experiment.create
 
-GET           /exps.json                                controllers.Experiment.listJson
+GET           /exps.json                                    controllers.Experiment.listJson
 
-GET           /exps/$id<[0-9]+>/runs                    controllers.Experiment.getExpRuns(id: models.Database.Id)
-PUT           /exps/$id<[0-9]+>                         controllers.Experiment.update(id: models.Database.Id)
-DELETE        /exps/$id<[0-9]+>                         controllers.Experiment.delete(id: models.Database.Id)
-POST          /exps/$id<[0-9]+>/psamples                controllers.Experiment.createProtocolSample(id: models.Database.Id)
-POST          /exps/$id<[0-9]+>/psteps                  controllers.Experiment.createProtocolStep(id: models.Database.Id)
-GET           /exps/$id<[0-9]+>/socket                  controllers.Experiment.socket(id: models.Database.Id)
+GET           /exps/$id<[0-9]+>/runs                        controllers.Experiment.getExpRuns(id: models.Database.Id)
+PUT           /exps/$id<[0-9]+>                             controllers.Experiment.update(id: models.Database.Id)
+DELETE        /exps/$id<[0-9]+>                             controllers.Experiment.delete(id: models.Database.Id)
+POST          /exps/$id<[0-9]+>/psamples                    controllers.Experiment.createProtocolSample(id: models.Database.Id)
+POST          /exps/$id<[0-9]+>/psteps                      controllers.Experiment.createProtocolStep(id: models.Database.Id)
+GET           /exps/$id<[0-9]+>/socket                      controllers.Experiment.socket(id: models.Database.Id)
 
-GET           /psteps/$id<[0-9]+>.json                  controllers.Experiment.getProtocolStep(id: models.Database.Id)
-PUT           /psteps/$id<[0-9]+>                       controllers.Experiment.updateProtocolStep(id: models.Database.Id)
-POST          /psteps/$id<[0-9]+>/params                controllers.Experiment.createProtocolStepParam(id: models.Database.Id)
-PUT           /pparams/$id<[0-9]+>                      controllers.Experiment.updateProtocolStepParam(id: models.Database.Id)
-DELETE        /pparams/$id<[0-9]+>                      controllers.Experiment.deleteProtocolStepParam(id: models.Database.Id)
-DELETE        /psteps/$id<[0-9]+>                       controllers.Experiment.deleteProtocolStep(id: models.Database.Id)
+GET           /psteps/$id<[0-9]+>.json                      controllers.Experiment.getProtocolStep(id: models.Database.Id)
+PUT           /psteps/$id<[0-9]+>                           controllers.Experiment.updateProtocolStep(id: models.Database.Id)
+POST          /psteps/$id<[0-9]+>/params                    controllers.Experiment.createProtocolStepParam(id: models.Database.Id)
+PUT           /pparams/$id<[0-9]+>                          controllers.Experiment.updateProtocolStepParam(id: models.Database.Id)
+DELETE        /pparams/$id<[0-9]+>                          controllers.Experiment.deleteProtocolStepParam(id: models.Database.Id)
+DELETE        /psteps/$id<[0-9]+>                           controllers.Experiment.deleteProtocolStep(id: models.Database.Id)
 
-POST          /exps/$id<[0-9]+>/runs                    controllers.Experiment.createExpRun(id: models.Database.Id)
-GET           /exps/$id<[0-9]+>/samples                 controllers.Experiment.getRunSamples(id: models.Database.Id)
+POST          /exps/$id<[0-9]+>/runs                        controllers.Experiment.createExpRun(id: models.Database.Id)
+GET           /exps/$id<[0-9]+>/samples                     controllers.Experiment.getRunSamples(id: models.Database.Id)
 
-POST          /runsamples/:rid/:pid                     controllers.Experiment.createRunSample(rid: models.Database.Id, pid: models.Database.Id)
-DELETE        /runsamples/:rid/:pid                     controllers.Experiment.deleteRunSample(rid: models.Database.Id, pid: models.Database.Id)
-
-
-GET           /runs/$id<[0-9]+>                         controllers.Experiment.getExpRun(id: models.Database.Id)
-DELETE        /runs/$id<[0-9]+>                         controllers.Experiment.deleteExpRun(id: models.Database.Id)
-POST          /runs/$id<[0-9]+>/steps                   controllers.Experiment.createRunStep(id: models.Database.Id)
-DELETE        /steps/$id<[0-9]+>                        controllers.Experiment.deleteRunStep(id: models.Database.Id)
-POST          /pparams/$pid<[0-9]+>/run/$rid<[0-9]+>    controllers.Experiment.createRunStepParam(pid: models.Database.Id, rid: models.Database.Id)
-PUT           /pparams/$pid<[0-9]+>/run/$rid<[0-9]+>    controllers.Experiment.updateRunStepParam(pid: models.Database.Id, rid: models.Database.Id)
-
-PUT           /psamples/$id<[0-9]+>                     controllers.Experiment.updateProtocolSample(id: models.Database.Id)
-DELETE        /psamples/$id<[0-9]+>                     controllers.Experiment.deleteProtocolSample(id: models.Database.Id)
-
-GET           /exps/$id<[0-9]+>.json                    controllers.Experiment.getJson(id: models.Database.Id)
-GET           /exps/$id<[0-9]+>/note                    controllers.Experiment.stub(id: models.Database.Id)
-GET           /exps/$id<[0-9]+>/protocol                controllers.Experiment.stub(id: models.Database.Id)
+POST          /runsamples/:rid/:pid                         controllers.Experiment.createRunSample(rid: models.Database.Id, pid: models.Database.Id)
+DELETE        /runsamples/:rid/:pid                         controllers.Experiment.deleteRunSample(rid: models.Database.Id, pid: models.Database.Id)
 
 
-GET           /samples.json                             controllers.Sample.listJson
-POST          /samples                                  controllers.Sample.create
-GET           /samples/$id<[0-9]+>.json                 controllers.Sample.getJson(id: models.Database.Id)
-PUT           /samples/$id<[0-9]+>                      controllers.Sample.update(id: models.Database.Id)
-DELETE        /samples/$id<[0-9]+>                      controllers.Sample.delete(id: models.Database.Id)
+GET           /runs/$id<[0-9]+>                             controllers.Experiment.getExpRun(id: models.Database.Id)
+DELETE        /runs/$id<[0-9]+>                             controllers.Experiment.deleteExpRun(id: models.Database.Id)
+POST          /runs/$id<[0-9]+>/steps                       controllers.Experiment.createRunStep(id: models.Database.Id)
+DELETE        /steps/$id<[0-9]+>                            controllers.Experiment.deleteRunStep(id: models.Database.Id)
+PUT           /steps/$id<[0-9]+>                            controllers.Experiment.updateRunStep(id: models.Database.Id)
+POST          /pparams/$pid<[0-9]+>/run/$rid<[0-9]+>        controllers.Experiment.createRunStepParam(pid: models.Database.Id, rid: models.Database.Id)
+PUT           /pparams/$pid<[0-9]+>/run/$rid<[0-9]+>        controllers.Experiment.updateRunStepParam(pid: models.Database.Id, rid: models.Database.Id)
 
-GET           /samples/$id<[0-9]+>/exps                 controllers.Sample.getExps(id: models.Database.Id)
-GET           /samples/$id<[0-9]+>/related              controllers.Sample.stub(id: models.Database.Id)
-GET           /samples/$id<[0-9]+>/data                 controllers.Sample.stub(id: models.Database.Id)
-GET           /samples/$id<[0-9]+>/note                 controllers.Sample.stub(id: models.Database.Id)
+PUT           /psamples/$id<[0-9]+>                         controllers.Experiment.updateProtocolSample(id: models.Database.Id)
+DELETE        /psamples/$id<[0-9]+>                         controllers.Experiment.deleteProtocolSample(id: models.Database.Id)
+
+GET           /exps/$id<[0-9]+>.json                        controllers.Experiment.getJson(id: models.Database.Id)
+GET           /exps/$id<[0-9]+>/note                        controllers.Experiment.stub(id: models.Database.Id)
+GET           /exps/$id<[0-9]+>/protocol                    controllers.Experiment.stub(id: models.Database.Id)
+
+
+GET           /samples.json                                 controllers.Sample.listJson
+POST          /samples                                      controllers.Sample.create
+GET           /samples/$id<[0-9]+>.json                     controllers.Sample.getJson(id: models.Database.Id)
+PUT           /samples/$id<[0-9]+>                          controllers.Sample.update(id: models.Database.Id)
+DELETE        /samples/$id<[0-9]+>                          controllers.Sample.delete(id: models.Database.Id)
+
+GET           /samples/$id<[0-9]+>/exps                     controllers.Sample.getExps(id: models.Database.Id)
+GET           /samples/$id<[0-9]+>/related                  controllers.Sample.stub(id: models.Database.Id)
+GET           /samples/$id<[0-9]+>/data                     controllers.Sample.stub(id: models.Database.Id)
+GET           /samples/$id<[0-9]+>/note                     controllers.Sample.stub(id: models.Database.Id)
 
 
 
-GET           /samples/of_type/:tid                     controllers.Sample.samplesOfType(tid: models.Database.Id)
+GET           /samples/of_type/:tid                         controllers.Sample.samplesOfType(tid: models.Database.Id)
 
-GET           /types.json                               controllers.SampleType.listJson
-POST          /types                                    controllers.SampleType.create
+GET           /types.json                                   controllers.SampleType.listJson
+POST          /types                                        controllers.SampleType.create
 
-GET           /types/$id<[0-9]+>.json                   controllers.SampleType.getJson(id: models.Database.Id)
-PUT           /types/$id<[0-9]+>                        controllers.SampleType.update(id: models.Database.Id)
-DELETE        /types/$id<[0-9]+>                        controllers.SampleType.delete(id: models.Database.Id)
+GET           /types/$id<[0-9]+>.json                       controllers.SampleType.getJson(id: models.Database.Id)
+PUT           /types/$id<[0-9]+>                            controllers.SampleType.update(id: models.Database.Id)
+DELETE        /types/$id<[0-9]+>                            controllers.SampleType.delete(id: models.Database.Id)
 
-GET           /types/$id<[0-9]+>/direct_subtypes        controllers.SampleType.getDirectSubtypes(id: models.Database.Id)
-GET           /types/$id<[0-9]+>/subtypes               controllers.SampleType.getSubtypes(id: models.Database.Id)
+GET           /types/$id<[0-9]+>/direct_subtypes            controllers.SampleType.getDirectSubtypes(id: models.Database.Id)
+GET           /types/$id<[0-9]+>/subtypes                   controllers.SampleType.getSubtypes(id: models.Database.Id)
 
-POST          /test/:name                               controllers.Experiment.addTestData(name)
+POST          /test/:name                                   controllers.Experiment.addTestData(name)

@@ -365,6 +365,15 @@ expsApp.controller('ProtocolSampleCtrl',['$scope','$http', function($scope, $htt
 }]);
 
 expsApp.controller('ProtocolStepCtrl',['$scope', '$http', function($scope, $http){
+
+    $scope.runs = $scope.item.runs;
+
+    $scope.runStep = function(run,pstep) {
+        if(!run || !pstep) return null;
+        var obj = $scope.item.runSteps[run.id];
+        return obj ? obj[pstep.id] : null;
+    };
+
     $scope.isSelectedPStep = function(pstep){
         return _.findWhere($scope.selectedPSteps,{id: pstep.id});
     };
@@ -375,12 +384,6 @@ expsApp.controller('ProtocolStepCtrl',['$scope', '$http', function($scope, $http
     }
     init();
 
-    $scope.runs = $scope.item.runs;
-
-    $scope.runStep = function(run,pstep) {
-        var obj = $scope.item.runSteps[run.id];
-        return obj ? obj[pstep.id] : null;
-    };
 
     $scope.addRunStep = function(run,pstep) {
         var psid = pstep.id;
@@ -574,6 +577,21 @@ expsApp.controller('RunSampleCtrl',['$scope','$http', '$timeout', 'listViewSvc',
     };
 }]);
 
+expsApp.controller('RunStepNoteCtrl',['$scope','$http',function($scope,$http){
+    $scope.runstep = $scope.runStep($scope.run,$scope.pstep);
+    $scope.$watch('runstep.note',function(nv,ov){
+       console.log(nv,ov);
+       if(!nv || ov == undefined || nv == ov) return;
+       var id = $scope.runstep.id;
+       $http({url: '/steps/'+id, method: 'PUT', data: $.param({note: nv})}).success(function(r){
+            console.log(r);
+       }).error(function(r){
+               console.log(r);
+
+           });
+    });
+}]);
+
 expsApp.controller('ParamCtrl',['$scope','$http',function($scope, $http){
 
    $scope.runparam = $scope.runStepParam($scope.run,$scope.pstep,$scope.param);
@@ -586,7 +604,7 @@ expsApp.controller('ParamCtrl',['$scope','$http',function($scope, $http){
     $scope.$watch('runparam',function(nv,ov){
         if(!nv || !ov || nv == ov) return;
         console.log(nv,ov);
-        if(ov.value == null){
+        if(nv.value != ov.value && ov.value == null){
             $http({url: '/pparams/'+nv.protocolParam+'/run/'+$scope.run.id,
                 method: 'POST', data: $.param({value: nv.value})}).success(function(r){
                 console.log(r);
@@ -628,6 +646,7 @@ function prepareExpData(exp){
 
 function createRunParams(step,psid,protocolSteps){
     console.log(step,psid,protocolSteps);
+    step.note = step.note || "";
     var params = _.findWhere(protocolSteps,{id: psid}).params;
 //    console.log(params);
     _.map(params,function(param){

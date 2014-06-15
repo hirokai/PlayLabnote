@@ -963,6 +963,14 @@ case class RunStepAccess(owner: Option[Id] = None) {
     }
   }
 
+  def updateNote(id: Id, note: String)(implicit c: Connection): Either[String,String] = {
+    if(1 == SQL(s"UPDATE RunStep SET note='${escape(note)}' where id=$id").executeUpdate()){
+      Right("Done")
+    }else{
+      Left("DB update failed.")
+    }
+  }
+
   def createParam(rid: Id, pid: Id, value: String)(implicit c: Connection): Either[String,Id] = {
     val step = SQL("SELECT RunStep.id from RunStep INNER JOIN ProtocolStep ON RunStep.protocol_step=ProtocolStep.id " +
       s"INNER JOIN ProtocolStepParam ON ProtocolStep.id=ProtocolStepParam.step where RunStep.run=$rid and ProtocolStepParam.id=$pid"

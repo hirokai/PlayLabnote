@@ -106,8 +106,8 @@
                 </tr>
                 <tr>
                     <td style='padding-left: 30px;'>Note</td>
-                    <td ng-repeat='run in item.runs'>
-                        <textarea type="" ng-disabled='!runStep(run,pstep)' ng-model='runStep(run,pstep).note'></textarea>
+                    <td ng-repeat='run in item.runs' ng-controller='RunStepNoteCtrl'>
+                        <textarea type="" ng-disabled='!runstep' ng-model='runstep.note' ng-model-options="{ updateOn: 'blur' }"></textarea>
                     </td>
                 </tr>
                 <tr ng-repeat='param in pstep.params'>
