@@ -455,7 +455,7 @@ expsApp.controller('ProtocolStepCtrl',['$scope', '$http', function($scope, $http
     $scope.deleteRunStep = function(step){
        $http({url: '/steps/'+step.id, method: 'DELETE'}).success(function(r){
            var k = step.run + ':' + step.step;
-           delete $scope.item.runSteps[k];
+           delete $scope.item.runSteps[step.run][step.step];
 
            $scope.showMessage('Step recorded was deleted.');
            console.log(r);
