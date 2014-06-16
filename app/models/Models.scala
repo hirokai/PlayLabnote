@@ -43,18 +43,29 @@ object Experiment {
   }
 }
 
-case class ExperimentAccess(owner: Id = 0) {
-  def create(name: String, owner: Option[Id] = None)(implicit c: Connection): Option[Id] = {
-      val oid: Id = owner.getOrElse(0l) // default is sandbox user.
-      SQL(s"INSERT into Experiment(owner,name) values($oid,'${escapeName(name)}')").executeInsert()
+case class ExperimentAccess(o_owner: Option[Id]) {
+  val owner: Id = o_owner.getOrElse(Database.sandboxUserId)
+
+  def list(implicit c: Connection): Array[Experiment] = {
+    println("ExperimentAccess.list")
+    println(o_owner,owner)
+    SQL(s"Select * from Experiment where owner=$owner order by id")().map( row => {
+      models.Experiment(
+        id = row[Long]("id"),
+        name = row[Option[String]]("name").getOrElse("(N/A)"),
+        owner =  row[Database.Id]("owner")
+      )
+    }).toArray
+  }
+  def create(name: String)(implicit c: Connection): Option[Id] = {
+    SQL(s"INSERT into Experiment(owner,name) values($owner,'${escapeName(name)}')").executeInsert()
   }
 
-  def setName(id: Id, name: String, owner: Option[Id] = None)(implicit c: Connection): Boolean = {
-        val oid: Id = owner.getOrElse(0l) // default is sandbox user.
+  def setName(id: Id, name: String)(implicit c: Connection): Boolean = {
     if(name.trim == ""){
       false
     }else{
-      1 == SQL(s"UPDATE Experiment SET name='${escapeName(name)}' where owner=$oid and id=$id").executeUpdate()
+      1 == SQL(s"UPDATE Experiment SET name='${escapeName(name)}' where owner=$owner and id=$id").executeUpdate()
     }
   }
 
@@ -63,9 +74,8 @@ case class ExperimentAccess(owner: Id = 0) {
   }
 
   //@Transaction
-  def delete(id: Id, owner: Option[Id] = None)(implicit c: Connection): Either[String,String] = {
+  def delete(id: Id)(implicit c: Connection): Either[String,String] = {
     try{
-      val oid: Id = owner.getOrElse(0l) // default is sandbox user.
       val ridstr = SQL(s"SELECT id from ExpRun where experiment=$id")().map(_[Id]("id")).mkString(",")
       SQL(s"DELETE from SampleInRun where run in($ridstr)").executeUpdate()
       val steps_str = SQL(s"SELECT id from ProtocolStep where experiment=$id")().map(_[Id]("id")).mkString(",")
@@ -75,7 +85,7 @@ case class ExperimentAccess(owner: Id = 0) {
       SQL(s"DELETE from ProtocolStep where experiment=$id").executeUpdate()
       SQL(s"DELETE from ProtocolSample where experiment=$id").executeUpdate()
       SQL(s"DELETE from ExpRun where experiment=$id").executeUpdate()
-      SQL(s"DELETE from Experiment where owner=$oid and id=$id").executeUpdate()
+      SQL(s"DELETE from Experiment where owner=$owner and id=$id").executeUpdate()
       Right("Done")
     }catch{
       case e: Throwable => Left(e.getMessage)
@@ -169,7 +179,7 @@ case class ExperimentAccess(owner: Id = 0) {
   //@Transaction
   def createRunSample(rid: Id, pid: Id, name: String, tid2: Option[Id])(implicit c: Connection): Option[Id] = {
       val o_tid = tid2 match {
-        case None => ProtocolSampleAccess().sampleTypeId(pid)
+        case None => ProtocolSampleAccess(o_owner).sampleTypeId(pid)
         case Some(t) => Some(t)
       }
       o_tid.flatMap{tid =>
@@ -198,7 +208,7 @@ case class ExperimentAccess(owner: Id = 0) {
           val sid = row[Id]("sample")
           val r = row[Id]("run")
           val p = row[Id]("protocol_sample")
-          val s = SampleAccess(owner).get(sid).get
+          val s = SampleAccess(o_owner).get(sid).get
           ((r,p),s)
         }
       ss.toMap
@@ -211,7 +221,7 @@ case class ExperimentAccess(owner: Id = 0) {
   def getRunStepsKeyValue(eid: Id)(implicit c: Connection): Map[(Id,Id),RunStep] = {
     val ids = SQL(s"SELECT id from ExpRun where experiment=$eid")().map(_[Id]("id"))
     ids.map{run_id =>
-      val steps: Array[RunStep] = ExpRunAccess().getRunSteps(run_id)
+      val steps: Array[RunStep] = ExpRunAccess(o_owner).getRunSteps(run_id)
       steps.map{step =>
         ((run_id,step.step),step)
       }
@@ -219,7 +229,7 @@ case class ExperimentAccess(owner: Id = 0) {
   }
 
   def addRun(eid: Id, name: String)(implicit c: Connection): Option[Id] = {
-    ExpRunAccess().create(eid, name)
+    ExpRunAccess(o_owner).create(eid, name)
   }
 
   def getRuns(eid: Id)(implicit c: Connection): Array[ExpRun] = {
@@ -227,12 +237,13 @@ case class ExperimentAccess(owner: Id = 0) {
   }
 
   def addProtocolSample(eid: Id, name: String, tid: Id)(implicit c: Connection): Option[Id] = {
-    ProtocolSampleAccess().create(eid,name,tid)
+    ProtocolSampleAccess(o_owner).create(eid,name,tid)
   }
 
   def getProtocolSamples(eid: Id)(implicit c: Connection): Array[ProtocolSample] = {
-    val vs = SQL(s"SELECT * from ProtocolSample LEFT JOIN ProtocolSampleInStep on ProtocolSample.id=ProtocolSampleInStep.sample where ProtocolSample.experiment=$eid")().map{ row =>
-      val ps = ProtocolSample.fromRow(full = true)(row)
+    val vs = SQL("SELECT * from ProtocolSample LEFT JOIN ProtocolSampleInStep on ProtocolSample.id=ProtocolSampleInStep.sample INNER JOIN "+
+      s"Experiment ON ProtocolSample.experiment=Experiment.id where ProtocolSample.experiment=$eid and Experiment.owner=$owner")().map{ row =>
+      val ps = ProtocolSample.fromRow(o_owner = o_owner, full = true)(row)
       val role = row[Option[String]]("ProtocolSampleInStep.role")
       ps.copy(role = role.map(Array(_)).getOrElse(Array()))
     }.toArray
@@ -271,7 +282,7 @@ case class ExperimentAccess(owner: Id = 0) {
       row[Id]("id")
     }.toArray
     Logger.debug(step_ids.mkString(","))
-    step_ids.map(id => models.ProtocolStepAccess().get(id)).flatten
+    step_ids.map(id => models.ProtocolStepAccess(o_owner).get(id)).flatten
   }
 
   //Run samples
@@ -292,7 +303,7 @@ case class ExperimentAccess(owner: Id = 0) {
 
   //Only allows one runsample per (rid,pid) point.
   def assignNewSample(rid: Id, pid: Id, sname: String, typ: Id)(implicit c: Connection): Option[Id] = {
-      val o_sid = SampleAccess(owner).create(sname,typ)
+      val o_sid = SampleAccess(o_owner).create(sname,typ)
       o_sid.flatMap { sid =>
           val count = countRunSamples(rid,pid)
           if(count == 0){
@@ -310,22 +321,27 @@ case class ExperimentAccess(owner: Id = 0) {
   }
 }
 
-case class ProtocolSample(id: Id, name: String, note: String = "", typ: Either[Id,SampleType] = Left(SampleType.AnyType.id), role: Array[String] = Array())
+case class ProtocolSample(id: Id, name: String, note: String = "", typ: Either[Id,SampleType], role: Array[String] = Array())
 
 object ProtocolSample {
-  def fromRow(full: Boolean = false)(row: Row)(implicit c: Connection): ProtocolSample = {
+  def fromRow(o_owner: Option[Id], full: Boolean = false)(row: Row)(implicit c: Connection): ProtocolSample = {
     val tid = row[Id]("type")
-    val t = if(full) Right(SampleTypeAccess().get(tid).get) else Left(tid)
+    val typ = if(full) {
+      var ot = SampleTypeAccess(o_owner).get(tid)
+      Right(ot.get)
+    }else Left(tid)
+
     ProtocolSample(
       row[Id]("id"),
       row[String]("name"),
       row[Option[String]]("note").getOrElse(""),
-      t
+      typ
     )
   }
 }
 
-case class ProtocolSampleAccess() {
+case class ProtocolSampleAccess(o_owner: Option[Id]) {
+  val owner: Id = o_owner.getOrElse(Database.sandboxUserId)
   val dbname = "ProtocolSample"
 
   def create(eid: Id, name: String, tid: Id)(implicit c: Connection): Option[Id] = {
@@ -343,7 +359,7 @@ case class ProtocolSampleAccess() {
     }else{
       try{
         if(1 == SQL(s"UPDATE ProtocolSample SET $str where id=$psid").executeUpdate()){
-          val ps = ProtocolSampleAccess().get(psid)
+          val ps = ProtocolSampleAccess(o_owner).get(psid)
           ps.map(s => Right(s)).getOrElse(Left("Error"))
         }else{
           Left("Not found.")
@@ -362,11 +378,11 @@ case class ProtocolSampleAccess() {
   }
 
   def listInExp(eid: Id)(implicit c: Connection): Stream[ProtocolSample] = {
-      SQL(s"SELECT * from ProtocolSample where experiment=$eid")().map(ProtocolSample.fromRow(full = true))
+      SQL(s"SELECT * from ProtocolSample where experiment=$eid")().map(ProtocolSample.fromRow(o_owner = o_owner, full = true))
   }
 
   def get(psid: Id)(implicit c: Connection): Option[ProtocolSample] = {
-    SQL(s"SELECT * from ProtocolSample where id=$psid")().map(ProtocolSample.fromRow(full = true)).headOption
+    SQL(s"SELECT * from ProtocolSample where id=$psid")().map(ProtocolSample.fromRow(o_owner = o_owner, full = true)).headOption
   }
 
   def sampleTypeId(psid: Id)(implicit c: Connection): Option[Id] = {
@@ -374,7 +390,7 @@ case class ProtocolSampleAccess() {
   }
   def sampleType(psid: Id)(implicit c: Connection): Option[SampleType] = {
     SQL(s"SELECT type from ProtocolSample where id=$psid")().map(_[Id]("type")).headOption.flatMap{ t =>
-      SampleTypeAccess().get(t)
+      SampleTypeAccess(o_owner).get(t)
     }
   }
 }
@@ -382,7 +398,14 @@ case class ProtocolSampleAccess() {
 case class SampleType(id: Id, name: String, parent: Option[Id])
 
 object SampleType {
-  val AnyType = SampleType(0, "Any", None)
+  def getAnyTypeId(u: Option[Id])(implicit c: Connection): Id = {
+    val uid = u.getOrElse(Database.sandboxUserId)
+    SQL(s"SELECT id from SampleType where owner=$uid and name='Any' and system=true")().map(_[Id]("id")).head
+  }
+  def getAnyType(u: Option[Id])(implicit c: Connection): SampleType = {
+    val uid = u.getOrElse(Database.sandboxUserId)
+    SQL(s"SELECT * from SampleType where owner=$uid and name='Any' and system=true")().map(SampleType.fromRow).head
+  }
   def fromRow(row: Row): SampleType = {
     SampleType(row[Id]("id"), row[String]("name"), row[Option[Id]]("parent"))
   }
@@ -396,7 +419,8 @@ case class Tree[A: ClassTag](node:A, children: Array[Tree[A]]) {
   }
 }
 
-case class SampleTypeAccess(owner: Id = 0) {
+case class SampleTypeAccess(o_owner: Option[Id]) {
+  val owner: Id = o_owner.getOrElse(Database.sandboxUserId)
   val dbname = "SampleType"
 
   def create(name: String, parent: Id, system: Boolean = false)(implicit c: Connection): Option[Id] = {
@@ -538,8 +562,8 @@ object ExpRun {
   }
 }
 
-//ExpRun does not have owner property, because it has the same owner as parent Exp.
-case class ExpRunAccess() {
+case class ExpRunAccess(o_owner: Option[Id]) {
+  val owner: Id = o_owner.getOrElse(Database.sandboxUserId)
   val dbname = "ExpRun"
 
   def create(eid: Id, name: String)(implicit c: Connection): Option[Id] = {
@@ -591,14 +615,14 @@ case class ExpRunAccess() {
   }
 
   def getRunSteps(run_id: Id)(implicit c: Connection): Array[RunStep] = {
-    SQL(s"SELECT * from RunStep where run=$run_id")().map(RunStep.fromRow(full = true)).toArray
+    SQL(s"SELECT * from RunStep where run=$run_id")().map(RunStep.fromRow(o_owner = o_owner, full = true)).toArray
   }
 
 }
 
 case class SampleData(id: Id, name: String, url: String, note: String, typ: String)
 
-case class Sample(id: Id, name: String, typ: Either[Id,SampleType] = Left(SampleType.AnyType.id), note: String = "", data: Array[SampleData] = Array())
+case class Sample(id: Id, name: String, typ: Either[Id,SampleType], note: String = "", data: Array[SampleData] = Array())
 
 object Sample {
   //Caution: Always use join query to include sampletype.
@@ -608,8 +632,8 @@ object Sample {
   }
 }
 
-case class SampleAccess(owner: Id = 0) {
-
+case class SampleAccess(o_owner: Option[Id]) {
+  val owner: Id = o_owner.getOrElse(Database.sandboxUserId)
   val dbname = "Sample"
 
   def get(id: Id)(implicit c: Connection): Option[Sample] = {
@@ -633,7 +657,7 @@ case class SampleAccess(owner: Id = 0) {
     SQL(s"SELECT count(*) as c from Sample where owner=$owner")().map(_[Long]("c")).headOption.getOrElse(0l)
   }
 
-  def create(name: String, tid: Id = SampleType.AnyType.id)(implicit c: Connection): Option[Id] = {
+  def create(name: String, tid: Id)(implicit c: Connection): Option[Id] = {
     if(name.trim == ""){
       None
     }else{
@@ -693,7 +717,7 @@ case class SampleAccess(owner: Id = 0) {
     DB.withConnection {implicit c =>
       val str =
         if(subtypes)
-          SampleTypeAccess(owner).findDescendantsId()(tid).mkString(",")
+          SampleTypeAccess(o_owner).findDescendantsId()(tid).mkString(",")
         else
           tid.toString
       SQL(s"SELECT * from sampletype inner join sample " +
@@ -706,25 +730,19 @@ case class SampleAccess(owner: Id = 0) {
   }
 
   //Count samples of SampleType of tid (and subtypes).
-  def findCompatibleSampleCount(tid: Id, subtypes: Boolean): Long = {
-    DB.withConnection {implicit c =>
+  def findCompatibleSampleCount(tid: Id, subtypes: Boolean)(implicit c: Connection): Long = {
       val str =
         if(subtypes)
-          (SampleTypeAccess(owner).findDescendantsId()(tid) ++ Array(tid)).mkString(",")
+          (SampleTypeAccess(o_owner).findDescendantsId()(tid) ++ Array(tid)).mkString(",")
         else
           tid.toString
       SQL(s"SELECT count(*) as c from sampletype inner join sample " +
         s"on sample.type = sampletype.id where sampletype.id in($str);")()
         .map(_[Long]("c")).headOption.getOrElse(0)
-    }
   }
 }
 
 case class ProtocolStepParam(id: Id, name: String, typ: ParamType.ParamType, unit: Option[String])
-
-case class StepParamAccess(owner: Id) {
-  val dbname = "StepParam"
-}
 
 case class ProtocolStep(
            id: Id,
@@ -756,7 +774,8 @@ object ParamType extends Enumeration {
   }
 }
 
-case class ProtocolStepAccess() {
+case class ProtocolStepAccess(o_owner: Option[Id]) {
+  val owner: Id = o_owner.getOrElse(Database.sandboxUserId)
   val dbname = "ProtocolStep"
 
   def create(eid: Id, name: String,input: Array[Id],
@@ -793,10 +812,10 @@ case class ProtocolStepAccess() {
           id = id,
           name = vs.head._1,
           input = input_ids.map{id =>
-            Right(ProtocolSampleAccess().get(id).get)
+            Right(ProtocolSampleAccess(o_owner).get(id).get)
           },
           output = output_ids.map{id =>
-            Right(ProtocolSampleAccess().get(id).get)
+            Right(ProtocolSampleAccess(o_owner).get(id).get)
           },
           params = getParams(id)))
       }else {
@@ -911,9 +930,9 @@ case class RunStep(id: Id, run: Id, step: Id, note: Option[String] = None,
 case class RunStepParam(id: Id, protocolParam: Id, name: String, value: String, typ: ParamType.ParamType, unit: String)
 
 object RunStep {
-  def fromRow(full: Boolean)(row: Row)(implicit c: Connection): RunStep = {
+  def fromRow(o_owner: Option[Id], full: Boolean)(row: Row)(implicit c: Connection): RunStep = {
     val id = row[Id]("id")
-    val params: Option[Array[RunStepParam]] = if(full) Some(RunStepAccess().getParams(id)) else None
+    val params: Option[Array[RunStepParam]] = if(full) Some(RunStepAccess(o_owner).getParams(id)) else None
     RunStep(
       id = id,
       run = row[Id]("run"),
@@ -926,27 +945,11 @@ object RunStep {
   }
 }
 
-case class RunStepAccess(owner: Option[Id] = None) {
-//  def create(rid: Id, pid: Id, time_at: Option[Int], time_to: Option[Int],
-//             params: Array[RunStepParam] = Array())(implicit c: Connection): Option[Id] = {
-//      val tf_k: String = time_at.map(_ => ",time_at").getOrElse("")
-//      val tf_v: String = time_at.map(",%d".format(_)).getOrElse("")
-//      val tt_k: String = time_to.map(_ => ",time_end").getOrElse("")
-//      val tt_v: String = time_to.map(",%d".format(_)).getOrElse("")
-//      val ps1: Option[Id] = SQL(s"INSERT into RunStep(run,protocol_step$tf_k$tt_k) " +
-//        s"values($rid,$pid$tf_v$tt_v)").executeInsert()
-//      for(p <- params){
-//        val pp: Option[Id] = SQL(
-//          "INSERT into ProtocolStepParam(step,name,param_type,unit) " +
-//            s"values($ps1,'${escape(p.name)}','$p.typ','$p.unit')")
-//          .executeInsert()
-//      }
-//      ps1
-//    }
-  val oid: Id = owner.getOrElse(Database.sandboxUserId)
+case class RunStepAccess(o_owner: Option[Id]) {
+  val owner: Id = o_owner.getOrElse(Database.sandboxUserId)
 
   def get(id: Id)(implicit c: Connection): Option[RunStep] = {
-    SQL(s"SELECT * from RunStep where id=$id")().map(RunStep.fromRow(full = true)).headOption
+    SQL(s"SELECT * from RunStep where id=$id")().map(RunStep.fromRow(o_owner = o_owner, full = true)).headOption
   }
 
   //@Transaction
@@ -1017,7 +1020,7 @@ case class RunStepAccess(owner: Option[Id] = None) {
     SQL("SELECT * from RunStepParam INNER JOIN ProtocolStepParam "+
       "ON RunStepParam.param=ProtocolStepParam.id INNER JOIN ProtocolStep " +
       "ON ProtocolStepParam.step=ProtocolStep.id INNER JOIN Experiment " +
-      s"ON ProtocolStep.experiment=Experiment.id where RunStepParam.step=$runStep and Experiment.owner=$oid")().map{row =>
+      s"ON ProtocolStep.experiment=Experiment.id where RunStepParam.step=$runStep and Experiment.owner=$owner")().map{row =>
       RunStepParam(
         id = row[Id]("RunStepParam.id"),
         protocolParam = row[Id]("ProtocolStepParam.id"),

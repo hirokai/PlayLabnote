@@ -24,7 +24,8 @@ object SampleType extends Controller {
     (o_name,o_parent) match {
       case (Some(name),Some(parent)) =>
       DB.withConnection{implicit c =>
-        val res = SampleTypeAccess().create(name,parent)
+        val u: Option[Id] = Application.getUserId(request)
+        val res = SampleTypeAccess(u).create(name,parent)
         res.map{ id =>
           Ok(Json.obj("success" -> true, "data" -> Json.obj("id" -> id, "name" -> name, "parent" -> parent)))
         }.getOrElse(Ok(Json.obj("success" -> false, "message" -> "DB failed.")))
@@ -42,7 +43,8 @@ object SampleType extends Controller {
     val o_name = params.get("name").flatMap(_.headOption)
     val o_parent = params.get("parent").flatMap(_.headOption).flatMap(toIdOpt)
     DB.withConnection{implicit c =>
-      val res = SampleTypeAccess().update(id,o_name,o_parent)
+      val u: Option[Id] = Application.getUserId(request)
+      val res = SampleTypeAccess(u).update(id,o_name,o_parent)
       res match {
         case Right(_) => Ok(Json.obj("success" -> true, "data" -> Json.obj("id" -> id, "name" -> o_name, "parent" -> o_parent)))
         case Left(err) =>
@@ -53,10 +55,9 @@ object SampleType extends Controller {
 
   def delete(id: Id) = Action(parse.tolerantFormUrlEncoded) { request =>
     DB.withTransaction {implicit c =>
-//      val params = request.body
-//      val force = params.get("force").flatMap(_.headOption) == Some("true")
-      if(!SampleTypeAccess().hasSamples(id, subtypes = true)){
-        val r = SampleTypeAccess().delete(id,subtypes=true)
+      val u: Option[Id] = Application.getUserId(request)
+      if(!SampleTypeAccess(u).hasSamples(id, subtypes = true)){
+        val r = SampleTypeAccess(u).delete(id,subtypes=true)
         if(r) Ok(Json.obj("success" -> true, "id" -> id)) else Ok(Json.obj("success" -> false, "id" -> id))
       }else{
         Ok(Json.obj("success" -> false, "id" -> id, "message" -> "Has samples"))
@@ -68,12 +69,13 @@ object SampleType extends Controller {
   def listJson() = Action { request =>
     val flatten: Boolean = request.getQueryString("flatten") == Some("true")
     DB.withConnection{ implicit c =>
+      val u: Option[Id] = Application.getUserId(request)
       if(flatten){
-        val arr: Array[SampleType] = Array(SampleTypeAccess().get(models.SampleType.AnyType.id).get) ++
-          SampleTypeAccess().findDescendants()(models.SampleType.AnyType)
+        val arr: Array[SampleType] = Array(SampleTypeAccess(u).get(models.SampleType.getAnyTypeId(u)).get) ++
+          SampleTypeAccess(u).findDescendants()(models.SampleType.getAnyType(u))
         Ok(Json.toJson(arr))
       }else{
-        val tree: Tree[SampleType] = SampleTypeAccess().getTypeTree()(models.SampleType.AnyType)
+        val tree: Tree[SampleType] = SampleTypeAccess(u).getTypeTree()(models.SampleType.getAnyType(u))
         Ok(mkTreeJson(tree))
       }
     }
@@ -82,11 +84,12 @@ object SampleType extends Controller {
   def getJson(id: Id) = Action {request =>
     DB.withConnection{ implicit c =>
       val full = request.getQueryString("full") == Some("true")
-      val o_t = SampleTypeAccess().get(id)
+      val u: Option[Id] = Application.getUserId(request)
+      val o_t = SampleTypeAccess(u).get(id)
        o_t match {
          case Some(t) =>
            if(full){
-             val samples = models.SampleAccess().findCompatibleSamples(id,true)
+             val samples = models.SampleAccess(u).findCompatibleSamples(id,true)
              Ok(Json.obj("id"->id, "name" -> t.name, "samples" -> samples))
            }else{
              Ok(Json.toJson(t))
@@ -101,12 +104,13 @@ object SampleType extends Controller {
   // Whether this returns the type detail or not.
     val deep: Option[String] = request.getQueryString("deep")
     DB.withConnection{ implicit c =>
+      val u: Option[Id] = Application.getUserId(request)
       if(deep == Some("true")){
-        val t = SampleTypeAccess().get(id)
-        Ok(Json.toJson(t.map(SampleTypeAccess().findChildren)))
+        val t = SampleTypeAccess(u).get(id)
+        Ok(Json.toJson(t.map(SampleTypeAccess(u).findChildren)))
       }
       else
-        Ok(Json.toJson(SampleTypeAccess().findChildrenId(id)))
+        Ok(Json.toJson(SampleTypeAccess(u).findChildrenId(id)))
     }
   }
 
@@ -115,12 +119,13 @@ object SampleType extends Controller {
   // Whether this returns the type detail or not.
     val full = request.getQueryString("full") == Some("true")
     DB.withConnection{ implicit c =>
+      val u: Option[Id] = Application.getUserId(request)
       if(full){
-        val t = SampleTypeAccess().get(id)
-        Ok(Json.toJson(t.map(SampleTypeAccess().findDescendants()(_))))
+        val t = SampleTypeAccess(u).get(id)
+        Ok(Json.toJson(t.map(SampleTypeAccess(u).findDescendants()(_))))
       }
       else
-        Ok(Json.toJson(SampleTypeAccess().findDescendantsId()(id)))
+        Ok(Json.toJson(SampleTypeAccess(u).findDescendantsId()(id)))
     }
   }
 }

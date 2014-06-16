@@ -1,3 +1,5 @@
+@(email: String, apiKey: String)
+
 <!DOCTYPE html>
 <html>
 <head>
@@ -6,7 +8,11 @@
 <body>
 Logged in...
     <script type="text/javascript">
+        localStorage.setItem('labnote.email', "@Html(email)");
+        localStorage.setItem('labnote.apiKey', "@Html(apiKey)");
         window.close();
+
+        console.log(window.parent);
 
     </script>
 </body>

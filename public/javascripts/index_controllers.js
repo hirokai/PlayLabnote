@@ -93,10 +93,10 @@ expsApp.controller('protocolGraphCtrl', ['$scope', function ($scope) {
 
 //This controller is loaded in the beginning, no matter which tab is open. (Background loading).
 expsApp.controller('entireCtrl',
-    ['$scope', '$http', '$timeout',
+    ['$scope', '$http', '$timeout', '$interval', '$window',
         'listViewSvc',
         'ExpDataSvc', 'SampleDataSvc', 'TypeDataSvc',
-    function ($scope, $http, $timeout,
+    function ($scope, $http, $timeout, $interval, $window,
               listViewSvc,
               ExpDataSvc, SampleDataSvc, TypeDataSvc) {
         var init = function () {
@@ -117,28 +117,74 @@ expsApp.controller('entireCtrl',
             $scope.selectedItem = listViewSvc.selectedItem;
             $scope.showList = listViewSvc.showList;
 
-            $http({url: '/account/getStateKey',method:'GET'}).success(function(r){
-                $scope.google_state_key = r;
-            });
+            $http.defaults.headers.common.Authorization = "OAuth2 " +  localStorage['labnote.apiKey'];
+            $scope.checkLogin();
 
         };
-
-        init();
 
         // There seems to be many options including 'Google+ signin', but this follows the following.
         // https://developers.google.com/accounts/docs/OAuth2Login
         $scope.googleLogin = function() {
             var redirectUrl = 'https://localhost/google_oauth2callback';
             var clientId = '599783734738-c8a62sjqes2a2j1sai58a7akn7e1j55h.apps.googleusercontent.com';
-            var state = $scope.google_state_key;
 
-            var url = 'https://accounts.google.com/o/oauth2/auth'+
-                '?response_type=code'+
-                '&scope=openid%20email' +
-                '&client_id='+clientId+
-                '&redirect_uri='+redirectUrl +
-                '&state='+state;
-            window.open(url,'Log in','width=500,height=500');
+            $http({url: '/account/getStateKey',method:'GET'}).success(function(state){
+                var url = 'https://accounts.google.com/o/oauth2/auth'+
+                    '?response_type=code'+
+                    '&scope=openid%20email' +
+                    '&client_id='+clientId+
+                    '&redirect_uri='+redirectUrl +
+                    '&state='+state;
+                window.open(url,'Log in','width=500,height=500');
+            });
+        };
+
+        $scope.logout = function(){
+            $http({url: '/account/logout', method:'GET'}).success(function(r){
+                delete localStorage['labnote.apiKey'];
+                delete localStorage['labnote.email'];
+                $scope.account_email = null;
+                $scope.loggedIn = false;
+                $http.defaults.headers.common.Authorization = "";
+                console.log(r);
+                $scope.checkLogin();
+            });
+        };
+
+        angular.element($window).bind('storage',function(e){
+            console.log('storage',e,localStorage);
+            $scope.$apply(function(){
+                $scope.account_email = localStorage['labnote.email'];
+                $scope.loggedIn = !!localStorage['labnote.email'];
+                location.reload();
+            });
+
+        });
+
+        $scope.$watch('loggedIn',function(nv,ov){
+            if(!nv && ov) {
+                location.reload();
+            }
+        });
+
+//        var count = 0;
+//        var timer = $interval(function(){
+//            count += 1;
+//            checkLogin();
+//        },5000);
+
+        $scope.checkLogin = function(){
+            $http.defaults.headers.common.Authorization = "OAuth2 " +  localStorage['labnote.apiKey'];
+            $http({url: '/account/loginStatus',method:'GET'}).success(function(r){
+                console.log(r);
+                if(r.logged_in){
+                    $scope.account_email = r.email;
+                    $scope.loggedIn = true;
+                }else{
+                    $scope.account_email = null;
+                    $scope.loggedIn = false;
+                }
+            });
         };
 
         //Selection change or content change
@@ -168,6 +214,7 @@ expsApp.controller('entireCtrl',
 
         $scope.pageTitle.value = 'Labnotebook';
 
+        init();
 
 
     }]);

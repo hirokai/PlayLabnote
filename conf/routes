@@ -83,3 +83,5 @@ POST          /test/:name                                   controllers.Experime
 # OAuth2
 GET           /google_oauth2callback                        controllers.Application.googleOAuth2Callback
 GET           /account/getStateKey                          controllers.Application.getStateKey
+GET           /account/loginStatus                          controllers.Application.getLoginStatus
+GET           /account/logout                               controllers.Application.logout

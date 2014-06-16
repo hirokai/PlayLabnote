@@ -5,7 +5,14 @@
 CREATE TABLE User (
   id bigint(20) NOT NULL AUTO_INCREMENT,
   email text NOT NULL,
+  api_secret text,
   PRIMARY KEY (id)
+);
+
+CREATE TABLE GoogleOAuth2 (
+  user_id bigint(20) NOT NULL REFERENCES User(id),
+  access_token text,
+  refresh_token text
 );
 
 CREATE TABLE UserInfo (
@@ -141,3 +148,4 @@ DROP TABLE RunStep;
 DROP TABLE RunStepParam;
 DROP TABLE UserInfo;
 DROP TABLE User;
+DROP TABLE GoogleOAuth2;

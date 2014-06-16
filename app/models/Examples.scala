@@ -4,19 +4,19 @@ import play.api.db.DB
 import play.api.Play.current
 import play.Logger
 
-class SampleDatabase(owner: Database.Id) {
+case class SampleDatabase(owner: Option[Database.Id]) {
   def setup() {
     DB.withTransaction {
       implicit c =>
         try {
-          val any = SampleType.AnyType.id
+          val any = SampleType.getAnyTypeId(owner)
           val o_t1 = SampleTypeAccess(owner).getOrCreate("Substrate", any)
           val o_t2 = SampleTypeAccess(owner).getOrCreate("SUVs", any)
           o_t2.flatMap {
             t2 =>
               val t3 = SampleTypeAccess(owner).getOrCreate("Lipids", any)
               val t4 = SampleTypeAccess(owner).getOrCreate("Fab materials", any)
-              val s1 = SampleAccess(owner).create("SUVs 1")
+              val s1 = SampleAccess(owner).create("SUVs 1",t2)
               val o_e1 = ExperimentAccess(owner).create("Making SUVs")
               o_e1.flatMap {
                 e1 =>

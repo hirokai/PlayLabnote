@@ -29,7 +29,11 @@ expsApp.filter('typeFilter', function () {
     };
 });
 
-expsApp.config(['$stateProvider', '$urlRouterProvider', function($stateProvider, $urlRouterProvider){
+expsApp.run(['$window',function($window){
+
+}]);
+
+expsApp.config(['$stateProvider', '$urlRouterProvider', '$httpProvider', function($stateProvider, $urlRouterProvider,$httpProvider){
     $urlRouterProvider.otherwise("/exps");
 
     $stateProvider
@@ -112,6 +116,9 @@ expsApp.config(['$stateProvider', '$urlRouterProvider', function($stateProvider,
                 }
             }
         });
+
+    $httpProvider.defaults.headers.common.Authorization = "OAuth2 " +  localStorage['labnote.apiKey'];
+
 }]);
 
 guid = function () {

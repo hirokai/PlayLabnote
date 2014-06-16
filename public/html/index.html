@@ -16,8 +16,10 @@
     <body class='container-fluid'>
         <div id="righttop_tools">
             <button type="button" class="btn btn-default btn-sm" ng-model="showList.value" btn-checkbox >List</button>
-            <button type="button" class="btn btn-default btn-sm" ng-model="showList.value" ng-click='googleLogin()' >Login</button>
-            {{google_state_key}}
+            <button type="button" class="btn btn-default btn-sm" ng-disabled='loggedIn' ng-click='googleLogin()' >Login</button>
+            <button type="button" class="btn btn-default btn-sm" ng-disabled='!loggedIn' ng-click='logout()' >Logout</button>
+            {{account_email}}
+            <span ng-if='!loggedIn'>Sandbox account.</span>
         </div>
 
         <div class='row wrapper'>

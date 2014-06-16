@@ -3,6 +3,7 @@ bower_components
 project/project
 project/target
 public/libs
+conf/oauth2.conf
 conf/host.key
 conf/host.cert
 node_modules/
@@ -19,5 +20,4 @@ dist
 /RUNNING_PID
 /.settings
 .DS_Store
-conf/oauth2.conf
 

@@ -26,9 +26,10 @@ object Sample extends Controller {
     (o_name,o_typ) match {
       case (Some(name),Some(tid)) =>{
         DB.withConnection{ implicit c =>
-          SampleAccess().create(name,tid) match {
+          val u: Option[Id] = Application.getUserId(request)
+          SampleAccess(u).create(name,tid) match {
             case Some(id) => {
-              val typ = SampleTypeAccess().get(tid)
+              val typ = SampleTypeAccess(u).get(tid)
               Ok(Json.obj("success" -> true, "data" -> Json.obj("id" -> id, "name" -> name, "typ" -> typ)))
             }
             case _ => Ok(Json.obj("success" -> false))
@@ -42,29 +43,33 @@ object Sample extends Controller {
   def delete(id: Id) = Action { request =>
     val force = request.getQueryString("force") == Some("true")
     DB.withConnection{ implicit c =>
-      val r = SampleAccess().delete(id,force)
+      val u: Option[Id] = Application.getUserId(request)
+      val r = SampleAccess(u).delete(id,force)
       Ok(Json.obj("success" -> r, "data" -> Json.obj("id" -> id)))
     }
   }
 
-  def listJson = Action {
+  def listJson = Action { request =>
     DB.withConnection{ implicit c =>
-      val samples = SampleAccess().list
+      val u: Option[Id] = Application.getUserId(request)
+      val samples = SampleAccess(u).list
       Ok(Json.toJson(samples))
     }
   }
 
-  def getJson(id: Id) = Action {
+  def getJson(id: Id) = Action { request =>
     DB.withConnection{ implicit c =>
-      val sample = SampleAccess().get(id)
+      val u: Option[Id] = Application.getUserId(request)
+      val sample = SampleAccess(u).get(id)
       Ok(Json.toJson(sample))
     }
   }
 
-  def getExps(id: Id) = Action {
+  def getExps(id: Id) = Action {request =>
     import JsonWriter.implicitExperimentWrites
     DB.withConnection{implicit c =>
-      val exps: Array[models.Experiment] = SampleAccess().findExps(id)
+      val u: Option[Id] = Application.getUserId(request)
+      val exps: Array[models.Experiment] = SampleAccess(u).findExps(id)
       Ok(Json.obj("success" -> true, "data" -> exps))
     }
   }
@@ -73,12 +78,15 @@ object Sample extends Controller {
   def samplesOfType(tid: Id) = Action { request =>
     val subtypes = request.getQueryString("subtypes") == Some("true")
     val countOnly = request.getQueryString("countOnly") == Some("true")
-    if(countOnly){
-      val count = SampleAccess().findCompatibleSampleCount(tid,subtypes)
-      Ok(Json.obj("count" -> count))
-    }else{
-      val samples = SampleAccess().findCompatibleSamples(tid,subtypes).toArray
-      Ok(Json.toJson(samples))
+    DB.withConnection {implicit c =>
+      val u: Option[Id] = Application.getUserId(request)
+      if(countOnly){
+        val count = SampleAccess(u).findCompatibleSampleCount(tid,subtypes)
+        Ok(Json.obj("count" -> count))
+      }else{
+        val samples = SampleAccess(u).findCompatibleSamples(tid,subtypes).toArray
+        Ok(Json.toJson(samples))
+      }
     }
   }
 
@@ -87,8 +95,9 @@ object Sample extends Controller {
     var o_typ: Option[Id] = parameters.get("type").flatMap(_.headOption).flatMap(toIdOpt)
     var o_name: Option[String] = parameters.get("name").flatMap(_.headOption)
     val res = DB.withConnection{ implicit c =>
-      if(o_typ.isEmpty || SampleAccess().isTypeCompatibleWithAllAssignment(id,o_typ.get)){
-        if(SampleAccess().update(id,o_name,o_typ)){
+      val u: Option[Id] = Application.getUserId(request)
+      if(o_typ.isEmpty || SampleAccess(u).isTypeCompatibleWithAllAssignment(id,o_typ.get)){
+        if(SampleAccess(u).update(id,o_name,o_typ)){
           Some(Json.obj("id" -> id, "name" -> o_name, "typ" -> o_typ))
         }else{
           None
