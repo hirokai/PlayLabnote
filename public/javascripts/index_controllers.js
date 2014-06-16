@@ -116,9 +116,30 @@ expsApp.controller('entireCtrl',
             $scope.selectedListTab = listViewSvc.selectedListTab;
             $scope.selectedItem = listViewSvc.selectedItem;
             $scope.showList = listViewSvc.showList;
+
+            $http({url: '/account/getStateKey',method:'GET'}).success(function(r){
+                $scope.google_state_key = r;
+            });
+
         };
 
         init();
+
+        // There seems to be many options including 'Google+ signin', but this follows the following.
+        // https://developers.google.com/accounts/docs/OAuth2Login
+        $scope.googleLogin = function() {
+            var redirectUrl = 'https://localhost/google_oauth2callback';
+            var clientId = '599783734738-c8a62sjqes2a2j1sai58a7akn7e1j55h.apps.googleusercontent.com';
+            var state = $scope.google_state_key;
+
+            var url = 'https://accounts.google.com/o/oauth2/auth'+
+                '?response_type=code'+
+                '&scope=openid%20email' +
+                '&client_id='+clientId+
+                '&redirect_uri='+redirectUrl +
+                '&state='+state;
+            window.open(url,'Log in','width=500,height=500');
+        };
 
         //Selection change or content change
 

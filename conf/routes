@@ -78,3 +78,8 @@ GET           /types/$id<[0-9]+>/direct_subtypes            controllers.SampleTy
 GET           /types/$id<[0-9]+>/subtypes                   controllers.SampleType.getSubtypes(id: models.Database.Id)
 
 POST          /test/:name                                   controllers.Experiment.addTestData(name)
+
+
+# OAuth2
+GET           /google_oauth2callback                        controllers.Application.googleOAuth2Callback
+GET           /account/getStateKey                          controllers.Application.getStateKey

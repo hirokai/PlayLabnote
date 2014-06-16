@@ -16,6 +16,8 @@
     <body class='container-fluid'>
         <div id="righttop_tools">
             <button type="button" class="btn btn-default btn-sm" ng-model="showList.value" btn-checkbox >List</button>
+            <button type="button" class="btn btn-default btn-sm" ng-model="showList.value" ng-click='googleLogin()' >Login</button>
+            {{google_state_key}}
         </div>
 
         <div class='row wrapper'>
@@ -33,8 +35,8 @@
 
         <script src="//cdnjs.cloudflare.com/ajax/libs/underscore.js/1.6.0/underscore-min.js"></script>
         <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
-        <script type="text/javascript" src='/public/javascripts/dagre-d3-custom.js'></script>
-        <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.3.0-beta.10/angular.js"></script>
+        <script src='/public/javascripts/dagre-d3-custom.js'></script>
+        <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.3.0-beta.10/angular.js"></script>
         <script src="//cdnjs.cloudflare.com/ajax/libs/angular-ui-router/0.2.10/angular-ui-router.min.js"></script>
         <script src="//cdnjs.cloudflare.com/ajax/libs/angular.js/1.3.0-beta.8/angular-resource.min.js"></script>
         <script src="//cdnjs.cloudflare.com/ajax/libs/angular-ui-bootstrap/0.10.0/ui-bootstrap.min.js"></script>
@@ -54,7 +56,7 @@
             <!-- Library -->
         <script src='/public/libs/angular-ui-tree/dist/angular-ui-tree.min.js'></script>
         <script src="/public/libs/underscore.string/dist/underscore.string.min.js"></script>
-        <script src='http://cdnjs.cloudflare.com/ajax/libs/moment.js/2.6.0/moment.min.js'></script>
+        <script src='//cdnjs.cloudflare.com/ajax/libs/moment.js/2.6.0/moment.min.js'></script>
 
             <!-- My own scripts -->
 <!--        <script src="/public/javascripts/dagre-d3-custom.js"></script>
