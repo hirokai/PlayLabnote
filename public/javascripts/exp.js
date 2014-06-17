@@ -154,7 +154,7 @@ expsApp.controller('ExpDetailCtrl', ['$scope', '$http', '$state', '$stateParams'
             var id = $scope.item.id;
             var url = '/exps/' + id + '/psamples'
             var name = 'Sample ' + ($scope.item.protocolSamples.length + 1);
-            var typ = 0;
+            var typ = $scope.types[0].id;
             $http({url: url, method: 'POST',data: $.param({name: name, type: typ})}).success(function(r){
                 $scope.item.protocolSamples.push(r.data);
                 $scope.showMessage('Sample added.')

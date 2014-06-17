@@ -316,35 +316,53 @@ object Experiment extends Controller {
 
   def createRunSample(rid: Id, pid: Id) = Action(parse.tolerantFormUrlEncoded) { request =>
     val params = request.body
+    val creating = params.get("create").flatMap(_.headOption) == Some("true")
+    val o_id = params.get("id").flatMap(_.headOption).flatMap(toIdOpt)
     val o_name = params.get("name").flatMap(_.headOption)
     val tid = params.get("type").flatMap(_.headOption).flatMap(toIdOpt)
-    o_name match {
-      case Some(n) => {
-        DB.withTransaction {implicit c =>
-          val u: Option[Id] = Application.getUserId(request)
-          val o_r: Option[Id] = ExperimentAccess(u).createRunSample(rid,pid,n,tid)
-          o_r match {
-            case Some(r) => {
-              val o_typ = SampleAccess(u).get(r).map{ sample =>
-                sample.typ match {
-                  case Right(t) => Some(t)
-                  case _ => None
+    if(creating){
+      o_name match {
+        case Some(n) => {
+          DB.withTransaction {implicit c =>
+            val u: Option[Id] = Application.getUserId(request)
+            val o_r: Option[Id] = ExperimentAccess(u).createRunSample(rid,pid,n,tid)
+            o_r match {
+              case Some(r) => {
+                val o_typ = SampleAccess(u).get(r).map{ sample =>
+                  sample.typ match {
+                    case Right(t) => Some(t)
+                    case _ => None
+                  }
                 }
+                (o_r,o_typ)
               }
-              (o_r,o_typ)
+              case _ => (o_r, None)
             }
-            case _ => (o_r, None)
+          } match {
+            case (Some(id),Some(typ)) =>
+              Ok(Json.obj("success" -> true, "id" -> id,
+                "data" -> Json.obj("id" -> id, "name" -> n, "run" -> rid, "protocolSample" -> pid, "typ" -> typ)))
+            case _ =>
+              NotFound(Json.obj())
           }
-        } match {
-          case (Some(id),Some(typ)) =>
-            Ok(Json.obj("success" -> true, "id" -> id,
-              "data" -> Json.obj("id" -> id, "name" -> n, "run" -> rid, "protocolSample" -> pid, "typ" -> typ)))
-          case _ =>
-            NotFound(Json.obj())
         }
+        case _ => Status(400)
       }
-      case _ => Status(400)
+    }else{
+      o_id match {
+        case Some(id) =>
+          DB.withTransaction {implicit c =>
+            val u: Option[Id] = Application.getUserId(request)
+            if(ExperimentAccess(u).assignExistingSample(rid,pid,id)){
+              Ok(Json.obj("success"-> true))
+            }else{
+              Status(400)("DB error in assignment.")
+            }
+          }
+        case _ => Status(400)("Param is missing.")
+      }
     }
+
   }
 
   def getRunSamples(id: Id) = Action(parse.tolerantFormUrlEncoded) { request =>
