@@ -144,7 +144,11 @@ expsApp.controller('RunSampleCtrl',['$scope','$http', '$timeout', 'listViewSvc',
 
 expsApp.controller('SampleChooserCtrl',['$scope', '$http', function($scope,$http){
     var init = function(){
-        $scope.compatibleSamples = $scope.item.runSamples;
+        var typ = $scope.types[0].id;
+        $http({url: '/samples/of_type/'+typ, method: 'GET', params: {subtypes: true}}).success(function(r){
+            console.log(r);
+            $scope.compatibleSamples = r;
+        })
     };
 
     init();
