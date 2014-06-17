@@ -41,10 +41,10 @@
                 </span>
                 </div>
                 <div>
-                    Sample: <input type="text" ng-disabled='selectedSamples.length != 1' ng-model='selectedSamples[0].name' ng-model-options="{ updateOn: 'blur' }"/>
+                    Sample: <input type="text" ng-disabled='selectedSamples.length != 1' ng-model='sampleById(selectedSamples[0]).name' ng-model-options="{ updateOn: 'blur' }"/>
                     <span>Type:
-                         <select ng-disabled='selectedSamples.length != 1' ng-model="selectedSamples[0].typ"
-                                 ng-change='' ng-options="type as type.title for type in types"></select>
+                         <select ng-disabled='selectedSamples.length != 1' ng-model="sampleById(selectedSamples[0]).typ"
+                                 ng-options="type as type.name for type in types"></select>
                     </span>
                     <span><a ng-disabled='selectedSamples.length != 1'  class='btn btn-sm btn-default' ui-sref="sample_id({id: selectedSamples[0].id})">Detail</a></span>
                 </div>
@@ -67,10 +67,10 @@
                     </a></td>
                     <td ng-click='clickPSample(psample,$event)' ng-class='{selected: isSelectedPSample(psample)}'>{{psample.name}}</td>
                     <td>{{psample.typ.name}}</td>
-                    <td ng-repeat='run in item.runs' ng-class='{cell_runsample: true, selected: runSample.selected}' ng-controller='RunSampleCtrl'>
-                        <div class='runsample' ng-if='runSample.id' ng-click='clickRunSample($event)'>{{runSample.name}} <br><small>{{runSample.typ.name}}</small></div>
-                        <div ng-if='!runSample.id' class='empty_runsample'>
-                            <a class="btn btn-sm btn-primary" ng-click='addRunSample(psample,run)'><span class='glyphicon glyphicon-plus'></span></a>
+                    <td ng-repeat='run in item.runs' ng-class='{cell_runsample: true, selected: isSelectedSample(), selected_cell: isSelectedCell()}' ng-controller='RunSampleCtrl'>
+                        <div class='runsample' ng-if='id' ng-click='clickRunSample($event)'>{{name()}} <br><small>{{typName()}}</small></div>
+                        <div ng-if='!id' class='empty_runsample' ng-click='clickEmptyCell($event)'>
+                            <a class="btn btn-sm btn-primary" ng-click='addRunSample(psample,run,$event)'><span class='glyphicon glyphicon-plus'></span></a>
                             <a class="btn btn-sm btn-primary" ng-click='chooseRunSampleToAssign(psample,run)'><span class='glyphicon glyphicon-import'></span></a>
                         </div>
                     </td>

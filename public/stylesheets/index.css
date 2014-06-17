@@ -37,14 +37,21 @@
 
 td {
     cursor: pointer;
+    transition: background 0.1s linear;
 }
 
-td.selected {
+td.selected_cell {
     background: pink;
 }
 
 td.selected.cell_runsample {
-    background: orange;
+    font-weight: bold;
+    transition: background 0.1s linear;
+}
+
+td.selected_cell.cell_runsample {
+    background: #d0cbff;
+    transition: background 0.1s linear;
 }
 
 td {
@@ -73,6 +80,9 @@ input[disabled] {
 
 .cell_runsample .empty_runsample {
     visibility: hidden;
+    width: 100%;
+    height: 100%;
+    padding: 0;
 }
 
 .cell_runsample:hover {

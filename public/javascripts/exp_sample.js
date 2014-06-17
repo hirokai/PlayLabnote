@@ -59,25 +59,57 @@ expsApp.controller('ProtocolSampleCtrl',['$scope','$http', function($scope, $htt
 expsApp.controller('RunSampleCtrl',['$scope','$http', '$timeout', 'listViewSvc', '$modal', function($scope,$http,$timeout,listViewSvc, $modal){
     var key = $scope.run.id + ':' + $scope.psample.id;
 //        console.log(key,$scope.item.runSamples,$scope.item.runSamples[key]);
-    $scope.runSample =  $scope.item.runSamples[key] || {};
-    $scope.runSample.rid = $scope.run.id;
-    $scope.runSample.psid = $scope.psample.id;
+    var s = $scope.item.runSamples[$scope.run.id][$scope.psample.id];
+ //   console.log(s,$scope.item.runSamples,$scope.run.id,$scope.psample.id)
+    $scope.id =  s;
+    $scope.rid = $scope.run.id;
+    $scope.psid = $scope.psample.id;
+
+    $scope.name = function() {
+        var obj = _.findWhere($scope.item.samples, {id: $scope.id});
+       // console.log($scope.id,obj,$scope.item.runSamples,$scope.item.samples)
+        return obj ? obj.name : null;
+    }
+
+    $scope.typName = function(){
+        var obj = _.findWhere($scope.item.samples, {id: $scope.id});
+        return obj ? obj.typ.name : null;
+    }
+
+    $scope.isSelectedSample = function(){
+        return _.contains($scope.selectedSamples,$scope.id);
+    }
+
+    $scope.isSelectedCell = function(){
+        var key = $scope.run.id + ':' + $scope.psample.id;
+        var r = _.contains($scope.selectedRunSampleCells,key);
+        return r;
+    }
 
     $scope.clickRunSample = function($event){
-        var sample = $scope.runSample;
-        console.log(sample);
         if($event.altKey){
-            $http({url: '/runsamples/'+sample.rid+'/'+sample.psid, method: 'DELETE'}).success(function(r){
-                var k = sample.rid + ':' + sample.psid;
-                $scope.runSample = null;
+            $http({url: '/runsamples/'+$scope.run.id+'/'+$scope.psample.id, method: 'DELETE'}).success(function(r){
+                $scope.id = null;
             }).error(function(r){
 
-                });
-        }else if($event.metaKey){
-            $scope.selectRunSample($scope.runSample,true);
-        }else{
-            $scope.selectRunSample($scope.runSample,false);
+            });
+        }else {
+            $scope.selectRunSampleCell($scope.run.id,$scope.psample.id,$event.metaKey);
+            $scope.selectRunSample($scope.id,$event.metaKey);
         }
+    };
+
+    $scope.clickEmptyCell = function($event){
+        $scope.selectRunSampleCell($scope.run.id,$scope.psample.id,$event.metaKey);
+    };
+
+    $scope.selectRunSampleCell = function(run,psample,adding) {
+        var k = run+':'+psample;
+        if(!adding){
+            $scope.selectedRunSampleCells.length = 0;
+        }
+        $scope.selectedRunSampleCells.push(k);
+        console.log($scope.selectedRunSampleCells);
     };
 
     $scope.$watch('runSample.typ',function(nv,ov){
@@ -115,7 +147,7 @@ expsApp.controller('RunSampleCtrl',['$scope','$http', '$timeout', 'listViewSvc',
         return ss && sample && (ss.id == sample.id);
     };
 
-    $scope.addRunSample = function(psample,run){
+    $scope.addRunSample = function(psample,run,$event){
         var rid = run.id;
         var pid = psample.id;
         var name = psample.typ.name + moment().format("-M/D/YY");
@@ -124,16 +156,16 @@ expsApp.controller('RunSampleCtrl',['$scope','$http', '$timeout', 'listViewSvc',
             console.log(r,d);
             var key = d.run + ':' + d.protocolSample;
             console.log(key,$scope.item.runSamples);
-            $scope.item.runSamples[key] = d;
+            $scope.item.runSamples[rid][pid] = r.data.id;
+            $scope.item.samples[d.id] = d;
             listViewSvc.samples.push(d);
-            $scope.runSample = d;
-            $scope.runSample.rid = rid;
-            $scope.runSample.psid = pid;
+            $scope.id = d.id;
             console.log($scope.item.runSamples);
 //            $timeout(function(){$scope.$digest();},0);
         }).error(function(r){
                 console.log(r);
             });
+        $event.stopPropagation()
     };
 
     $scope.chooseRunSampleToAssign = function(psample,run){
@@ -144,7 +176,7 @@ expsApp.controller('RunSampleCtrl',['$scope','$http', '$timeout', 'listViewSvc',
 
 expsApp.controller('SampleChooserCtrl',['$scope', '$http', function($scope,$http){
     var init = function(){
-        var typ = $scope.types[0].id;
+        var typ = $scope.psample.typ.id // $scope.types[0].id;
         $http({url: '/samples/of_type/'+typ, method: 'GET', params: {subtypes: true}}).success(function(r){
             console.log(r);
             $scope.compatibleSamples = r;

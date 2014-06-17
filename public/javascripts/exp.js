@@ -68,6 +68,7 @@ expsApp.controller('ExpDetailCtrl', ['$scope', '$http', '$state', '$stateParams'
             $scope.selectedPSteps = [];
 
             $scope.selectedSamples = [];
+            $scope.selectedRunSampleCells = [];
             console.log('initData()');
 
             var id = $stateParams.id;
@@ -213,24 +214,12 @@ expsApp.controller('ExpDetailCtrl', ['$scope', '$http', '$state', '$stateParams'
                 });
         }
 
-        $scope.selectRunSample = function(s,adding){
-            console.log(s);
-            var newt = _.findWhere($scope.types,{id: s.typ.id});
-            if(newt){
-                s.typ = newt;
-                if(adding){
-                    $scope.selectedSamples.push(s);
-                    s.selected = true;
-                }else{
-                    _.map($scope.selectedSamples,function(s){
-                        s.selected = false;
-                    });
-                    $scope.selectedSamples = [s];
-                    s.selected = true;
-                }
-            }else{
-
+        $scope.selectRunSample = function(sid,adding){
+            var sample = $scope.item.samples[sid];
+            if(!adding){
+                $scope.selectedSamples.length = 0;
             }
+            $scope.selectedSamples.push(sid);
         };
 
         $scope.deselectRunSample = function(s){
@@ -243,9 +232,29 @@ expsApp.controller('ExpDetailCtrl', ['$scope', '$http', '$state', '$stateParams'
             }
         };
 
-        $scope.isActive = function () {
-            return $scope.selectedItem.id || $scope.selectedItem.id == 0;
+        $scope.sampleById = function(id) {
+          var samples = $scope.item ? $scope.item.samples : null;
+          return samples ? $scope.item.samples[id] : null;
         };
+
+        $scope.$watch('item.samples',function(nv,ov){
+            if(!nv || !ov || nv == ov) return;
+            var diff = diffChangeSamples(nv,ov);
+            console.log(nv,ov,diff);
+            if(diff.changed){
+                _.map(diff.changed,function(chg){
+                   var n = chg[0];
+                    var o = chg[1];
+                    if(n.name != o.name){
+                        console.log('Name changed.');
+                        $http({url: '/samples/'+n.id, method: 'PUT', data: $.param({name: n.name})});
+                    }
+                    if(n.typ.id != o.typ.id){
+                        console.log('Type changed.');
+                    }
+                });
+            }
+        },true);
 
         $scope.selectPSample = function(s,adding){
             console.log(s);
@@ -289,13 +298,30 @@ expsApp.controller('ExpDetailCtrl', ['$scope', '$http', '$state', '$stateParams'
     }]);
 
 prepareExpData = function(exp){
-    _.map(exp.runSteps,function(step,k){
-        createRunParams(step,parseInt(k.split(':')[1]),exp.protocolSteps);
-    });
-    var keys = _.zip.apply(null,_.map(Object.keys(exp.runSteps),function(k){return k.split(':');}));
     var runs = _.map(exp.runs,function(run){return run.id;});
     var psteps = _.map(exp.protocolSteps,function(pstep){return pstep.id;});
-    var res = {};
+    var psamples = _.map(exp.protocolSamples,function(pstep){return pstep.id;});
+
+    console.log(runs,psteps);
+
+    //Run samples
+    var samples = {};
+    var sampledata = {};
+    _.map(runs,function(run){
+        var obj = {};
+        _.map(psamples,function(psample){
+            var o = exp.runSamples[run + ':' + psample];
+            if(o){
+                obj[psample] = o.id;
+                sampledata[o.id] = o;
+                sampledata[o.id].typ.title = o.typ.name;
+            }
+        });
+        samples[run] = obj;
+    });
+
+    //Run steps
+    var steps = {};
     _.map(runs,function(run){
         var obj = {};
         _.map(psteps,function(pstep){
@@ -303,9 +329,22 @@ prepareExpData = function(exp){
             if(o)
                 obj[pstep] = o;
         });
-        res[run] = obj;
+        console.log(run,obj);
+        steps[run] = obj;
     });
-    exp.runSteps = res;
+    exp.runSamples = samples;
+    exp.runSteps = steps;
+    exp.samples = sampledata;
+    console.log(exp);
+
+
+    //Run params
+    _.map(exp.runSteps,function(steps,run){
+        _.map(steps,function(step,psample){
+            createRunParams(step,parseInt(psample),exp.protocolSteps);
+        });
+    });
+
     return exp;
 }
 
@@ -322,3 +361,19 @@ createRunParams = function(step,psid,protocolSteps){
     console.log(step,psid,protocolSteps);
     return step;
 }
+
+var diffChangeSamples = function (vs1, vs2) {
+    if(_.isEqual(Object.keys(vs1),Object.keys(vs2))){
+        var keys = Object.keys(vs1);
+        var changed = [];
+        _.map(keys,function(k){
+           if(!_.isEqual(vs1[k],vs2[k])){
+               changed.push([vs1[k],vs2[k]]);
+           }
+        });
+
+        return {changed: changed};
+    }else{
+        return {};  //stub
+    }
+};
