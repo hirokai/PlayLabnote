@@ -42,6 +42,14 @@ pre.json {
     opacity: 1;
 }
 
+.fades_svg {
+    opacity: 0;
+}
+.fades_svg.in{
+    opacity: 1;
+}
+
+
 rect {
     fill: #f8fff1;
     stroke-width: 1;

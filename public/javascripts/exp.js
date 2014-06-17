@@ -69,6 +69,9 @@ expsApp.controller('ExpDetailCtrl', ['$scope', '$http', '$state', '$stateParams'
 
             $scope.selectedSamples = [];
             $scope.selectedRunSampleCells = [];
+
+            $scope.units = unitList;
+
             console.log('initData()');
 
             var id = $stateParams.id;
@@ -122,6 +125,13 @@ expsApp.controller('ExpDetailCtrl', ['$scope', '$http', '$state', '$stateParams'
                 listViewSvc.showSection.step = true;
             }
         });
+
+        $scope.$watch('showSection.protocol',function(nv,ov){
+            if(nv && !ov){
+                $timeout(function(){$('#resetZoom').click();},0);
+                $timeout(function(){$scope.graphLoaded = true;},50);
+            }
+        })
 
         // Action handlers
         $scope.deleteExp = function (id) {

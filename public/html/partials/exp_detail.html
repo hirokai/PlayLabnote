@@ -120,7 +120,12 @@
                     <td>
                         <span class='glyphicon glyphicon-remove' ng-if='editingPSteps.val' ng-click='deleteParam(param)'></span>
 
-                        {{param.name}} <small>({{unit(param)}})</small></td>
+                        <span >{{param.name}} <small ng-if='!editingPSteps.val'>({{unit(param)}})</small></span>
+                        <select ng-if='editingPSteps.val' ng-model="param.type_unit"
+                                ng-options='unit.value as unit.name for unit in units'></select>
+                        </span>
+
+                    </td>
                     <td ng-repeat='run in item.runs' ng-controller='ParamCtrl' ng-class='{runsample_cell: true, runsample_stub: !runStep(run,pstep)}'>
                         <input class='paraminput' type='{{inputType(param)}}' step='{{inputType(param) =="number" ? "0.1" : ""}}'
                                ng-disabled='!runStep(run,pstep)' ng-model='runStepParam(run,pstep,param).value' ng-model-options="{ updateOn: 'blur' }"/>

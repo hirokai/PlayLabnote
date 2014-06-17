@@ -38,7 +38,7 @@
             </div>
             <div style='margin: 8px 0;'>
                 <a class="btn btn-xs btn-default" ng-click='selectNone()'>Select none</a>
-                <a class="btn btn-xs btn-default" ng-click='resetZoom()'>Reset zoom</a>
+                <a class="btn btn-xs btn-default" id='resetZoom' ng-click='resetZoom()'>Reset zoom</a>
             </div>
             <div style='margin: 8px 0;'>
                 <input type="checkbox" id='shrink_nodes' ng-model='shrinkNodes.val'/>
@@ -49,7 +49,7 @@
 
         </div>
         <div id='protocol_graph_wrapper'>
-            <svg id='protocol_graph'>
+            <svg id='protocol_graph' ng-class='{fades_svg: true, in: graphLoaded}'>
             </svg>
         </div>
     </div>

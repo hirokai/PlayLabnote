@@ -34,7 +34,6 @@ angular.module('myGraph',['d3'])
 
     }])
     .controller('PStepParamCtrl',['$scope','$http', function($scope, $http){
-        $scope.units = unitList;
 
         $scope.getParamUnitName = function(type_unit){
             return _.findWhere($scope.units,{value: type_unit}).name;
@@ -133,9 +132,12 @@ angular.module('myGraph',['d3'])
                         });
 
                         scope.graphZoom = scope.graphZoom || {};
-                        var el = $('svg');
+                        var el = $('#protocol_graph');
+                        var visible = el.is(":visible");
+                        var w = visible ? el.width() : 668;
+                        var h = visible ? el.height() : 600;
                         if(scope.autoZoom.val){
-                            scope.graphZoom.scale = getDefaultScale(layout,el.width(),el.height());
+                            scope.graphZoom.scale = getDefaultScale(layout,w,h);
                             scope.graphZoom.translate = getDefaultTranslate(layout);
                         }else{
                             scope.graphZoom.scale = scope.graphZoom.scale || getDefaultScale(layout,el.width(),el.height());
@@ -486,6 +488,7 @@ var getDefaultScale = function(layout,svg_w,svg_h){
 //        console.log('No node.');
 //        return 1;
 //    }
+
     svg_w = svg_w || 300;
     svg_h = svg_h || 500;
     var ranks = _.map(layout._nodes,function(n){return n.value.rank;});
