@@ -56,20 +56,12 @@ expsApp.controller('ProtocolSampleCtrl',['$scope','$http', function($scope, $htt
 }]);
 
 
-expsApp.controller('RunSampleCtrl',['$scope','$http', '$timeout', 'listViewSvc', function($scope,$http,$timeout,listViewSvc){
+expsApp.controller('RunSampleCtrl',['$scope','$http', '$timeout', 'listViewSvc', '$modal', function($scope,$http,$timeout,listViewSvc, $modal){
     var key = $scope.run.id + ':' + $scope.psample.id;
 //        console.log(key,$scope.item.runSamples,$scope.item.runSamples[key]);
     $scope.runSample =  $scope.item.runSamples[key] || {};
     $scope.runSample.rid = $scope.run.id;
     $scope.runSample.psid = $scope.psample.id;
-
-    $scope.typestr = function(){
-        var k = $scope.run.id + ':' + $scope.psample.id;
-        var s = $scope.runSample($scope.psample.id,$scope.run.id);
-        console.log($scope,k,s);
-        return s ? s.typ.name : null;
-
-    }
 
     $scope.clickRunSample = function($event){
         var sample = $scope.runSample;
@@ -89,7 +81,7 @@ expsApp.controller('RunSampleCtrl',['$scope','$http', '$timeout', 'listViewSvc',
     };
 
     $scope.$watch('runSample.typ',function(nv,ov){
-        if(ov && nv != ov){
+        if(nv && ov && nv != ov){
             console.log(nv);
             var sid = $scope.runSample.id;
             $http({url: '/samples/'+sid, method: 'PUT', data: $.param({type: nv.id})}).success(function(r){
@@ -127,7 +119,7 @@ expsApp.controller('RunSampleCtrl',['$scope','$http', '$timeout', 'listViewSvc',
         var rid = run.id;
         var pid = psample.id;
         var name = psample.typ.name + moment().format("-M/D/YY");
-        $http({url: '/runsamples/'+rid+'/'+pid, method: 'POST', data: $.param({name: name})}).success(function(r){
+        $http({url: '/runsamples/'+rid+'/'+pid, method: 'POST', data: $.param({create: true, name: name})}).success(function(r){
             var d = r.data;
             console.log(r,d);
             var key = d.run + ':' + d.protocolSample;
@@ -142,5 +134,30 @@ expsApp.controller('RunSampleCtrl',['$scope','$http', '$timeout', 'listViewSvc',
         }).error(function(r){
                 console.log(r);
             });
+    };
+
+    $scope.chooseRunSampleToAssign = function(psample,run){
+        $modal.open({templateUrl: '/public/html/partials/sampleChooser.html', scope: $scope, controller: 'SampleChooserCtrl'});
+    }
+
+}]);
+
+expsApp.controller('SampleChooserCtrl',['$scope', '$http', function($scope,$http){
+    var init = function(){
+        $scope.compatibleSamples = $scope.item.runSamples;
+    };
+
+    init();
+
+    $scope.chooseSample = function(sample) {
+        var rid = $scope.run.id;
+        var pid = $scope.psample.id;
+        $http({url: '/runsamples/'+rid+'/'+pid, method: 'POST', data: $.param({create: false, id: sample.id})}).success(function(r){
+            $scope.$parent.runSample = sample;
+            $scope.$parent.rid = rid;
+            $scope.$parent.psid = pid;
+        });
+        $scope.$close();
+
     };
 }]);

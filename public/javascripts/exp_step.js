@@ -119,7 +119,6 @@ expsApp.controller('ProtocolStepCtrl',['$scope', '$http', function($scope, $http
 expsApp.controller('RunStepNoteCtrl',['$scope','$http',function($scope,$http){
     $scope.runstep = $scope.runStep($scope.run,$scope.pstep);
     $scope.$watch('runstep.note',function(nv,ov){
-        console.log(nv,ov);
         if(!nv || ov == undefined || nv == ov) return;
         var id = $scope.runstep.id;
         $http({url: '/steps/'+id, method: 'PUT', data: $.param({note: nv})}).success(function(r){

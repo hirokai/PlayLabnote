@@ -1,4 +1,4 @@
-<div class="fade" ng-class="{in:loaded}">
+<div class="fades" ng-class="{in:loaded}">
     <div ng-class="row" >
         <div editable-name item='item'></div>
     </div>
@@ -71,6 +71,7 @@
                         <div class='runsample' ng-if='runSample.id' ng-click='clickRunSample($event)'>{{runSample.name}} <br><small>{{runSample.typ.name}}</small></div>
                         <div ng-if='!runSample.id' class='empty_runsample'>
                             <a class="btn btn-sm btn-primary" ng-click='addRunSample(psample,run)'><span class='glyphicon glyphicon-plus'></span></a>
+                            <a class="btn btn-sm btn-primary" ng-click='chooseRunSampleToAssign(psample,run)'><span class='glyphicon glyphicon-import'></span></a>
                         </div>
                     </td>
                 </tr>
