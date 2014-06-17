@@ -40,6 +40,10 @@ td {
     transition: background 0.1s linear;
 }
 
+td.psample_cell.selected {
+    background: pink;
+}
+
 td.selected_cell {
     background: pink;
 }

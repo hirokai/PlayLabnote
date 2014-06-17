@@ -190,6 +190,7 @@ expsApp.controller('ExpDetailCtrl', ['$scope', '$http', '$state', '$stateParams'
             var name = 'Run ' + ($scope.item.runs.length + 1);
             $http({url: url, method: 'POST',data: $.param({name: name})}).success(function(r){
                 $scope.item.runs.push(r.data);
+                $scope.item.runSamples[r.data.id] = {};
                 $scope.item.runSteps[r.data.id] = {};
             });
         };
@@ -257,11 +258,6 @@ expsApp.controller('ExpDetailCtrl', ['$scope', '$http', '$state', '$stateParams'
         },true);
 
         $scope.selectPSample = function(s,adding){
-            console.log(s);
-            var newt = _.findWhere($scope.types,{id: s.typ.id});
-            console.log(s,newt);
-            if(newt){
-                s.typ = newt;
                 if(adding){
                     $scope.selectedPSamples.push(s);
                     s.selected = true;
@@ -273,9 +269,6 @@ expsApp.controller('ExpDetailCtrl', ['$scope', '$http', '$state', '$stateParams'
                     $scope.selectedPSteps = [];
                     s.selected = true;
                 }
-            }else{
-
-            }
             console.log(s);
         };
 

@@ -8,6 +8,13 @@ expsApp.controller('ProtocolSampleCtrl',['$scope','$http', function($scope, $htt
     $scope.clickPSample = function(item,$event){
         $scope.selectPSample(item,$event.metaKey);
     };
+
+        var newt = _.findWhere($scope.types,{id: $scope.psample.typ.id});
+        console.log($scope.psample,newt);
+        if(newt){
+            $scope.psample.typ = newt;
+        }
+
     $scope.deletePSample = function(id){
         var url = '/psamples/' + id;
         if(_.filter(Object.keys($scope.item.runSamples),function(k){return k.split(':')[1] == ""+id}).length > 0){
@@ -189,9 +196,7 @@ expsApp.controller('SampleChooserCtrl',['$scope', '$http', function($scope,$http
         var rid = $scope.run.id;
         var pid = $scope.psample.id;
         $http({url: '/runsamples/'+rid+'/'+pid, method: 'POST', data: $.param({create: false, id: sample.id})}).success(function(r){
-            $scope.$parent.runSample = sample;
-            $scope.$parent.rid = rid;
-            $scope.$parent.psid = pid;
+            $scope.$parent.id = sample.id;
         });
         $scope.$close();
 

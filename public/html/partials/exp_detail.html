@@ -34,17 +34,15 @@
     <div class='row' >
         <section ng-show='showSection.sample'>
             <h3>Samples</h3>
+            <span><input type="checkbox" ng-model='editingPSamples.val' btn-checkbox/>Editing protocol</span>
             <div>
                 <div>
-                    <span>Protocol sample type:
-                <select ng-disabled='selectedPSamples.length != 1' ng-model="selectedPSamples[0].typ" ng-options="type as type.title for type in types"></select>
-                </span>
-                </div>
-                <div>
-                    Sample: <input type="text" ng-disabled='selectedSamples.length != 1' ng-model='sampleById(selectedSamples[0]).name' ng-model-options="{ updateOn: 'blur' }"/>
-                    <span>Type:
-                         <select ng-disabled='selectedSamples.length != 1' ng-model="sampleById(selectedSamples[0]).typ"
-                                 ng-options="type as type.name for type in types"></select>
+                    <span>
+                        Name: <input type="text" ng-disabled='selectedSamples.length != 1' ng-model='sampleById(selectedSamples[0]).name' ng-model-options="{ updateOn: 'blur' }"/>
+                    </span>
+                    <span>
+                        Type: <select ng-disabled='selectedSamples.length != 1' ng-model="sampleById(selectedSamples[0]).typ"
+                                 ng-options="type as type.title for type in types"></select>
                     </span>
                     <span><a ng-disabled='selectedSamples.length != 1'  class='btn btn-sm btn-default' ui-sref="sample_id({id: selectedSamples[0].id})">Detail</a></span>
                 </div>
@@ -53,7 +51,7 @@
             <table class='table' id='sample_table'>
                 <thead><tr>
                     <th style='width: 100px;'>
-                        <a class='btn btn-xs btn-default' ng-click='addPSample(item.id)'>+Sample</a>
+                        <a class='btn btn-xs btn-default' ng-if='editingPSamples.val' ng-click='addPSample(item.id)'>+Sample</a>
                         <a class='btn btn-xs btn-default' ng-click='addRun(item)'>+Run</a>
                     </th>
                     <th>Name</th>
@@ -62,11 +60,17 @@
                 </tr>
                 </thead>
                 <tbody><tr ng-repeat='psample in item.protocolSamples' ng-controller='ProtocolSampleCtrl'>
-                    <td><a class='btn btn-xs btn-default' ng-click='deletePSample(psample.id)'>
+                    <td><a ng-if='editingPSamples.val' class='btn btn-xs btn-default' ng-click='deletePSample(psample.id)'>
                         <span class='glyphicon glyphicon-minus'></span>
                     </a></td>
-                    <td ng-click='clickPSample(psample,$event)' ng-class='{selected: isSelectedPSample(psample)}'>{{psample.name}}</td>
-                    <td>{{psample.typ.name}}</td>
+                    <td ng-click='clickPSample(psample,$event)' ng-class='{psample_cell: true, selected: isSelectedPSample(psample)}'>{{psample.name}}</td>
+                    <td>
+                        <span ng-if='editingPSamples.val'>
+                            <select ng-model="psample.typ"
+                                    ng-options="type as type.title for type in types"></select>
+                        </span>
+                        <span ng-if='!editingPSamples.val'>{{psample.typ.name}}</span>
+                    </td>
                     <td ng-repeat='run in item.runs' ng-class='{cell_runsample: true, selected: isSelectedSample(), selected_cell: isSelectedCell()}' ng-controller='RunSampleCtrl'>
                         <div class='runsample' ng-if='id' ng-click='clickRunSample($event)'>{{name()}} <br><small>{{typName()}}</small></div>
                         <div ng-if='!id' class='empty_runsample' ng-click='clickEmptyCell($event)'>
@@ -82,6 +86,7 @@
     <div class='row' >
         <section ng-show='showSection.step' ng-if='loaded'>
             <h3>Steps</h3>
+            <span><input type="checkbox" ng-model='editingPSteps.val' btn-checkbox/>Editing protocol</span>
             <table class="table" id="step_table">
                 <thead>
                 <tr>
@@ -93,7 +98,7 @@
                 <tbody ng-repeat='pstep in item.protocolSteps' ng-controller='ProtocolStepCtrl'>
                 <tr class='run_time'>
                     <td ng-class='{title_col: true, selected: isSelectedPStep(pstep)}' ng-click='clickPStep(pstep,$event)'><b>{{pstep.name}}</b>
-                        <a class='btn btn-xs btn-default' ng-click='addParamInTable(pstep,$event)'>+Param</a>
+                        <a class='btn btn-xs btn-default' ng-if='editingPSteps.val' ng-click='addParamInTable(pstep,$event)'>+Param</a>
 
                     </td>
                     <td ng-repeat='run in item.runs' ng-class='{runsample_cell: true, runsample_stub: !runStep(run,pstep)}'>
@@ -113,7 +118,7 @@
                 </tr>
                 <tr ng-repeat='param in pstep.params'>
                     <td>
-                        <span class='glyphicon glyphicon-remove' ng-click='deleteParam(param)'></span>
+                        <span class='glyphicon glyphicon-remove' ng-if='editingPSteps.val' ng-click='deleteParam(param)'></span>
 
                         {{param.name}} <small>({{unit(param)}})</small></td>
                     <td ng-repeat='run in item.runs' ng-controller='ParamCtrl' ng-class='{runsample_cell: true, runsample_stub: !runStep(run,pstep)}'>
