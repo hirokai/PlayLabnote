@@ -242,6 +242,7 @@ th.run_header {
 }
 
 .paraminput {
+    width: 100%;
     max-width: 200px;
 }
 
@@ -252,19 +253,4 @@ th.run_header {
 
 .title_col {
     width: 150px;
-}
-
-#step_table {
-    font-size: 12px;
-}
-#step_table td {
-    padding: 0;
-}
-
-.empty_runsample .btn {
-    margin: 3px;
-}
-
-tr.samplechooser_samples:hover {
-    background: pink;
 }

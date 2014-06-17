@@ -8,7 +8,6 @@ import play.api.mvc.BodyParsers.parse
 import play.api.mvc.{Action, Controller}
 import scala.Some
 import play.api.Play.current
-import play.Logger
 
 object Sample extends Controller {
   import JsonWriter.implicitSampleTypeWrites
@@ -85,7 +84,6 @@ object Sample extends Controller {
         val count = SampleAccess(u).findCompatibleSampleCount(tid,subtypes)
         Ok(Json.obj("count" -> count))
       }else{
-        Logger.debug("%d %b".format(tid,subtypes))
         val samples = SampleAccess(u).findCompatibleSamples(tid,subtypes).toArray
         Ok(Json.toJson(samples))
       }
