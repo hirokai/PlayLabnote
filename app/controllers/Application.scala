@@ -51,25 +51,12 @@ object Application extends Controller {
     }
   }
 
-  def logout = Action { request =>
-    DB.withConnection{implicit c =>
-      val u: Option[Id] = Application.getUserId(request)
-      u.map{id =>
-          if(1 == SQL(s"UPDATE User SET api_secret=null where id=$id").executeUpdate()){
-            Ok(Json.obj("success"->true))
-          }else{
-            Status(400)
-          }
-      }.getOrElse(Status(400))
-    }
-  }
-
-
   def getUserId[A](req: Request[A])(implicit c: Connection): Option[Id] = {
     val a = req.headers.get("Authorization")
     a match {
       case Some(auth) => {
         val token = auth.split(" ")(1)
+        Logger.debug("Token is" + token)
         val r = SQL(s"SELECT id from User where api_secret='$token'")().map(_[Id]("id")).headOption
         Logger.debug("getUserId: "+r.map(_.toString).getOrElse("None")+" with token: "+token)
         r
@@ -78,15 +65,15 @@ object Application extends Controller {
     }
   }
 
-  import play.api.Play.current
-  private def addUserToken(email: String, apiKey: String, accessToken: String, expiresIn: Int): Boolean = {
-    println(email,apiKey,accessToken,expiresIn)
+  private def addUserToken(email: String, accessToken: String, expiresIn: Int): Boolean = {
+    import play.api.Play.current
+    println(email,accessToken,expiresIn)
     DB.withConnection{implicit c =>
       if(0 == SQL(s"SELECT count(*) as c from User where email='$email'")().map(_[Long]("c")).head){
         val u: Option[Id] = SQL(s"INSERT into User(email) values('${escape(email)}')").executeInsert()
         u.map(setupForNewUser)
       }
-      1 == SQL(s"UPDATE User SET api_secret='$apiKey' where email='$email'").executeUpdate()
+      1 == SQL(s"UPDATE User SET api_secret='$accessToken' where email='$email'").executeUpdate()
     }
   }
 
@@ -102,56 +89,49 @@ object Application extends Controller {
     Ok(Cache.get("state_key").asInstanceOf[String])
   }
 
-  // https://developers.google.com/accounts/docs/OAuth2Login
-  def googleOAuth2Callback = Action.async { request =>
-    import play.api.Play.current
+  def loginByOAuth2Token(email: String, access_token: String): Future[Result] = {
     import scala.concurrent.ExecutionContext.Implicits.global
-
-    val c = request.getQueryString("code")
-    val s: Option[String] = request.getQueryString("state")
-    println(c,s)
-    val res: Future[Result] = (c,s) match {
-      case (Some(code),Some(state)) => {
-        val client_id: String = Play.application().configuration().getString("oauth2.google.client_id")
-        val client_secret: String = Play.application().configuration().getString("oauth2.google.client_secret")
-        val redirect_uri = Play.application().configuration().getString("oauth2.google.redirect_uri")
-
-        val stateKey = Cache.get("state_key").asInstanceOf[String]
-        if(stateKey != state){
-          Future {Ok("Please reload the top page and login again.")}
-        }else{
-          val promise: Future[Result] = WS.url("https://accounts.google.com/o/oauth2/token").post(Map(
-            "code" -> Seq(code),
-            "client_id" -> Seq(client_id),
-            "client_secret" -> Seq(client_secret),
-            "redirect_uri" -> Seq(redirect_uri),
-            "grant_type" -> Seq("authorization_code")
-          )).flatMap{res =>
-            val json = res.json
-            val accessToken = (json \ "access_token").as[String]
-            val expiresIn = (json \ "expires_in").as[Int]
-            val url = "https://www.googleapis.com/oauth2/v1/tokeninfo"
-            WS.url(url).withQueryString("id_token" -> (json \ "id_token").as[String]).get().map{res =>
-              println(res.body)
-              val json = res.json
-              if((json \ "issuer").as[String] == "accounts.google.com" && (json \ "audience").as[String] == client_id){
-                //This is correct ID.
-                val email = (json \ "email").as[String]
-                val api_secret = scala.util.Random.alphanumeric.take(30).mkString
-                addUserToken(email, api_secret, accessToken, expiresIn)
-                Ok(views.html.loggedIn(email,api_secret))
-              }else{
-                println("Not correct ID",(json \ "issuer").as[String],(json \ "audience").as[String])
-                Ok("failed")
-              }
-            }
-          }
-          promise
-        }
+    val url = "https://www.googleapis.com/oauth2/v1/tokeninfo"
+    WS.url(url).withQueryString("access_token" -> access_token).get().map{res =>
+      val j = res.json
+      Logger.debug(res.body)
+      val email_s = (j \ "email").as[String]
+      val expires = (j \ "expires_in").as[Int]
+      if(email == email_s){
+        addUserToken(email,access_token,expires)
+        Ok(Json.obj("email" -> email))
+      }else{
+        Status(400)("Email address incorrect.")
       }
-      case _ => Future {Ok("failed")}
     }
-    res
+  }
+
+  def login = Action.async(parse.tolerantFormUrlEncoded) {request =>
+    import scala.concurrent.ExecutionContext.Implicits.global
+    val params = request.body
+    val e = params.get("email").flatMap(_.headOption)
+
+    val a = request.headers.get("Authorization")
+    (e,a) match {
+      case (Some(email),Some(auth)) => {
+        val token: String = auth.split(" ")(1)
+        loginByOAuth2Token(email,token)
+      }
+      case _ => Future(Status(400)("Missing Auth info."))
+    }
+  }
+
+  def logout = Action { request =>
+    DB.withConnection{implicit c =>
+      val u: Option[Id] = Application.getUserId(request)
+      u.map{id =>
+        if(1 == SQL(s"UPDATE User SET api_secret=null where id=$id").executeUpdate()){
+          Ok(Json.obj("success"->true))
+        }else{
+          Status(400)
+        }
+      }.getOrElse(Status(400))
+    }
   }
 
 }

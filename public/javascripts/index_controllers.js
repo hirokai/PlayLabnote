@@ -117,7 +117,7 @@ expsApp.controller('entireCtrl',
             $scope.selectedItem = listViewSvc.selectedItem;
             $scope.showList = listViewSvc.showList;
 
-            $http.defaults.headers.common.Authorization = "OAuth2 " +  localStorage['labnote.apiKey'];
+            $http.defaults.headers.common.Authorization = "OAuth2 " +  localStorage['labnote.access_token'];
             $scope.checkLogin();
 
         };
@@ -125,29 +125,48 @@ expsApp.controller('entireCtrl',
         // There seems to be many options including 'Google+ signin', but this follows the following.
         // https://developers.google.com/accounts/docs/OAuth2Login
         $scope.googleLogin = function() {
-            var redirectUrl = 'https://localhost/google_oauth2callback';
             var clientId = '599783734738-c8a62sjqes2a2j1sai58a7akn7e1j55h.apps.googleusercontent.com';
-
-            $http({url: '/account/getStateKey',method:'GET'}).success(function(state){
-                var url = 'https://accounts.google.com/o/oauth2/auth'+
-                    '?response_type=code'+
-                    '&scope=openid%20email' +
-                    '&client_id='+clientId+
-                    '&redirect_uri='+redirectUrl +
-                    '&state='+state;
-                window.open(url,'Log in','width=500,height=500');
+            var scopes = 'openid email';
+            gapi.auth.authorize({client_id: clientId, scope: scopes, immediate: false}, function(auth){
+                console.log(auth);
+                var url = 'https://www.googleapis.com/oauth2/v1/tokeninfo?access_token=' + auth.access_token;
+                $.post(url).success(function(r){
+                    console.log(r);
+                    if(r.audience == clientId){
+                        console.log('Token verified.');
+                        localStorage.setItem('labnote.access_token', auth.access_token);
+                        $http.defaults.headers.common.Authorization = 'OAuth '+auth.access_token;
+                        $http({url: '/account/login', method: 'POST', data: $.param({email: r.email})}).success(function(r){
+                            localStorage['labnote.email'] = r.email;
+                            $scope.account_email = r.email;
+                            $scope.loggedIn = true;
+                        }).error(function(r){
+                                localStorage['labnote.email'] = null;
+                                $scope.account_email = null;
+                                $scope.loggedIn = false;
+                            });
+//                        gapi.load('picker', {'callback': createPicker});
+                    }else{
+                        console.log('token is invalid!!!');
+                    }
+                })
             });
+
         };
 
         $scope.logout = function(){
+            // https://developers.google.com/+/web/signin/#revoking_access_tokens_and_disconnecting_the_app
+            // http://stackoverflow.com/questions/12809339/how-to-revoke-an-authentication-token-client-side-against-the-google-api
+            $http.jsonp('https://accounts.google.com/o/oauth2/revoke?token='+localStorage['labnote.access_token']).success(function(r){
+                console.log(r);
+            })
             $http({url: '/account/logout', method:'GET'}).success(function(r){
-                delete localStorage['labnote.apiKey'];
                 delete localStorage['labnote.email'];
+                delete localStorage['labnote.access_token'];
                 $scope.account_email = null;
                 $scope.loggedIn = false;
                 $http.defaults.headers.common.Authorization = "";
                 console.log(r);
-                $scope.checkLogin();
             });
         };
 
@@ -163,7 +182,7 @@ expsApp.controller('entireCtrl',
 
         $scope.$watch('loggedIn',function(nv,ov){
             if(!nv && ov) {
-                location.reload();
+          //      location.reload();
             }
         });
 
@@ -174,7 +193,7 @@ expsApp.controller('entireCtrl',
 //        },5000);
 
         $scope.checkLogin = function(){
-            $http.defaults.headers.common.Authorization = "OAuth2 " +  localStorage['labnote.apiKey'];
+            $http.defaults.headers.common.Authorization = "OAuth2 " +  localStorage['labnote.access_token'];
             $http({url: '/account/loginStatus',method:'GET'}).success(function(r){
                 console.log(r);
                 if(r.logged_in){

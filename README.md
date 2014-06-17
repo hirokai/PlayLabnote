@@ -1,4 +1,4 @@
-This is your new Play application
+Labnotebok
 =================================
 
 [![Build Status](https://travis-ci.org/hirokai/PlayLabnote.svg?branch=master)](https://travis-ci.org/hirokai/PlayLabnote)

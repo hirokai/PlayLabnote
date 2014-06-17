@@ -75,7 +75,7 @@ expsApp.controller('ExpDetailCtrl', ['$scope', '$http', '$state', '$stateParams'
             console.log('initData()');
 
             var id = $stateParams.id;
-            $http.defaults.headers.common.Authorization = "OAuth2 " +  localStorage['labnote.apiKey'];
+            $http.defaults.headers.common.Authorization = "OAuth2 " +  localStorage['labnote.access_token'];
 
             $http({url: '/exps/'+id+'.json', method: 'GET', params: {full: true}}).success(function(r){
                 $scope.item = prepareExpData(r);
@@ -155,6 +155,12 @@ expsApp.controller('ExpDetailCtrl', ['$scope', '$http', '$state', '$stateParams'
                 }
             });
         };
+
+
+        $scope.chooseGDrive = function(){
+            chooseGDrive();
+        }
+
 
         $scope.addPSample = function(){
             var id = $scope.item.id;

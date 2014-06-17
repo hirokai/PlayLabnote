@@ -26,6 +26,7 @@
         </section>
     </div>
     <div class='row' >
+        <a class="btn btn-sm btn-default" ng-click='chooseGDrive()'>GDrive</a>
         <section ng-show='showSection.protocol'> <!-- ng-if does not work. The controller in this section is necessary to keep track of updates.-->
             <h4>Protocol</h4>
             <protocol-graph ng-if='loaded' exp='item' selection='selectedPSamples'></protocol-graph>
