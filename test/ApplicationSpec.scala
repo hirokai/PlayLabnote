@@ -1,3 +1,4 @@
+import models.Database
 import org.specs2.mutable._
 import org.specs2.runner._
 import org.junit.runner._
@@ -48,6 +49,8 @@ class ApplicationSpec extends Specification {
 
   "Application" should {
 
+    val u = Some(Database.sandboxUserId)
+
     "send 404 on a bad request" in new WithApplication{
       route(FakeRequest(GET, "/boum")) must beNone
     }
@@ -71,14 +74,14 @@ class ApplicationSpec extends Specification {
           val names: Array[String] = genNames(100)
           val ns = choose(names,len)
           val es = for(n <- ns) yield {
-            ExperimentAccess().create(n)
+            ExperimentAccess(u).create(n)
           }
-          ExperimentAccess().countTotal must equalTo(len)
+          ExperimentAccess(u).countTotal must equalTo(len)
 
           for(Some(e) <- es){
-            ExperimentAccess().delete(e)
+            ExperimentAccess(u).delete(e)
           }
-          ExperimentAccess().countTotal must equalTo(0)
+          ExperimentAccess(u).countTotal must equalTo(0)
         }
       }
     }
@@ -95,18 +98,20 @@ class ApplicationSpec extends Specification {
     "add then remove samples must be no change" in {
       running(FakeApplication(additionalConfiguration = inMemoryDatabase())){
 
+
         DB.withConnection{implicit c =>
+          val tid = SampleTypeAccess(u).getAnyTypeId
           val len = 1000
           val names: Array[String] = genNames(100)
           val ns = choose(names,len)
           val es = for(n <- ns) yield {
-            SampleAccess().create(n)
+            SampleAccess(u).create(n,tid)
           }
-          SampleAccess().countTotal must equalTo(len)
+          SampleAccess(u).countTotal must equalTo(len)
           for(Some(e) <- es){
-            SampleAccess().delete(e)
+            SampleAccess(u).delete(e)
           }
-          SampleAccess().countTotal must equalTo(0)
+          SampleAccess(u).countTotal must equalTo(0)
 
         }
       }

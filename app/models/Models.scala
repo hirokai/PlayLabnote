@@ -449,6 +449,10 @@ case class SampleTypeAccess(o_owner: Option[Id]) {
   val owner: Id = o_owner.getOrElse(Database.sandboxUserId)
   val dbname = "SampleType"
 
+  def getAnyTypeId(implicit c: Connection): Id = {
+    SQL(s"SELECT id from SampleType where name='Any' and owner=$owner")().map(_[Id]("id")).head
+  }
+
   def create(name: String, parent: Id, system: Boolean = false)(implicit c: Connection): Option[Id] = {
     val exists = 0 < SQL(s"SELECT count(*) as c from SampleType where exists" +
        s" (SELECT * from SampleType where owner=$owner and name='${escapeName(name)}')")().map(_[Long]("c")).head
