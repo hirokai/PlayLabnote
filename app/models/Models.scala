@@ -112,7 +112,7 @@ case class ExperimentAccess(o_owner: Option[Id]) {
           with_runs: Boolean = false,
           with_psamples: Boolean = false)(implicit c: Connection): Option[Experiment] = {
       val exp: Option[models.Experiment] =
-        SQL("Select * from Experiment where id={id} limit 1").on('id -> id)()
+        SQL(s"Select * from Experiment where id=$id and owner=$owner limit 1")()
           .map(Experiment.fromRow).headOption
       exp match {
         case Some(e) => {
@@ -241,28 +241,42 @@ case class ExperimentAccess(o_owner: Option[Id]) {
   }
 
   def getProtocolSamples(eid: Id)(implicit c: Connection): Array[ProtocolSample] = {
-    val vs = SQL("SELECT * from ProtocolSample LEFT JOIN ProtocolSampleInStep on ProtocolSample.id=ProtocolSampleInStep.sample INNER JOIN "+
-      s"Experiment ON ProtocolSample.experiment=Experiment.id where ProtocolSample.experiment=$eid and Experiment.owner=$owner")().map{ row =>
-      val ps = ProtocolSample.fromRow(o_owner = o_owner, full = true)(row)
-      val role = row[Option[String]]("ProtocolSampleInStep.role")
-      ps.copy(role = role.map(Array(_)).getOrElse(Array()))
+    val s = s"SELECT * from ProtocolSample INNER JOIN Experiment ON ProtocolSample.experiment=Experiment.id where Experiment.id=$eid and Experiment.owner=$owner"
+    val samples: Array[ProtocolSample] = SQL(s)().map{row =>
+      val tid = row[Id]("ProtocolSample.type")
+      val typ = Right(SampleTypeAccess(o_owner).get(tid).get)
+
+      ProtocolSample(
+        row[Id]("ProtocolSample.id"),
+        row[String]("ProtocolSample.name"),
+        row[Option[String]]("ProtocolSample.note").getOrElse(""),
+        typ
+      )
     }.toArray
-    val vs2: Map[Id, Array[ProtocolSample]] = vs.groupBy{ v =>
-      v.id
+
+    samples.map{sample =>
+      val role: Array[String] = Array()
+      sample.copy(role = role)
     }
-    vs2.values.map{(vs: Array[ProtocolSample]) =>
-      val ps = vs.head
-      val role: Array[String] = vs.flatMap(_.role).distinct
-      ps.copy(role = role)
-    }.toArray
   }
 
   //@Transaction
   def deleteProtocolSample(pid: Id, force: Boolean = false)(implicit c: Connection): Either[String,String] = {
+      if(SQL(s"SELECT count(*) as c from ProtocolSample inner join Experiment on ProtocolSample.experiment=Experiment.id where ProtocolSample.id=$pid and Experiment.owner=$owner")()
+        .map(_[Long]("c")).headOption != Some(1l))
+        return Left("Not found or not owner.")
+
       if(force || SQL(s"SELECT count(*) as c from SampleInRun where protocol_sample=$pid")().map(_[Long]("c")).headOption == Some(0l)){
         //FIXME: Need to delete all protocol params etc.
         SQL(s"DELETE from ProtocolSampleInStep where sample=$pid").executeUpdate()
 
+        /*
+DELETE
+FROM ProtocolSample
+where exists
+(select * from protocolsample inner join experiment on protocolsample.experiment=experiment.id where experiment.owner=1 and protocolsample.id=18)
+
+        */
         SQL(s"DELETE from SampleInRun where protocol_sample=$pid").executeUpdate()
         val r = SQL(s"DELETE from ProtocolSample where id=$pid").executeUpdate()
         if(r == 1){
@@ -291,14 +305,23 @@ case class ExperimentAccess(o_owner: Option[Id]) {
               .on('r -> rid, 'p -> pid)().map(_[Long]("c")).head
   }
 
-  def assignExistingSample(pid: Id, rid: Id, sid: Id)(implicit c: Connection): Option[Id] = {
+  def assignExistingSample(rid: Id, pid: Id, sid: Id)(implicit c: Connection): Boolean = {
       val count: Long = countRunSamples(rid,pid)
-      if(count == 0){
-        SQL("INSERT into SampleInRun(sample,protocol_sample,run) values({s},{p},{r})")
-            .on('s -> sid, 'p -> pid, 'r -> rid).executeInsert()
+    try{
+      if(true || count == 0){
+        //This table does not have ID.
+        SQL(s"INSERT into SampleInRun(sample,protocol_sample,run) values($sid,$pid,$rid)").executeInsert()
+        true
       }else{
-        None
+        Logger.debug("Already exists.")
+        false
       }
+    }catch{
+      case e: Throwable =>{
+        Logger.debug(e.getMessage)
+        false
+      }
+    }
   }
 
   //Only allows one runsample per (rid,pid) point.
@@ -643,11 +666,11 @@ case class SampleAccess(o_owner: Option[Id]) {
 
   def list(implicit c: Connection): Array[Sample] = {
     SQL(s"SELECT * from sample inner join sampletype " +
-      s"on sample.type = sampletype.id")().map(Sample.fromRow).toArray
+      s"on sample.type = sampletype.id where sample.owner=$owner")().map(Sample.fromRow).toArray
   }
 
   def findExps(id: Id)(implicit c: Connection): Array[Experiment] = {
-    SQL("SELECT Experiment.* from Experiment inner join ExpRun on ExpRun.experiment=Experiment.id " +
+    SQL("SELECT DISTINCT Experiment.* from Experiment inner join ExpRun on ExpRun.experiment=Experiment.id " +
       "inner join SampleInRun on ExpRun.id=SampleInRun.run " +
       s"inner join Sample on SampleInRun.sample=Sample.id where Sample.id=$id"
     )().map(Experiment.fromRow).toArray
@@ -721,7 +744,7 @@ case class SampleAccess(o_owner: Option[Id]) {
         else
           tid.toString
       SQL(s"SELECT * from sampletype inner join sample " +
-        s"on sample.type = sampletype.id where sampletype.id in($str);")().map{row =>
+        s"on sample.type = sampletype.id where sampletype.id in($str) and sample.owner=$owner")().map{row =>
         val tid = row[Id]("sampletype.id")
         val t = SampleType(tid,row[String]("sampletype.name"),row[Option[Id]]("parent"))
         Sample(name = row[String]("sample.name"), id=row[Id]("sample.id"), typ = Right(t))

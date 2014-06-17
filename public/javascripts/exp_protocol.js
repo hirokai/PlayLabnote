@@ -2,6 +2,7 @@ angular.module('d3', [])
     .factory('d3Service', ['$document', '$q', '$rootScope',
         function($document, $q, $rootScope) {
             var d = $q.defer();
+            console.log("D3 service");
             function onScriptLoad() {
                 // Load client in the browser
                 $rootScope.$apply(function() { d.resolve(window.d3); });
@@ -72,11 +73,14 @@ angular.module('myGraph',['d3'])
     .directive('protocolGraph', ['d3Service', '$http', '$timeout', '$q', function(d3Service,$http,$timeout,$q) {
         return {
             restrict: 'EA',
-            templateUrl: '/public/html/partials/protocolGraph.html',
+            templateUrl: '/public/html/partials/exp_protocol.html',
             link: function(scope,element,attrs){
+                console.log("link!!!!!!");
                 d3Service.d3().then(function(d3) {
                     var svg = d3.select('svg');
                     scope.render = function(data) {
+
+                        console.log('render!!!!!');
 
                         var getPSample = function(id){
                             return _.findWhere(scope.item.protocolSamples,{id:id});

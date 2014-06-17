@@ -1,4 +1,4 @@
-<div class="fade" ng-class="{in:loaded}">
+<div class="fades" ng-class="{in:loaded}">
     <div ng-class="row" >
         <div editable-name item='item'></div>
     </div>
@@ -67,10 +67,12 @@
                     </a></td>
                     <td ng-click='clickPSample(psample,$event)' ng-class='{selected: isSelectedPSample(psample)}'>{{psample.name}}</td>
                     <td>{{psample.typ.name}}</td>
-                    <td ng-repeat='run in item.runs' ng-class='{cell_runsample: true, selected: runSample.selected}' ng-controller='RunSampleCtrl'>
-                        <div class='runsample' ng-if='runSample.id' ng-click='clickRunSample($event)'>{{runSample.name}} <br><small>{{runSample.typ.name}}</small></div>
-                        <div ng-if='!runSample.id' class='empty_runsample'>
+                    <td ng-repeat='run in item.runs' ng-class='{cell_runsample: true, selected: isSelectedRunSample(key)}' ng-controller='RunSampleCtrl'>
+                        {{item.runSamples[key]}}
+                        <div class='runsample' ng-if='runSample2().id' ng-click='clickRunSample($event)'>{{item.runSamples[key].name}} <br><small>{{item.runSamples[key].typ.name}}</small></div>
+                        <div ng-if='!runSample2()' class='empty_runsample'>
                             <a class="btn btn-sm btn-primary" ng-click='addRunSample(psample,run)'><span class='glyphicon glyphicon-plus'></span></a>
+                            <a class="btn btn-sm btn-primary" ng-click='assignRunSample(psample,run)'><span class='glyphicon glyphicon-import'></span></a>
                         </div>
                     </td>
                 </tr>
@@ -81,6 +83,7 @@
     <div class='row' >
         <section ng-show='showSection.step' ng-if='loaded'>
             <h3>Steps</h3>
+            <span><input type="checkbox" ng-model='editingProtocolSteps.val'/> Editing protocol</span>
             <table class="table" id="step_table">
                 <thead>
                 <tr>
@@ -92,7 +95,7 @@
                 <tbody ng-repeat='pstep in item.protocolSteps' ng-controller='ProtocolStepCtrl'>
                 <tr class='run_time'>
                     <td ng-class='{title_col: true, selected: isSelectedPStep(pstep)}' ng-click='clickPStep(pstep,$event)'><b>{{pstep.name}}</b>
-                        <a class='btn btn-xs btn-default' ng-click='addParamInTable(pstep,$event)'>+Param</a>
+                        <a class='btn btn-xs btn-default' ng-show='editingProtocolSteps.val' ng-click='addParamInTable(pstep,$event)'>+Param</a>
 
                     </td>
                     <td ng-repeat='run in item.runs' ng-class='{runsample_cell: true, runsample_stub: !runStep(run,pstep)}'>
@@ -112,12 +115,16 @@
                 </tr>
                 <tr ng-repeat='param in pstep.params'>
                     <td>
-                        <span class='glyphicon glyphicon-remove' ng-click='deleteParam(param)'></span>
+                        <span ng-if='editingProtocolSteps.val' class='glyphicon glyphicon-remove' ng-click='deleteParam(param)'></span>
 
-                        {{param.name}} <small>({{unit(param)}})</small></td>
+                        {{param.name}} <small>({{unitName(param)}})</small></td>
                     <td ng-repeat='run in item.runs' ng-controller='ParamCtrl' ng-class='{runsample_cell: true, runsample_stub: !runStep(run,pstep)}'>
+                        <span style="white-space: nowrap;">
                         <input class='paraminput' type='{{inputType(param)}}' step='{{inputType(param) =="number" ? "0.1" : ""}}'
                                ng-disabled='!runStep(run,pstep)' ng-model='runStepParam(run,pstep,param).value' ng-model-options="{ updateOn: 'blur' }"/>
+                        {{unit(param)}}
+                        </span>
+
                     </td>
                 </tr>
                 </tbody>

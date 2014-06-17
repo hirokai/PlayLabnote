@@ -29,6 +29,7 @@ expsApp.service('listViewSvc', ['$http', function ($http) {
         showSection: {note: true, sample: true, protocol: true},
         shrinkNodes: {val: false},
         expViewMode: {val: 'record'},
+        editingPSteps: {val: false},
         newSubItem: function (scope) {
             console.log(scope);
             var nodeData = scope.$modelValue;
@@ -93,12 +94,12 @@ expsApp.controller('protocolGraphCtrl', ['$scope', function ($scope) {
 
 //This controller is loaded in the beginning, no matter which tab is open. (Background loading).
 expsApp.controller('entireCtrl',
-    ['$scope', '$http', '$timeout', '$interval', '$window',
+    ['$scope', '$http', '$timeout', '$interval', '$window', '$state',
         'listViewSvc',
-        'ExpDataSvc', 'SampleDataSvc', 'TypeDataSvc',
-    function ($scope, $http, $timeout, $interval, $window,
+        'SampleDataSvc', 'TypeDataSvc',
+    function ($scope, $http, $timeout, $interval, $window, $state,
               listViewSvc,
-              ExpDataSvc, SampleDataSvc, TypeDataSvc) {
+              SampleDataSvc, TypeDataSvc) {
         var init = function () {
             //Common data store. This enables background loading.
             $http({url: '/exps.json', method: 'GET'}).success(function(r){
@@ -141,6 +142,7 @@ expsApp.controller('entireCtrl',
 
         $scope.logout = function(){
             $http({url: '/account/logout', method:'GET'}).success(function(r){
+                delete localStorage['labnote.stateKey'];
                 delete localStorage['labnote.apiKey'];
                 delete localStorage['labnote.email'];
                 $scope.account_email = null;

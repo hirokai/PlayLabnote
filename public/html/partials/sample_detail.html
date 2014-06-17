@@ -1,4 +1,4 @@
-<div class="fade row" ng-class="{in:loaded, 'col-md-8': showList.value, 'rightPane': showList.value, 'col-md-11': !showList.value}">
+<div class="fades row" ng-class="{in:loaded, 'col-md-8': showList.value, 'rightPane': showList.value, 'col-md-11': !showList.value}">
     <div ng-class="row" >
     <div editable-name item='item'></div>
 </div>
@@ -8,6 +8,11 @@
     <button type="button" class="btn btn-default btn-sm" ng-model="showDetailJson.value" btn-checkbox >JSON</button>
     <pre class='json' ng-if='showDetailJson.value'>{{selectedItem.sample | json}}</pre>
     <pre class='json' ng-if='showDetailJson.value'>{{item | json}}</pre>
+
+    <section>
+        <h3>Info</h3>
+        <p>Type: {{item.typ.name}}</p>
+    </section>
 
     <section>
         <h3>Experiments using sample</h3>

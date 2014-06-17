@@ -1,0 +1,26 @@
+<div class="modal-header">
+    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+    <h4 class="modal-title">Choose sample</h4>
+</div>
+<div class="modal-body">
+    <table>
+        <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Exp made</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr class='samplechooser_samples' ng-repeat='s in compatibleSamples' ng-click='chooseSample(s)'>
+            <td>{{s.name}}</td>
+            <td>{{s.typ.name}}</td>
+            <td></td>
+        </tr>
+        </tbody>
+    </table>
+</div>
+<div class="modal-footer">
+    <button type="button" class="btn btn-default" ng-click='$close()' data-dismiss="modal">Cancel</button>
+    <button type="button" class="btn btn-primary">Choose</button>
+</div>
