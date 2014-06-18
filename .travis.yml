@@ -6,6 +6,7 @@ before_script:
   - unzip -q play-${PLAY_VERSION}.zip
   - npm install -g bower
   - npm install -g grunt-cli
+  - npm install -g karma
   - npm install
   - bower install
   - grunt

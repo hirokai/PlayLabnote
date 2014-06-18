@@ -15,6 +15,7 @@ import play.libs.F.Promise
 import scala.concurrent.Future
 import play.Logger
 import play.api.libs.json.Json
+import models.UserAccess
 
 
 object Application extends Controller {
@@ -70,16 +71,10 @@ object Application extends Controller {
     println(email,accessToken,expiresIn)
     DB.withConnection{implicit c =>
       if(0 == SQL(s"SELECT count(*) as c from User where email='$email'")().map(_[Long]("c")).head){
-        val u: Option[Id] = SQL(s"INSERT into User(email) values('${escape(email)}')").executeInsert()
-        u.map(setupForNewUser)
+        UserAccess().setupUser(email)
       }
       1 == SQL(s"UPDATE User SET api_secret='$accessToken' where email='$email'").executeUpdate()
     }
-  }
-
-  def setupForNewUser(uid: Id)(implicit c: Connection) {
-    val r = SQL(s"INSERT into SampleType(owner,name,system) values($uid,'Any',true)").executeInsert()
-    models.SampleDatabase(Some(uid)).setup()
   }
 
   def getStateKey = Action {request =>

@@ -21,6 +21,31 @@ object Database {
 import Database.Id
 import Database.{escape,escapeName}
 
+case class User (id: Id, email: String, firstName: String, lastName: String)
+
+case class UserAccess() {
+  def listUserIDs(implicit c: Connection): Array[Id] = {
+    SQL(s"SELECT id from User")().map(_[Id]("id")).toArray
+  }
+  def addUser(email: String)(implicit c: Connection): Option[Id] = {
+    SQL(s"INSERT into User(email) values('${escape(email)}')").executeInsert()
+  }
+  //Add and setup.
+  def setupUser(email: String, addInitialData: Boolean = false)(implicit c: Connection): Option[Id] = {
+    addUser(email) match {
+      case None => None
+      case Some(uid) => {
+        SQL(s"INSERT into SampleType(owner,name,system) values($uid,'Any',true)").executeInsert()
+        if(addInitialData){
+          models.SampleDatabase(Some(uid)).setup()
+        }
+        Some(uid)
+      }
+    }
+  }
+
+}
+
 case class Experiment (
                        id: Id,
                        owner: Id,
@@ -453,6 +478,10 @@ case class SampleTypeAccess(o_owner: Option[Id]) {
     SQL(s"SELECT id from SampleType where name='Any' and owner=$owner")().map(_[Id]("id")).head
   }
 
+  def getAnyType(implicit c: Connection): SampleType = {
+    SQL(s"SELECT * from SampleType where name='Any' and owner=$owner")().map(SampleType.fromRow).head
+  }
+
   def create(name: String, parent: Id, system: Boolean = false)(implicit c: Connection): Option[Id] = {
     val exists = 0 < SQL(s"SELECT count(*) as c from SampleType where exists" +
        s" (SELECT * from SampleType where owner=$owner and name='${escapeName(name)}')")().map(_[Long]("c")).head
@@ -485,19 +514,19 @@ case class SampleTypeAccess(o_owner: Option[Id]) {
   }
 
   def delete(id: Id, subtypes: Boolean = true)(implicit c: Connection): Boolean = {
-    if(!hasSamples(id,subtypes)){
+    if(isSystemType(id)){
+      false
+    }else if(hasSamples(id,subtypes)){
+      false
+    }else {
       val tids = if(subtypes) findDescendantsId()(id) else Array(id)
       val str = tids.mkString(",")
       0 < SQL(s"DELETE from SampleType where id in($str)").executeUpdate()
-    }else if(isSystemType(id)){
-      false
-    }else{
-      false
     }
   }
 
   def isSystemType(id: Id)(implicit c: Connection): Boolean = {
-    SQL(s"SELECT system from SampleTypes where id=$id limit 1")().map(_[Boolean]("system")).headOption == Some(true)
+    SQL(s"SELECT * from SampleType where id=$id")().map(_[Boolean]("system")).headOption == Some(true)
   }
 
   def hasSamples(id: Id,subtypes: Boolean = true)(implicit c: Connection): Boolean = {
@@ -664,7 +693,7 @@ object SampleData {
       original_id = row[Option[String]]("original_id"))
   }
 }
-case class Sample(id: Id, name: String, typ: Either[Id,SampleType], note: String = "", data: Array[SampleData] = Array())
+case class Sample(id: Id, owner: Id, name: String, typ: Either[Id,SampleType], note: String = "", data: Array[SampleData] = Array())
 
 object Sample {
   //Caution: Always use join query to include sampletype.
@@ -674,7 +703,7 @@ object Sample {
     val id = row[Id]("sample.id")
     val data = SQL(s"SELECT * from SampleData where sample=$id")().map(SampleData.fromRow).toArray
 
-    Sample(id = id, name=row[String]("sample.name"), typ = Right(t), data = data)
+    Sample(id = id, owner=row[Id]("owner"), name=row[String]("sample.name"), typ = Right(t), data = data)
   }
 }
 
@@ -770,7 +799,7 @@ case class SampleAccess(o_owner: Option[Id]) {
         s"on sample.type = sampletype.id where sampletype.id in($str) and sample.owner=$owner")().map{row =>
         val tid = row[Id]("sampletype.id")
         val t = SampleType(tid,row[String]("sampletype.name"),row[Option[Id]]("parent"))
-        Sample(name = row[String]("sample.name"), id=row[Id]("sample.id"), typ = Right(t))
+        Sample(name = row[String]("sample.name"), owner = row[Id]("sample.owner"), id=row[Id]("sample.id"), typ = Right(t))
       }.toArray
     }
   }
