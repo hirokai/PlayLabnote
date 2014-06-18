@@ -116,4 +116,46 @@ object Sample extends Controller {
     }
   }
 
+  def createData(id: Id)  = Action(parse.tolerantFormUrlEncoded) { request =>
+    import JsonWriter.implicitSampleDataWrites
+    val parameters = request.body
+    var o_name: Option[String] = parameters.get("name").flatMap(_.headOption)
+    var o_url: Option[String] = parameters.get("url").flatMap(_.headOption)
+    var o_icon: Option[String] = parameters.get("icon").flatMap(_.headOption)
+    var o_note: Option[String] = parameters.get("note").flatMap(_.headOption)
+    var o_original_id: Option[String] = parameters.get("original_id").flatMap(_.headOption)
+    (o_url,o_name) match {
+      case (Some(url),Some(name)) => {
+        DB.withConnection{ implicit c =>
+          val u: Option[Id] = Application.getUserId(request)
+          SampleAccess(u).addData(id,url,name,"gdrive",o_icon,o_note,o_original_id) match {
+            case Some(r) =>
+              val d = SampleAccess(u).getData(r)
+              d match {
+                case Some(dat) =>
+                  Ok(Json.obj("success" -> true, "id" -> r, "data" -> dat))
+                case _ =>
+                  Status(400)
+              }
+            case _ =>
+              Status(400)
+          }
+        }
+      }
+      case _ =>
+        Status(400)
+    }
+  }
+
+  def deleteData(id: Id) = Action {request =>
+    DB.withConnection{ implicit c =>
+      val u: Option[Id] = Application.getUserId(request)
+      if(SampleAccess(u).deleteData(id)){
+        Ok("Done.")
+      }else{
+        Status(400)
+      }
+    }
+  }
+
 }

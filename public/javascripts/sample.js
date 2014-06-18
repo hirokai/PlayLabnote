@@ -51,11 +51,14 @@ expsApp.controller('SampleDetailCtrl', ['$scope', '$http', '$state', '$statePara
 
     $http({url: '/samples/'+id+'.json', method: 'GET'}).success(function(r){
         $scope.item = r;
+        console.log($scope.item);
         $scope.loaded = true;
         $http({url: '/samples/'+id+'/exps', method: 'GET'}).success(function(r){
             console.log(r);
             $scope.exps = r.data;
         });
+
+        $scope.loadDataInfo();
         listViewSvc.pageTitle.value = $scope.item.name + ' - Labnotebook';
 
     });
@@ -93,4 +96,81 @@ expsApp.controller('SampleDetailCtrl', ['$scope', '$http', '$state', '$statePara
         }
     };
 
+    $scope.getWhere = function(data) {
+      var t = data.typ;
+      if(t == 'gdrive'){
+          return 'Google Drive';
+      }else{
+          return t;
+      }
+    };
+
+    $scope.loadDataInfo = function(){
+
+    }
+
+    $scope.deleteData = function(data){
+        $http({url: '/sampledata/'+data.id, method: 'DELETE'}).success(function(r){
+            var idx = findIndex($scope.item.data, data.id);
+            if(idx >= 0){
+                $scope.item.data.splice(idx, 1);
+            }
+        });
+    };
+
+    $scope.addData = function(){
+        // https://developers.google.com/accounts/docs/OAuth2UserAgent?hl=ja#handlingtheresponse
+
+        var scopes = 'https://www.googleapis.com/auth/drive.file';
+        gapi.auth.authorize({client_id: clientId, scope: scopes, immediate: true}, function(auth){
+            console.log(auth);
+            access_token = auth.access_token;
+            var url = 'https://www.googleapis.com/oauth2/v1/tokeninfo?access_token=' + access_token;
+            $.post(url).success(function(r){
+                console.log(r);
+                if(r.audience == clientId){
+                    console.log('Token verified.');
+                    gapi.load('picker', {'callback': createPicker});
+                }else{
+                    console.log('token is invalid!!!');
+                }
+            })
+        });
+
+        var access_token;
+
+        function createPicker(){
+            var view = new google.picker.View(google.picker.ViewId.DOCS);
+            //   view.setMimeTypes("image/png,image/jpeg,image/jpg");
+            var picker = new google.picker.PickerBuilder()
+                .enableFeature(google.picker.Feature.NAV_HIDDEN)
+                .enableFeature(google.picker.Feature.MULTISELECT_ENABLED)
+                .setAppId(clientId)
+                .setOAuthToken(access_token)
+                .addView(view)
+                .addView(new google.picker.DocsUploadView())
+                .setDeveloperKey(developerKey)
+                .setCallback(pickerCallback)
+                .build();
+            picker.setVisible(true);
+        }
+
+        function pickerCallback(data) {
+            if (data.action == google.picker.Action.PICKED) {
+                var fileId = data.docs[0].id;
+                _.map(data.docs,function(doc){
+                   console.log(doc);
+                    var obj = {url: doc.url, name: doc.name, icon: doc.iconUrl, original_id: doc.id};
+                    console.log($scope.item);
+                   $http({url: '/samples/'+$scope.item.id+'/data', method: 'POST',
+                       data: $.param(obj)}).success(function(r){
+                           $scope.item.data.push(r.data);
+                       });
+                });
+            }
+        }
+
+    }
+
 }]);
+

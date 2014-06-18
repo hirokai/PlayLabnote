@@ -10,6 +10,28 @@
     <pre class='json' ng-if='showDetailJson.value'>{{item | json}}</pre>
 
     <section>
+        <h3>Data</h3>
+        <a class="btn btn-sm btn-default" ng-click='addData()'>Add from GDrive</a>
+        <table class="table">
+            <thead>
+            <tr>
+                <th>Data</th>
+                <th>Where</th>
+                <th>Note</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr ng-repeat='data in item.data'>
+                <td>
+                    <span class='glyphicon glyphicon-remove' ng-click='deleteData(data)'></span>
+                    <img ng-src={{data.icon}} alt=""/><a ng-href={{data.url}}>{{data.name}}</a></td>
+                <td>{{getWhere(data)}}</td>
+                <td>{{data.note}}</td>
+            </tr>
+            </tbody>
+        </table>
+    </section>
+    <section>
         <h3>Experiments using sample</h3>
         <table class='table'>
             <thead>

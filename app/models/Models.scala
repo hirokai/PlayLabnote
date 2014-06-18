@@ -650,15 +650,31 @@ case class ExpRunAccess(o_owner: Option[Id]) {
 
 }
 
-case class SampleData(id: Id, name: String, url: String, note: String, typ: String)
+case class SampleData(id: Id, name: String, url: String, typ: Option[String], icon: Option[String] = None, note: Option[String] = None,
+                       original_id: Option[String] = None)
 
+object SampleData {
+  def fromRow(row: Row): SampleData = {
+    SampleData(id = row[Id]("id"),
+      name = row[String]("name"),
+      url = row[String]("url"),
+      typ = row[Option[String]]("type"),
+      icon = row[Option[String]]("icon"),
+      note = row[Option[String]]("note"),
+      original_id = row[Option[String]]("original_id"))
+  }
+}
 case class Sample(id: Id, name: String, typ: Either[Id,SampleType], note: String = "", data: Array[SampleData] = Array())
 
 object Sample {
   //Caution: Always use join query to include sampletype.
-  def fromRow(row: Row): Sample = {
+  def fromRow(row: Row)(implicit c: Connection): Sample = {
     val t = SampleType(id = row[Id]("sampletype.id"), name = row[String]("sampletype.name"), parent = row[Option[Id]]("sampletype.parent"))
-    Sample(id = row[Id]("sample.id"), name=row[String]("sample.name"), typ = Right(t))
+
+    val id = row[Id]("sample.id")
+    val data = SQL(s"SELECT * from SampleData where sample=$id")().map(SampleData.fromRow).toArray
+
+    Sample(id = id, name=row[String]("sample.name"), typ = Right(t), data = data)
   }
 }
 
@@ -770,6 +786,30 @@ case class SampleAccess(o_owner: Option[Id]) {
         s"on sample.type = sampletype.id where sampletype.id in($str);")()
         .map(_[Long]("c")).headOption.getOrElse(0)
   }
+
+
+  def addData(id: Id, url: String, name: String, typ: String,
+              icon: Option[String] = None, note: Option[String] = None,
+               originalId: Option[String] = None)(implicit c: Connection): Option[Long] = {
+    val k_icon = if(icon.isDefined) ",icon" else ""
+    val k_note = if(note.isDefined) ",note" else ""
+    val k_id = if(originalId.isDefined) ",original_id" else ""
+    val k = k_icon + k_note + k_id
+    val v_icon = icon.map(s => ",'%s'".format(escape(s))).getOrElse("")
+    val v_note = note.map(s => ",'%s'".format(escape(s))).getOrElse("")
+    val v_id = originalId.map(s => ",'%s'".format(escape(s))).getOrElse("")
+    val v = v_icon + v_note + v_id
+    SQL(s"INSERT into SampleData(sample,url,name,type$k) values ($id, '${escapeName(url)}','${escapeName(name)}','$typ'$v)").executeInsert()
+  }
+
+  def deleteData(data_id: Id)(implicit c: Connection): Boolean = {
+    1 == SQL(s"DELETE SampleData where id=$data_id").executeUpdate()
+  }
+
+  def getData(data_id: Id)(implicit c: Connection): Option[SampleData] = {
+    SQL(s"SELECT * from SampleData where id=$data_id")().map(SampleData.fromRow).headOption
+  }
+
 }
 
 case class ProtocolStepParam(id: Id, name: String, typ: ParamType.ParamType, unit: Option[String])

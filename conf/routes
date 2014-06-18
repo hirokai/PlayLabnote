@@ -61,8 +61,9 @@ DELETE        /samples/$id<[0-9]+>                          controllers.Sample.d
 GET           /samples/$id<[0-9]+>/exps                     controllers.Sample.getExps(id: models.Database.Id)
 GET           /samples/$id<[0-9]+>/related                  controllers.Sample.stub(id: models.Database.Id)
 GET           /samples/$id<[0-9]+>/data                     controllers.Sample.stub(id: models.Database.Id)
+POST          /samples/$id<[0-9]+>/data                     controllers.Sample.createData(id: models.Database.Id)
 GET           /samples/$id<[0-9]+>/note                     controllers.Sample.stub(id: models.Database.Id)
-
+DELETE        /sampledata/$id<[0-9]+>                       controllers.Sample.deleteData(id: models.Database.Id)
 
 
 GET           /samples/of_type/:tid                         controllers.Sample.samplesOfType(tid: models.Database.Id)

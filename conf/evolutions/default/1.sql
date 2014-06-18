@@ -55,17 +55,19 @@ CREATE TABLE Sample (
 );
 
 CREATE TABLE SampleData (
-  sample bigint(20) REFERENCES Sample(id),
+  sample bigint(20) NOT NULL REFERENCES Sample(id),
   url  text NOT NULL,
   name text NOT NULL,
   note text,
+  icon text,
   type text,
+  original_id text,
   id bigint(20) NOT NULL AUTO_INCREMENT,
   PRIMARY KEY (id)
 );
 
 CREATE TABLE ExpRun (
-  experiment bigint(20) REFERENCES Experiment(id),
+  experiment bigint(20) NOT NULL REFERENCES Experiment(id),
   name text NOT NULL,
   id bigint(20) NOT NULL AUTO_INCREMENT,
   PRIMARY KEY (id)
