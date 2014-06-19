@@ -4,7 +4,7 @@
 
 
     <ul>
-        <li ng-repeat='exp in exps' class='exp_list_item' ng-class='{selected: isSelectedExp(exp.id)}' ng-click='selectItem(exp)'>
+        <li ng-repeat='exp in exps.value' class='exp_list_item' ng-class='{selected: isSelectedExp(exp.id)}' ng-click='selectItem(exp)'>
             <div ng-click='clickList(exp,$event)'>{{exp.name}}</div>
         </li>
     </ul>

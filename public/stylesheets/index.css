@@ -268,3 +268,11 @@ th.run_header {
 .title_col {
     width: 150px;
 }
+
+#step_table {
+    font-size: 12px;
+}
+
+#step_table td {
+    padding: 0;
+}

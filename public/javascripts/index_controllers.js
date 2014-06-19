@@ -101,9 +101,8 @@ expsApp.controller('entireCtrl',
               ExpDataSvc, SampleDataSvc, TypeDataSvc) {
         var init = function () {
             //Common data store. This enables background loading.
-            $http({url: '/exps.json', method: 'GET'}).success(function(r){
-               listViewSvc.exps.value = r;
-            });
+            console.log('entireCtrl: init()');
+
             $http({url: '/samples.json', method: 'GET'}).success(function(r){
                 listViewSvc.samples = r;
             });

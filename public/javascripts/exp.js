@@ -20,12 +20,18 @@ expsApp.factory('ExpDataSvc',['$http', 'listViewSvc', function($http, listViewSv
 }]);
 
 expsApp.controller('ExpListCtrl', ['$scope', '$state', '$stateParams', 'listViewSvc', 'ExpDataSvc', '$http', function ($scope, $state, $stateParams, listViewSvc, ExpDataSvc, $http) {
-    $scope.exps = listViewSvc.exps.value;
+    $scope.exps = listViewSvc.exps;
     $scope.loaded = false;
     $scope.selectedItem = listViewSvc.selectedItem;
 
     listViewSvc.current.mode = 'exp';
     listViewSvc.current.id = $stateParams.id;
+
+    console.log('ExpListCtrl loaded.');
+    $http({url: '/exps.json', method: 'GET'}).success(function(r){
+        listViewSvc.exps.value = r;
+        console.log($scope.exps);
+    });
 
     $scope.$watchCollection('exps',function(nv,ov){
        if((!ov || ov.length == 0) && nv && !$scope.loaded)
@@ -37,9 +43,9 @@ expsApp.controller('ExpListCtrl', ['$scope', '$state', '$stateParams', 'listView
     }
 
     $scope.addExp = function(){
-        var name = 'New exp ' + ($scope.exps.length + 1);
+        var name = 'New exp ' + ($scope.exps.value.length + 1);
         ExpDataSvc.addExp({name: name},function(r){
-            $scope.exps.push(r);
+            $scope.exps.value.push(r);
             $state.go('exp_id',{id: r.id});
         },function(r){
             console.log('Error');

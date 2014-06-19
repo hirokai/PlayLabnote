@@ -95,3 +95,7 @@ ul.flatlist li:last-child:after {
 input[disabled] {
     background: #dadada;
 }
+
+textarea[disabled] {
+    background: #dadada;
+}

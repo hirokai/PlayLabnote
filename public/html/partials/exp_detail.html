@@ -50,7 +50,7 @@
             </div>
             <table class='table' id='sample_table'>
                 <thead><tr>
-                    <th style='width: 100px;'>
+                    <th style='width: 60px;'>
                         <a class='btn btn-xs btn-default' ng-if='editingPSamples.val' ng-click='addPSample(item.id)'>+Sample</a>
                         <a class='btn btn-xs btn-default' ng-click='addRun(item)'>+Run</a>
                     </th>
@@ -64,9 +64,9 @@
                         <span class='glyphicon glyphicon-minus'></span>
                     </a></td>
                     <td ng-click='clickPSample(psample,$event)' ng-class='{psample_cell: true, selected: isSelectedPSample(psample)}'>{{psample.name}}</td>
-                    <td>
+                    <td style='max-width: 100px;'>
                         <span ng-if='editingPSamples.val'>
-                            <select ng-model="psample.typ"
+                            <select  style='max-width: 100px;' ng-model="psample.typ"
                                     ng-options="type as type.title for type in types"></select>
                         </span>
                         <span ng-if='!editingPSamples.val'>{{psample.typ.name}}</span>
@@ -74,8 +74,8 @@
                     <td ng-repeat='run in item.runs' ng-class='{cell_runsample: true, selected: isSelectedSample(), selected_cell: isSelectedCell()}' ng-controller='RunSampleCtrl'>
                         <div class='runsample' ng-if='id' ng-click='clickRunSample($event)'>{{name()}} <br><small>{{typName()}}</small></div>
                         <div ng-if='!id' class='empty_runsample' ng-click='clickEmptyCell($event)'>
-                            <a class="btn btn-sm btn-primary" ng-click='addRunSample(psample,run,$event)'><span class='glyphicon glyphicon-plus'></span></a>
-                            <a class="btn btn-sm btn-primary" ng-click='chooseRunSampleToAssign(psample,run)'><span class='glyphicon glyphicon-import'></span></a>
+                            <a class="btn btn-xs btn-primary" ng-click='addRunSample(psample,run,$event)'><span class='glyphicon glyphicon-plus'></span></a>
+                            <a class="btn btn-xs btn-primary" ng-click='chooseRunSampleToAssign(psample,run)'><span class='glyphicon glyphicon-import'></span></a>
                         </div>
                     </td>
                 </tr>
@@ -97,7 +97,7 @@
 
                 <tbody ng-repeat='pstep in item.protocolSteps' ng-controller='ProtocolStepCtrl'>
                 <tr class='run_time'>
-                    <td ng-class='{title_col: true, selected: isSelectedPStep(pstep)}' ng-click='clickPStep(pstep,$event)'><b>{{pstep.name}}</b>
+                    <td style='width: 100px;' ng-class='{title_col: true, selected: isSelectedPStep(pstep)}' ng-click='clickPStep(pstep,$event)'><b>{{pstep.name}}</b>
                         <a class='btn btn-xs btn-default' ng-if='editingPSteps.val' ng-click='addParamInTable(pstep,$event)'>+Param</a>
 
                     </td>
@@ -113,7 +113,7 @@
                 <tr>
                     <td style='padding-left: 30px;'>Note</td>
                     <td ng-repeat='run in item.runs' ng-controller='RunStepNoteCtrl'>
-                        <textarea type="" ng-disabled='!runstep' ng-model='runstep.note' ng-model-options="{ updateOn: 'blur' }"></textarea>
+                        <textarea rows='2' cols='15' type="" ng-disabled='!runStep(run,pstep)' ng-model='runstep.note' ng-model-options="{ updateOn: 'blur' }"></textarea>
                     </td>
                 </tr>
                 <tr ng-repeat='param in pstep.params'>

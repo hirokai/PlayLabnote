@@ -43,6 +43,18 @@ object Util {
     val len = vs.length
     (0 until n).map(_ => vs(Random.nextInt(len))).toArray
   }
+
+  def addTypes(uid: Id,len: Int)(implicit c: Connection) {
+    val u = Some(uid)
+    val len = 20
+    val any = SampleTypeAccess(u).getAnyType
+    val ts = ArrayBuffer[Id](any.id)
+    for(i <- 0 until len){
+      val name = randomStr(10)
+      val parent = ts(Random.nextInt(ts.length))
+      ts += SampleTypeAccess(u).create(name,parent).get
+    }
+  }
 }
 
 /**
@@ -140,18 +152,6 @@ class SampleTypeSpec extends Specification {
   import Util._
   import scala.util.Random
 
-  def addTypes(uid: Id,len: Int)(implicit c: Connection) {
-    val u = Some(uid)
-    val len = 20
-    val any = SampleTypeAccess(u).getAnyType
-    val ts = ArrayBuffer[Id](any.id)
-    for(i <- 0 until len){
-      val name = randomStr(10)
-      val parent = ts(Random.nextInt(ts.length))
-      ts += SampleTypeAccess(u).create(name,parent).get
-    }
-  }
-
   def deleteAllTypes(uid: Id)(implicit c: Connection) {
     val u = Some(uid)
     val any = SampleTypeAccess(u).getAnyType
@@ -195,6 +195,8 @@ class SampleTypeSpec extends Specification {
         }
       }
     }
+
+    "Does not delete system samples"
 
     "Deleting is separate for users" in {
       running(FakeApplication(additionalConfiguration = inMemoryDatabase())){
@@ -272,6 +274,72 @@ class SampleSpec extends Specification {
 
           for(u3<-us if u3 != u2){
             SampleAccess(Some(u3)).list must have size(0)
+          }
+          true
+        }
+      }
+    }
+  }
+}
+
+@RunWith(classOf[JUnitRunner])
+class ExpSpec extends Specification {
+  import Util._
+  import scala.util.Random
+
+  "Experiment" should {
+    "be created and deleted correctly" in {
+      running(FakeApplication(additionalConfiguration = inMemoryDatabase())){
+        DB.withConnection{implicit c =>
+          val uid = UserAccess().setupUser(randomStr(5)+"@gmail.com", addInitialData = false).get
+          val u = Some(uid)
+
+          val len = 50
+          for(i <- 0 until len){
+            ExperimentAccess(u).create(randomStr(5))
+          }
+          val exps = ExperimentAccess(u).list
+          exps must have size(len)
+          for(e <- exps){
+            ExperimentAccess(u).delete(e.id)
+          }
+          ExperimentAccess(u).list must have size(0)
+        }
+      }
+    }
+  }
+
+  "RunSample" should {
+    "not have incompatible type"
+
+    "belong to only one exp"
+  }
+
+  "PSample" should {
+    "belong to only one exp" in {
+      running(FakeApplication(additionalConfiguration = inMemoryDatabase())){
+        DB.withConnection{implicit c =>
+        //Prepare user
+          val uid = UserAccess().setupUser(randomStr(5)+"@gmail.com", addInitialData = false).get
+          val u = Some(uid)
+
+          //Prepare types
+          addTypes(uid,20)
+          val any = SampleTypeAccess(u).getAnyTypeId
+          val ts = SampleTypeAccess(u).getTypeIdTree()(any).flatten
+
+          //Prepare exp and other exps
+          val exp = ExperimentAccess(u).create(randomStr(5)).get
+          val others = for(i <- 0 until 10) yield {
+            ExperimentAccess(u).create(randomStr(5)).get
+          }
+
+          for(i <- 0 until 10){
+            ProtocolSampleAccess(u).create(exp,randomStr(5),ts(Random.nextInt(ts.length)))
+          }
+
+          for(e <- others){
+             ExperimentAccess(u).getProtocolSamples(e) must have size 0
           }
           true
         }

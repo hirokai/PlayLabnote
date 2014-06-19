@@ -3,6 +3,9 @@
 
 module.exports = function(config) {
   config.set({
+      preprocessors: {
+          '../public/html/index.html': ['ng-html2js']
+      },
 
     // base path that will be used to resolve all patterns (eg. files, exclude)
     basePath: '',
@@ -15,6 +18,14 @@ module.exports = function(config) {
 
     // list of files / patterns to load in the browser
     files: [
+        'http://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.6.0/underscore-min.js',
+      '../public/libs/angular/angular.min.js',
+      '../public/libs/angular-mocks/angular-mocks.js',
+      "../public/libs/underscore.string/dist/underscore.string.min.js",
+      '../public/javascripts/index_module.js',
+      '../public/javascripts/LabnoteServer.min.js',
+      '../public/javascripts/dist/LabnoteServer.min.js',
+      '../public/html/index.html',
       '*.js'
     ],
 
