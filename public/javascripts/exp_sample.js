@@ -165,7 +165,7 @@ expsApp.controller('RunSampleCtrl',['$scope','$http', '$timeout', 'listViewSvc',
             console.log(key,$scope.item.runSamples);
             $scope.item.runSamples[rid][pid] = r.data.id;
             $scope.item.samples[d.id] = d;
-            listViewSvc.samples.push(d);
+            listViewSvc.samples.value.push(d);
             $scope.id = d.id;
             console.log($scope.item.runSamples);
 //            $timeout(function(){$scope.$digest();},0);
