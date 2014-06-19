@@ -27,7 +27,7 @@ expsApp.factory('TypeDataSvc',['$http', 'listViewSvc', function($http, listViewS
 }]);
 
 
-expsApp.controller('TypeListCtrl', ['$scope', '$state', '$stateParams', 'listViewSvc', function ($scope, $state, $stateParams, listViewSvc) {
+expsApp.controller('TypeListCtrl', ['$scope', '$http', '$state', '$stateParams', 'listViewSvc', function ($scope, $http, $state, $stateParams, listViewSvc) {
     $scope.treedata = listViewSvc.types;
     $scope.selectedItem = listViewSvc.selectedItem;
 
@@ -36,7 +36,6 @@ expsApp.controller('TypeListCtrl', ['$scope', '$state', '$stateParams', 'listVie
     if(!$stateParams.id){
         listViewSvc.pageTitle.value = 'List of types - Labnotebook';
     }
-
 
     $scope.isSelectedType = function (id) {
         return id == $stateParams.id;

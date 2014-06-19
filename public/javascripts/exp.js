@@ -28,10 +28,6 @@ expsApp.controller('ExpListCtrl', ['$scope', '$state', '$stateParams', 'listView
     listViewSvc.current.id = $stateParams.id;
 
     console.log('ExpListCtrl loaded.');
-    $http({url: '/exps.json', method: 'GET'}).success(function(r){
-        listViewSvc.exps.value = r;
-        console.log($scope.exps);
-    });
 
     $scope.$watchCollection('exps',function(nv,ov){
        if((!ov || ov.length == 0) && nv && !$scope.loaded)

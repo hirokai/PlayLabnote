@@ -1,4 +1,4 @@
-<div ng-controller='SampleListCtrl'>
+<div>
 
     <div class='listContainer'>
         <button class='btn btn-default' ng-click='addSample()'>Add sample</button>
@@ -6,7 +6,7 @@
         <span>{{(samples| filter:freeword).length}}/{{samples.length}} samples shown.</span>
         <div class='fixedHeight'>
             <ul>
-                <li ng-repeat='sample in samples| filter:freeword' class='sample_list_item' ng-class='{selected: isSelectedSample(sample.id)}' ng-click='selectItem(sample)'>
+                <li ng-repeat='sample in samples.value| filter:freeword' class='sample_list_item' ng-class='{selected: isSelectedSample(sample.id)}' ng-click='selectItem(sample)'>
                     <div ng-click='clickList(sample,$event)'>{{sample.name}}</div>
                 </li>
             </ul>

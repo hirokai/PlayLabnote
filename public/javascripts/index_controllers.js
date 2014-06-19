@@ -24,8 +24,12 @@ expsApp.service('listViewSvc', ['$http', function ($http) {
         exps: {
             value: []
         },
-        samples: [],
-        types: [],
+        samples: {
+            value: []
+        },
+        types: {
+            value: []
+        },
         showSection: {note: true, sample: true, protocol: true},
         shrinkNodes: {val: false},
         expViewMode: {val: 'record'},
@@ -103,13 +107,6 @@ expsApp.controller('entireCtrl',
             //Common data store. This enables background loading.
             console.log('entireCtrl: init()');
 
-            $http({url: '/samples.json', method: 'GET'}).success(function(r){
-                listViewSvc.samples = r;
-            });
-            $http({url: '/types.json', method: 'GET'}).success(function(r){
-                listViewSvc.types = [mkTreeData(r)];
-            });
-
             $scope.mode = 'exp';
 
             $scope.selectedListTab = listViewSvc.selectedListTab;
@@ -118,6 +115,19 @@ expsApp.controller('entireCtrl',
 
             $http.defaults.headers.common.Authorization = "OAuth2 " +  localStorage['labnote.access_token'];
             $scope.checkLogin();
+
+            $http({url: '/exps.json', method: 'GET'}).success(function(r){
+                listViewSvc.exps.value = r;
+                console.log($scope.exps);
+            });
+
+            $http({url: '/samples.json', method: 'GET'}).success(function(r){
+                listViewSvc.samples.value = r;
+            });
+
+            $http({url: '/types.json', method: 'GET'}).success(function(r){
+                listViewSvc.types.value = [mkTreeData(r)];
+            });
 
         };
 

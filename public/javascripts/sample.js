@@ -28,6 +28,8 @@ expsApp.controller('SampleListCtrl', ['$scope', '$state', '$stateParams', 'listV
     $scope.samples = listViewSvc.samples;
     $scope.selectedItem = listViewSvc.selectedItem;
 
+    console.log('SampleListCtrl loaded.');
+
     listViewSvc.current.mode = 'sample';
     listViewSvc.current.id = $stateParams.id;
     if(!$stateParams.id){
@@ -48,6 +50,9 @@ expsApp.controller('SampleDetailCtrl', ['$scope', '$http', '$state', '$statePara
 
     var id = $stateParams.id;
     if(!id)return;
+
+    console.log('SampleDetailCtrl loaded.');
+
 
     $http({url: '/samples/'+id+'.json', method: 'GET'}).success(function(r){
         $scope.item = r;
