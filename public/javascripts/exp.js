@@ -112,16 +112,19 @@ expsApp.controller('ExpDetailCtrl', ['$scope', '$http', '$state', '$stateParams'
         $scope.$watch('expViewMode.val',function(nv){
             if(nv == 'summary'){
                 listViewSvc.showSection.note = true;
+                listViewSvc.showSection.data = true;
                 listViewSvc.showSection.protocol = true;
                 listViewSvc.showSection.sample = false;
                 listViewSvc.showSection.step = false;
             }else if(nv == 'define'){
                 listViewSvc.showSection.note = false;
+                listViewSvc.showSection.data = false;
                 listViewSvc.showSection.protocol = true;
                 listViewSvc.showSection.sample = false;
                 listViewSvc.showSection.step = false;
             }else if(nv == 'record'){
                 listViewSvc.showSection.note = false;
+                listViewSvc.showSection.data = true;
                 listViewSvc.showSection.protocol = false;
                 listViewSvc.showSection.sample = true;
                 listViewSvc.showSection.step = true;
@@ -137,6 +140,9 @@ expsApp.controller('ExpDetailCtrl', ['$scope', '$http', '$state', '$stateParams'
 
         // Action handlers
         $scope.deleteExp = function (id) {
+            var msg = 'Are you sure you want to delete the experiment?';
+            if(!window.confirm(msg))return;
+
             $http({url: '/exps/' + id, method: 'DELETE'}).then(function (r) {
                 var res = r.data;
                 console.log(res);
@@ -155,6 +161,12 @@ expsApp.controller('ExpDetailCtrl', ['$scope', '$http', '$state', '$stateParams'
                 }else{
                     $scope.showMessage('Delete failed.','danger');
                 }
+            });
+        };
+
+        $scope.saveExp = function (id) {
+            dumpToSheet(id,"hoge,hage,hige", function(){
+                $scope.showMessage('Dumped.');
             });
         };
 
@@ -340,7 +352,6 @@ prepareExpData = function(exp){
             if(o)
                 obj[pstep] = o;
         });
-        console.log(run,obj);
         steps[run] = obj;
     });
     exp.runSamples = samples;
@@ -360,7 +371,6 @@ prepareExpData = function(exp){
 }
 
 createRunParams = function(step,psid,protocolSteps){
-    console.log(step,psid,protocolSteps);
     step.note = step.note || "";
     var params = _.findWhere(protocolSteps,{id: psid}).params;
 //    console.log(params);
@@ -369,7 +379,6 @@ createRunParams = function(step,psid,protocolSteps){
             step.params.push({protocolParam: param.id, value: null});
         }
     });
-    console.log(step,psid,protocolSteps);
     return step;
 }
 

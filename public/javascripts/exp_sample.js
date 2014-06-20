@@ -10,7 +10,6 @@ expsApp.controller('ProtocolSampleCtrl',['$scope','$http', function($scope, $htt
     };
 
         var newt = _.findWhere($scope.types,{id: $scope.psample.typ.id});
-        console.log($scope.psample,newt);
         if(newt){
             $scope.psample.typ = newt;
         }

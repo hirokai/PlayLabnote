@@ -7,6 +7,8 @@
         <!--<pre class='json' ng-if='showDetailJson.value'>{{item | json}}</pre>-->
 
         <a class="btn btn-sm btn-danger" ng-click='deleteExp(item.id)'>Delete</a>
+        <a class="btn btn-sm btn-primary" ng-click='saveExp(item.id)'>Save</a>
+
         <div class="btn-group">
             <label class="btn btn-default btn-sm" ng-model="expViewMode.val" btn-radio='"summary"'>Summary</label>
             <label class="btn btn-default btn-sm" ng-model="expViewMode.val"  btn-radio='"define"'>Define</label>
@@ -14,6 +16,7 @@
         </div>
         <div class="btn-group">
             <label class="btn btn-default btn-sm" ng-model="showSection.note" btn-checkbox>Note</label>
+            <label class="btn btn-default btn-sm" ng-model="showSection.data" btn-checkbox>Data</label>
             <label class="btn btn-default btn-sm" ng-model="showSection.protocol" btn-checkbox>Protocol</label>
             <label class="btn btn-default btn-sm" ng-model="showSection.sample" btn-checkbox>Samples</label>
             <label class="btn btn-default btn-sm" ng-model="showSection.step" btn-checkbox>Steps</label>
@@ -134,7 +137,6 @@
                 </tbody>
 
             </table>
-            <pre class="json">{{item.runSteps|json}}</pre>
 
             <!--<div class="gridStyle" ng-grid="gridOptions"></div>-->
             <!--<pre class="json">{{gridData|json}}</pre>-->
