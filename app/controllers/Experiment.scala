@@ -11,11 +11,12 @@ import models._
 
 import models.Database.Id
 import play.api.libs.iteratee.{Enumerator, Iteratee}
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{Future, ExecutionContext}
 import play.libs.Akka
 import akka.io.Udp.SO.Broadcast
 import java.sql.Connection
 import play.cache.Cache
+import play.api.libs.ws.WS
 
 object Experiment extends Controller {
   import Database._
@@ -473,6 +474,46 @@ object Experiment extends Controller {
 
   def stub(id: Id) = Action {
     Ok("Stub")
+  }
+
+  def exportExp(id: Id) = Action.async {request =>
+    import scala.concurrent.ExecutionContext.Implicits.global
+
+    DB.withConnection{implicit c =>
+      val user: Option[(Id,String)] = Application.getUserIdAndAccessToken(request)
+      user match {
+        case Some((uid, accessToken)) =>{
+          val u: Option[Id] = Some(uid)
+          val exp = ExperimentAccess(u).getFull(id).get
+          val boundary = "-------314159265358979323846"
+          val delimiter = "\r\n--" + boundary + "\r\n"
+          val close_delim = "\r\n--" + boundary + "--"
+
+          val csvData = exp.mkCsv  //This mkCsv is just a stub yet.
+
+          val title = "Labnotebook: Experiment: " + exp.name
+
+          val multipartRequestBody =
+            delimiter + "Content-Type: application/json\r\n\r\n" +
+            Json.obj("title" -> title, "mimeType" -> "text/csv").toString +
+              delimiter + "Content-Type: application/vnd.ms-excel" + "\r\n" +
+              "Content-Transfer-Encoding: base64\r\n" +
+              "\r\n" +
+            csvData + close_delim
+
+
+
+          WS.url("https://www.googleapis.com/upload/drive/v2/files?uploadType=multipart&convert=true")
+            .withHeaders(
+              "Authorization" -> ("Bearer "+accessToken),
+              "Content-Type" -> ("multipart/mixed; boundary='" + boundary + "'"))
+            .post(multipartRequestBody).map{res =>
+            Ok(res.json)
+          }
+        }
+        case _ => Future(Status(400))
+      }
+    }
   }
 
   def listJson = Action { request =>

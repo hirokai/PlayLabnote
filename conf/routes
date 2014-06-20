@@ -22,6 +22,9 @@ POST          /exps/$id<[0-9]+>/psamples                    controllers.Experime
 POST          /exps/$id<[0-9]+>/psteps                      controllers.Experiment.createProtocolStep(id: models.Database.Id)
 GET           /exps/$id<[0-9]+>/socket                      controllers.Experiment.socket(id: models.Database.Id)
 
+POST          /exps/$id<[0-9]+>/export                      controllers.Experiment.exportExp(id: models.Database.Id)
+
+
 GET           /psteps/$id<[0-9]+>.json                      controllers.Experiment.getProtocolStep(id: models.Database.Id)
 PUT           /psteps/$id<[0-9]+>                           controllers.Experiment.updateProtocolStep(id: models.Database.Id)
 POST          /psteps/$id<[0-9]+>/params                    controllers.Experiment.createProtocolStepParam(id: models.Database.Id)
@@ -86,3 +89,4 @@ GET           /account/getStateKey                          controllers.Applicat
 GET           /account/loginStatus                          controllers.Application.getLoginStatus
 GET           /account/logout                               controllers.Application.logout
 POST          /account/login                                controllers.Application.login
+GET           /google_oauth2callback                        controllers.Application.oauth2Callback

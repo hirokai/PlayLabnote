@@ -9,6 +9,7 @@ import java.sql.Connection
 import javax.transaction.Transaction
 import scala.reflect.ClassTag
 import org.h2.jdbc.JdbcSQLException
+import java.io.{ByteArrayOutputStream, OutputStream}
 
 object Database {
   type Id = Long
@@ -56,7 +57,29 @@ case class Experiment (
                        note: String = "",
                        runSamples: Map[(Id,Id),Sample] = Map(),
                        runSteps: Map[(Id,Id),RunStep] = Map()
-                       )
+                       ){
+  def mkCsv: String = {
+    import org.apache.poi.hssf.usermodel._
+    import org.apache.commons.codec.binary.Base64OutputStream
+
+    val wb = new HSSFWorkbook
+    val sheet = wb.createSheet("Summary")
+    val createHelper = wb.getCreationHelper
+
+    val row = sheet.createRow(0)
+    row.createCell(1).setCellValue(createHelper.createRichTextString(this.name))
+    row.createCell(2).setCellValue("ID: " + id.toString)
+    sheet.autoSizeColumn(0)
+    sheet.autoSizeColumn(1)
+
+
+    val byteOut = new ByteArrayOutputStream
+    val out = new Base64OutputStream(byteOut)
+    wb.write(out)
+    out.close()
+    byteOut.toString
+  }
+}
 
 object Experiment {
   def fromRow(row: Row) = {

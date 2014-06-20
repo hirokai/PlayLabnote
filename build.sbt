@@ -10,5 +10,7 @@ libraryDependencies ++= Seq(
   jdbc,
   anorm,
   cache,
-  ws
+  ws,
+  "org.apache.poi" % "poi" % "3.9",
+  "commons-codec" % "commons-codec" % "1.9"
   )

@@ -1,4 +1,11 @@
 saveToGDrive = function(fileData, callback) {
+
+
+    var url = "https://accounts.google.com/o/oauth2/auth?scope=https://www.googleapis.com/auth/drive.file&state=%2Fprofile&"+
+    "redirect_uri=https%3A%2F%2Flocalhost%2Fcallback&response_type=code&"+
+    "lient_id=8127352506391.apps.googleusercontent.com&approval_prompt=force&include_granted_scopes=true"
+    
+    
     const boundary = '-------314159265358979323846';
     const delimiter = "\r\n--" + boundary + "\r\n";
     const close_delim = "\r\n--" + boundary + "--";

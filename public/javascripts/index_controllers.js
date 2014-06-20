@@ -97,10 +97,10 @@ expsApp.controller('protocolGraphCtrl', ['$scope', function ($scope) {
 
 //This controller is loaded in the beginning, no matter which tab is open. (Background loading).
 expsApp.controller('entireCtrl',
-    ['$scope', '$http', '$timeout', '$interval', '$window',
+    ['$scope', '$http', '$timeout', '$interval', '$window', '$sce',
         'listViewSvc',
         'ExpDataSvc', 'SampleDataSvc', 'TypeDataSvc',
-    function ($scope, $http, $timeout, $interval, $window,
+    function ($scope, $http, $timeout, $interval, $window, $sce,
               listViewSvc,
               ExpDataSvc, SampleDataSvc, TypeDataSvc) {
         var init = function () {
@@ -113,8 +113,13 @@ expsApp.controller('entireCtrl',
             $scope.selectedItem = listViewSvc.selectedItem;
             $scope.showList = listViewSvc.showList;
 
+            $scope.alertmsghtml =
+
+            $scope.account_email = localStorage['labnote.email'];
+            $scope.loggedIn = !!localStorage['labnote.email'];
+
             $http.defaults.headers.common.Authorization = "OAuth2 " +  localStorage['labnote.access_token'];
-            $scope.checkLogin();
+//            $scope.checkLogin();
 
             $http({url: '/exps.json', method: 'GET'}).success(function(r){
                 listViewSvc.exps.value = r;
@@ -131,36 +136,14 @@ expsApp.controller('entireCtrl',
 
         };
 
-        // There seems to be many options including 'Google+ signin', but this follows the following.
-        // https://developers.google.com/accounts/docs/OAuth2Login
-        $scope.googleLogin = function() {
-            var clientId = '599783734738-c8a62sjqes2a2j1sai58a7akn7e1j55h.apps.googleusercontent.com';
-            var scopes = 'openid email';
-            gapi.auth.authorize({client_id: clientId, scope: scopes, immediate: false}, function(auth){
-                console.log(auth);
-                var url = 'https://www.googleapis.com/oauth2/v1/tokeninfo?access_token=' + auth.access_token;
-                $.post(url).success(function(r){
-                    console.log(r);
-                    if(r.audience == clientId){
-                        console.log('Token verified.');
-                        localStorage.setItem('labnote.access_token', auth.access_token);
-                        $http.defaults.headers.common.Authorization = 'OAuth '+auth.access_token;
-                        $http({url: '/account/login', method: 'POST', data: $.param({email: r.email})}).success(function(r){
-                            localStorage['labnote.email'] = r.email;
-                            $scope.account_email = r.email;
-                            $scope.loggedIn = true;
-                        }).error(function(r){
-                                localStorage['labnote.email'] = null;
-                                $scope.account_email = null;
-                                $scope.loggedIn = false;
-                            });
-//                        gapi.load('picker', {'callback': createPicker});
-                    }else{
-                        console.log('token is invalid!!!');
-                    }
-                })
-            });
-
+        $scope.googleLogin = function(){
+            var redirectUri = 'https://localhost/google_oauth2callback';
+            var params = {response_type: 'code', client_id: clientId, redirect_uri: redirectUri,
+                scope: 'email https://www.googleapis.com/auth/drive.file', state: 'Hoge', access_type: 'online', approval_prompt: 'auto',
+                include_granted_scopes: false
+            }
+            var url = 'https://accounts.google.com/o/oauth2/auth?' + $.param(params);
+            window.open(url, 'Login with Google', 'width=500,height=500;')
         };
 
         $scope.logout = function(){

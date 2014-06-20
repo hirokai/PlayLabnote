@@ -165,9 +165,21 @@ expsApp.controller('ExpDetailCtrl', ['$scope', '$http', '$state', '$stateParams'
         };
 
         $scope.saveExp = function (id) {
-            dumpToSheet(id,"hoge,hage,hige", function(){
-                $scope.showMessage('Dumped.');
-            });
+            $scope.showMessage('Saving to Google Drive. This takes a while...');
+            $http.post('/exps/'+id+'/export').success(function(r){
+                console.log(r);
+                if(r.id){
+                    var url = "https://docs.google.com/spreadsheets/d/" + r.id;
+                    $scope.showMessage('Data was exported to Google Drive')
+                //    window.open(url);
+                }
+            }).error(function(r){
+                    $scope.showMessage('Error occured.','danger');
+                });
+//            $http.get
+//            dumpToSheet(id,"hoge,hage,hige", function(){
+//                $scope.showMessage('Dumped.');
+//            });
         };
 
 

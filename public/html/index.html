@@ -16,6 +16,7 @@
     <body class='container-fluid'>
         <div id="righttop_tools">
             <button type="button" class="btn btn-default btn-sm" ng-model="showList.value" btn-checkbox >List</button>
+
             <button type="button" class="btn btn-default btn-sm" ng-disabled='loggedIn' ng-click='googleLogin()' >Login</button>
             <button type="button" class="btn btn-default btn-sm" ng-disabled='!loggedIn' ng-click='logout()' >Logout</button>
             {{account_email}}
@@ -24,9 +25,9 @@
 
         <div class='row wrapper'>
             <div ng-show='showList.value' class='col-md-3 leftPane' ng-controller='itemListCtrl'>
-                <a class='btn btn-sm btn-default' href='#/exps'>Exp</a>
-                <a class='btn btn-sm btn-default' href='#/samples'>Sample</a>
-                <a class='btn btn-sm btn-default' href='#/types'>Type</a>
+                <a class='btn btn-sm btn-default' ui-sref='exps'>Exp</a>
+                <a class='btn btn-sm btn-default' ui-sref='samples'>Sample</a>
+                <a class='btn btn-sm btn-default' ui-sref='types'>Type</a>
                 <div ui-view='list'></div>
             </div>
             <div ui-view='detail' ng-class="{'col-md-8': showList.value, 'rightPane': showList.value, 'col-md-12': !showList.value}"></div>
@@ -58,6 +59,7 @@
         <script src='/public/libs/angular-ui-tree/dist/angular-ui-tree.min.js'></script>
         <script src="/public/libs/underscore.string/dist/underscore.string.min.js"></script>
         <script src='//cdnjs.cloudflare.com/ajax/libs/moment.js/2.6.0/moment.min.js'></script>
+        <script src='/public/javascripts/google-plus-signin.js'></script>
 
             <!-- My own scripts -->
 <!--        <script src="/public/javascripts/dagre-d3-custom.js"></script>

@@ -1,4 +1,4 @@
-@(email: String, apiKey: String)
+@(email: String, accessToken: String)
 
 <!DOCTYPE html>
 <html>
@@ -9,7 +9,7 @@
 Logged in...
     <script type="text/javascript">
         localStorage.setItem('labnote.email', "@Html(email)");
-        localStorage.setItem('labnote.apiKey', "@Html(apiKey)");
+        localStorage.setItem('labnote.access_token', "@Html(accessToken)");
         window.close();
 
         console.log(window.parent);
