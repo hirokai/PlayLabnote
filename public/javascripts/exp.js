@@ -172,14 +172,12 @@ expsApp.controller('ExpDetailCtrl', ['$scope', '$http', '$state', '$stateParams'
                     var url = "https://docs.google.com/spreadsheets/d/" + r.id;
                     $scope.showMessage('Data was exported to Google Drive')
                 //    window.open(url);
+                }else{
+                    $scope.showMessage('Error occured.','danger');
                 }
             }).error(function(r){
                     $scope.showMessage('Error occured.','danger');
                 });
-//            $http.get
-//            dumpToSheet(id,"hoge,hage,hige", function(){
-//                $scope.showMessage('Dumped.');
-//            });
         };
 
 

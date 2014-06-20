@@ -14,14 +14,23 @@ CREATE TABLE ExpData (
   PRIMARY KEY (id)
 );
 
-CREATE TABLE ExpDump (
-  experiment bigint(20) NOT NULL AUTO_INCREMENT,
+CREATE TABLE GDriveExportExp (
+  experiment bigint(20) NOT NULL REFERENCES Experiment(id),
   sheet_id text NOT NULL,
   save_count int NOT NULL,
   PRIMARY KEY (experiment)
 );
 
+CREATE TABLE GDriveExportSample (
+  sample bigint(20) NOT NULL REFERENCES Sample(id),
+  sheet_id text NOT NULL,
+  save_count int NOT NULL,
+  PRIMARY KEY (sample   )
+);
+
+
 # --- !Downs
 
 DROP TABLE ExpData;
-DROP TABLE ExpDump;
+DROP TABLE GDriveExportExp;
+DROP TABLE GDriveExportSample;

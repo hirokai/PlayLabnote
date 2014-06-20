@@ -58,7 +58,7 @@ case class Experiment (
                        runSamples: Map[(Id,Id),Sample] = Map(),
                        runSteps: Map[(Id,Id),RunStep] = Map()
                        ){
-  def mkCsv: String = {
+  def mkSpreadSheet: String = {
     import org.apache.poi.hssf.usermodel._
     import org.apache.commons.codec.binary.Base64OutputStream
 
@@ -67,7 +67,13 @@ case class Experiment (
     val createHelper = wb.getCreationHelper
 
     val row = sheet.createRow(0)
-    row.createCell(1).setCellValue(createHelper.createRichTextString(this.name))
+    val font = wb.createFont
+    val style = wb.createCellStyle
+    style.setFont(font)
+    font.setFontHeightInPoints(24)
+    val cell = row.createCell(1)
+    cell.setCellStyle(style)
+    cell.setCellValue(createHelper.createRichTextString(this.name))
     row.createCell(2).setCellValue("ID: " + id.toString)
     sheet.autoSizeColumn(0)
     sheet.autoSizeColumn(1)

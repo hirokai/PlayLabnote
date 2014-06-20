@@ -489,7 +489,7 @@ object Experiment extends Controller {
           val delimiter = "\r\n--" + boundary + "\r\n"
           val close_delim = "\r\n--" + boundary + "--"
 
-          val csvData = exp.mkCsv  //This mkCsv is just a stub yet.
+          val xlsData = exp.mkSpreadSheet
 
           val title = "Labnotebook: Experiment: " + exp.name
 
@@ -499,21 +499,56 @@ object Experiment extends Controller {
               delimiter + "Content-Type: application/vnd.ms-excel" + "\r\n" +
               "Content-Transfer-Encoding: base64\r\n" +
               "\r\n" +
-            csvData + close_delim
+              xlsData + close_delim
 
-
-
-          WS.url("https://www.googleapis.com/upload/drive/v2/files?uploadType=multipart&convert=true")
-            .withHeaders(
-              "Authorization" -> ("Bearer "+accessToken),
-              "Content-Type" -> ("multipart/mixed; boundary='" + boundary + "'"))
-            .post(multipartRequestBody).map{res =>
-            Ok(res.json)
+          getGSheetId(id) match {
+            case Some(sheet_id) => {
+              WS.url("https://www.googleapis.com/upload/drive/v2/files/"+sheet_id+"?uploadType=multipart&convert=true")
+                .withHeaders(
+                "Authorization" -> ("Bearer "+accessToken),
+                "Content-Type" -> ("multipart/mixed; boundary='" + boundary + "'"))
+                .put(multipartRequestBody).map{res =>
+                Ok(res.json)
+              }
+            }
+            case None => {
+              WS.url("https://www.googleapis.com/upload/drive/v2/files?uploadType=multipart&convert=true")
+                .withHeaders(
+                "Authorization" -> ("Bearer "+accessToken),
+                "Content-Type" -> ("multipart/mixed; boundary='" + boundary + "'"))
+                .post(multipartRequestBody).map{res =>
+                  val j = res.json
+                  val sheet = (j \ "id").as[String]
+                  DB.withConnection{implicit c =>
+                    setGSheetId(id,sheet)
+                    incrementGSheetSaveCount(id)
+                  }
+                  Ok(j)
+                }
+            }
           }
         }
         case _ => Future(Status(400))
       }
     }
+  }
+
+  def setGSheetId(id: Id, sheet_id: String)(implicit c: Connection): Boolean = {
+    if(getGSheetId(id).isDefined){
+      SQL(s"UPDATE GDriveExportExp SET sheet_id='${escape(sheet_id)}' where experiment=$id").executeUpdate() == 1
+    }else{
+      SQL(s"INSERT into GDriveExportExp(experiment,sheet_id,save_count) values($id,'${escape(sheet_id)}',0)").executeInsert()
+      true
+    }
+  }
+
+  def incrementGSheetSaveCount(id: Id)(implicit c: Connection): Option[Int] = {
+    SQL(s"UPDATE GDriveExportExp SET save_count=save_count+1 where experiment=$id").executeUpdate()
+    SQL(s"SELECT save_count from GDriveExportExp where experiment=$id")().map(_[Int]("save_count")).headOption
+  }
+
+  def getGSheetId(id: Id)(implicit c: Connection): Option[String] = {
+    SQL(s"SELECT sheet_id from GDriveExportExp where experiment=$id")().map(_[String]("sheet_id")).headOption
   }
 
   def listJson = Action { request =>
