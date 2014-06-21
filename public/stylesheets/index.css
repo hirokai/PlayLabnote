@@ -48,17 +48,21 @@ td.psample_cell.selected {
     background: pink;
 }
 
-td.selected_cell {
-    background: pink;
-}
+/*td.selected_cell {*/
+    /*background: pink;*/
+/*}*/
 
 td.selected.cell_runsample {
     font-weight: bold;
     transition: background 0.1s linear;
 }
 
-td.selected_cell.cell_runsample {
-    background: #d0cbff;
+.cell_runsample > div:hover {
+    background: #e8e6ff;
+}
+
+td.selected_cell > div {
+    background: #d0cbff ! important;
     transition: background 0.1s linear;
 }
 
@@ -86,19 +90,29 @@ input[disabled] {
     color: #a9a9a9;
 }
 
+/* http://stackoverflow.com/questions/3542090/how-to-make-div-fill-td-height */
+.cell_runsample {
+    height: 1px;
+}
+
 .cell_runsample .empty_runsample {
-    visibility: hidden;
     width: 100%;
-    height: 100%;
+    height: 35px;
     padding: 0;
+    margin: 0;
 }
 
-.cell_runsample:hover {
-    background: pink;
+
+.empty_runsample > a {
+    visibility: hidden;
 }
 
-.cell_runsample:hover .empty_runsample {
+.empty_runsample.enable_btns:hover > a {
     visibility: visible;
+}
+
+.cell_runsample > div {
+    margin: 0;
 }
 
 .leftPane {
@@ -223,6 +237,13 @@ marker {
 
 #sample_table {
     font-size: 12px;
+
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
 }
 
 .gridStyle {
@@ -235,12 +256,12 @@ td {
     padding: 0;
 }
 
-td.runsample_cell {
+td.cell_runsample {
     padding: 0 ! important;
 
 }
 
-td.runsample_cell div {
+td.cell_runsample div {
     padding: 0 ! important;
     width: 100%;
     height: 100%;

@@ -12,11 +12,6 @@
     cursor: pointer;
 }
 
-.selected {
-    color: red;
-    background: yellow;
-}
-
 /*#title_input {*/
     /*margin-top: 20px;*/
     /*font-size: 24px;*/
@@ -24,4 +19,8 @@
 
 #exptitlediv {
     height: 60px;
+}
+
+.samplechooser_samples:hover {
+    background: pink;
 }
