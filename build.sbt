@@ -12,5 +12,6 @@ libraryDependencies ++= Seq(
   cache,
   ws,
   "org.apache.poi" % "poi" % "3.9",
-  "commons-codec" % "commons-codec" % "1.9"
+  "commons-codec" % "commons-codec" % "1.9",
+   "com.github.nscala-time" %% "nscala-time" % "1.2.0"
   )

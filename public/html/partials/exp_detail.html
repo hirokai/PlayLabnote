@@ -5,6 +5,12 @@
     <div class="row">
         <!--<button type="button" class="btn btn-default btn-sm" ng-model="showDetailJson.value" btn-checkbox >JSON</button>-->
         <!--<pre class='json' ng-if='showDetailJson.value'>{{item | json}}</pre>-->
+        <span id='exp_date' class="input-group" ng-controller='ExpDateCtrl'>
+            <input type="text" class="form-control" datepicker-popup="{{format}}" ng-model="dt" ng-change='dateChanged()' is-open="opened" min-date="minDate" max-date="moment().format('YYYY-MM-DD')" datepicker-options="dateOptions" date-disabled="disabled(date, mode)" ng-required="true" close-text="Close" />
+              <span class="input-group-btn">
+                <button type="button" class="btn btn-default" ng-click="open($event)"><i class="glyphicon glyphicon-calendar"></i></button>
+              </span>
+        </span>
 
         <a class="btn btn-sm btn-danger" ng-click='deleteExp(item.id)'>Delete</a>
         <a class="btn btn-sm btn-primary" ng-click='saveExp(item.id)'>Save</a>
@@ -47,7 +53,7 @@
                         Type: <select ng-disabled='selectedSamples.length != 1' ng-model="sampleById(selectedSamples[0]).typ"
                                  ng-options="type as type.title for type in types"></select>
                     </span>
-                    <span><a ng-disabled='selectedSamples.length != 1'  class='btn btn-sm btn-default' ui-sref="sample_id({id: selectedSamples[0].id})">Detail</a></span>
+                    <span><a ng-disabled='selectedSamples.length != 1'  class='btn btn-sm btn-default' ui-sref="sample_id({id: selectedSamples[0]})">Detail</a></span>
                 </div>
 
             </div>

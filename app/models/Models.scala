@@ -10,6 +10,8 @@ import javax.transaction.Transaction
 import scala.reflect.ClassTag
 import org.h2.jdbc.JdbcSQLException
 import java.io.{ByteArrayOutputStream, OutputStream}
+import org.apache.poi.ss.usermodel.Sheet
+import org.apache.poi.hssf.usermodel.HSSFWorkbook
 
 object Database {
   type Id = Long
@@ -64,26 +66,64 @@ case class Experiment (
 
     val wb = new HSSFWorkbook
     val sheet = wb.createSheet("Summary")
-    val createHelper = wb.getCreationHelper
+    mkSummarySheet(wb,sheet)
 
-    val row = sheet.createRow(0)
-    val font = wb.createFont
-    val style = wb.createCellStyle
-    style.setFont(font)
-    font.setFontHeightInPoints(24)
-    val cell = row.createCell(1)
-    cell.setCellStyle(style)
-    cell.setCellValue(createHelper.createRichTextString(this.name))
-    row.createCell(2).setCellValue("ID: " + id.toString)
-    sheet.autoSizeColumn(0)
-    sheet.autoSizeColumn(1)
-
+    val sheet2 = wb.createSheet("Samples")
+    mkSampleSheet(wb,sheet2)
 
     val byteOut = new ByteArrayOutputStream
     val out = new Base64OutputStream(byteOut)
     wb.write(out)
     out.close()
     byteOut.toString
+  }
+
+  def mkSummarySheet(wb: HSSFWorkbook, sheet: Sheet){
+    val createHelper = wb.getCreationHelper
+
+    val row = sheet.createRow(0)
+    val font = wb.createFont
+    val style = wb.createCellStyle
+    style.setFont(font)
+    font.setFontHeightInPoints(16)
+    val cell = row.createCell(0)
+    cell.setCellStyle(style)
+    cell.setCellValue(createHelper.createRichTextString(this.name))
+    row.createCell(1).setCellValue("ID: " + id.toString)
+    sheet.autoSizeColumn(0)
+    sheet.autoSizeColumn(1)
+  }
+
+  def mkSampleSheet(wb: HSSFWorkbook, sheet: Sheet){
+    val samples: Seq[Sample] = this.runSamples.values.toSeq
+
+    var ci = 0
+    var row = sheet.createRow(ci)
+    row.createCell(0).setCellValue("Samples used in the experiment")
+
+    val toprow = sheet.createRow(1)
+    val cols = Seq("Name","ID","Date","Note")
+    for((s,i) <- cols.zipWithIndex){
+      toprow.createCell(i).setCellValue(s)
+    }
+    ci = 2
+    for((s,i) <- samples.zipWithIndex){
+      val row = sheet.createRow(ci)
+      row.createCell(0).setCellValue(s.name)
+      row.createCell(1).setCellValue(s.id)
+      ci += 1
+    }
+    ci += 1
+    row = sheet.createRow(ci)
+    row.createCell(0).setCellValue("Related samples")
+    ci += 1
+
+    row = sheet.createRow(ci)
+    for((s,i) <- cols.zipWithIndex){
+      row.createCell(i).setCellValue(s)
+    }
+    cols.indices.map(sheet.autoSizeColumn)
+
   }
 }
 
@@ -100,16 +140,22 @@ object Experiment {
 case class ExperimentAccess(o_owner: Option[Id]) {
   val owner: Id = o_owner.getOrElse(Database.sandboxUserId)
 
-  def list(implicit c: Connection): Array[Experiment] = {
-    println("ExperimentAccess.list")
+  def list(full: Boolean = false)(implicit c: Connection): Array[Experiment] = {
     println(o_owner,owner)
-    SQL(s"Select * from Experiment where owner=$owner order by id")().map( row => {
-      models.Experiment(
-        id = row[Long]("id"),
-        name = row[Option[String]]("name").getOrElse("(N/A)"),
-        owner =  row[Database.Id]("owner")
-      )
-    }).toArray
+    if(full){
+      SQL(s"Select id from Experiment where owner=$owner order by id")().map{row =>
+        val id = row[Id]("id")
+        getFull(id)
+      }.flatten.toArray
+    }else{
+      SQL(s"Select * from Experiment where owner=$owner order by id")().map( row => {
+        models.Experiment(
+          id = row[Long]("id"),
+          name = row[Option[String]]("name").getOrElse("(N/A)"),
+          owner =  row[Database.Id]("owner")
+        )
+      }).toArray
+    }
   }
   def create(name: String)(implicit c: Connection): Option[Id] = {
     SQL(s"INSERT into Experiment(owner,name) values($owner,'${escapeName(name)}')").executeInsert()

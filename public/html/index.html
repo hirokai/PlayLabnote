@@ -17,10 +17,26 @@
         <div id="righttop_tools">
             <button type="button" class="btn btn-default btn-sm" ng-model="showList.value" btn-checkbox >List</button>
 
-            <button type="button" class="btn btn-default btn-sm" ng-disabled='loggedIn' ng-click='googleLogin()' >Login</button>
-            <button type="button" class="btn btn-default btn-sm" ng-disabled='!loggedIn' ng-click='logout()' >Logout</button>
-            {{account_email}}
-            <span ng-if='!loggedIn'>Sandbox account.</span>
+            <div class="btn-group" dropdown is-open="status.isopen" ng-controller='MainMenuCtrl'>
+                <button type="button" class="btn btn-sm btn-primary dropdown-toggle" ng-disabled="disabled">
+                    <span ng-if='loggedIn'>{{account_email}}</span>
+                    <span ng-if='!loggedIn'>Sandbox</span>
+
+                    <span class="caret"></span>
+                </button>
+                <ul ng-if='loggedIn'class="dropdown-menu pull-right" role="menu">
+                    <li><a href="#" ng-click='openPrefs()'>Preferences</a></li>
+                    <li class="divider"></li>
+                    <li><a href="#" ng-click='dumpDB()'>Download Database</a></li>
+                    <li><a href="#" ng-click='exportDB()'>Export Database</a></li>
+                    <li class="divider"></li>
+                    <li><a ng-click='logout()' href="#">Log out</a></li>
+                </ul>
+                <ul ng-if='!loggedIn'class="dropdown-menu pull-right" role="menu">
+                    <li><a ng-click='googleLogin()' href="#">Log in</a></li>
+                    </ul>
+
+            </div>
         </div>
 
         <div class='row wrapper'>

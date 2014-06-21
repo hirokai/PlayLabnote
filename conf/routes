@@ -88,5 +88,9 @@ POST          /test/:name                                   controllers.Experime
 GET           /account/getStateKey                          controllers.Application.getStateKey
 GET           /account/loginStatus                          controllers.Application.getLoginStatus
 GET           /account/logout                               controllers.Application.logout
-POST          /account/login                                controllers.Application.login
 GET           /google_oauth2callback                        controllers.Application.oauth2Callback
+
+
+
+# Global DB
+GET           /account/database                             controllers.Application.dumpdb

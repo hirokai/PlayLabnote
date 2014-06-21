@@ -16,6 +16,8 @@ import scala.concurrent.Future
 import play.Logger
 import play.api.libs.json.Json
 import models.UserAccess
+import java.io.FileInputStream
+import play.api.libs.iteratee.Enumerator
 
 
 object Application extends Controller {
@@ -36,7 +38,7 @@ object Application extends Controller {
       case Some(auth) => {
         val token = auth.split(" ")(1)
         Logger.debug("Token is" + token)
-        val r = SQL(s"SELECT id from User where api_secret='$token'")().map(_[Id]("id")).headOption
+        val r = SQL(s"SELECT User.id from User inner join Client on User.id=Client.user where Client.access_token='$token'")().map(_[Id]("User.id")).headOption
         Logger.debug("getUserId: "+r.map(_.toString).getOrElse("None")+" with token: "+token)
         r.map(id => (id,token))
       }
@@ -50,12 +52,12 @@ object Application extends Controller {
       case Some(auth) => {
         val token = auth.split(" ")(1)
         DB.withConnection {implicit c =>
-          val r = SQL(s"SELECT * from User where api_secret='$token'")().map{row =>
-            (row[Id]("id"),row[String]("email"),row[String]("api_secret"))
+          val r = SQL(s"SELECT * from Client inner join User on Client.user=User.id where Client.access_token='$token'")().map{row =>
+            (row[Id]("User.id"),row[String]("User.email"),row[String]("Client.access_token"))
           }.headOption
           r match {
-            case Some((id,email,api_secret)) =>
-              Ok(Json.obj("logged_in" -> true, "id" -> id, "email" -> email, "api_secret" -> api_secret))
+            case Some((id,email,access_token)) =>
+              Ok(Json.obj("logged_in" -> true, "id" -> id, "email" -> email, "access_token" -> access_token))
             case _ =>
               Ok(Json.obj("logged_in" -> false))
           }
@@ -66,20 +68,25 @@ object Application extends Controller {
     }
   }
 
+  def getUserIdFromToken(token: String)(implicit c: Connection): Option[Id] = {
+    Logger.debug("Token is" + token)
+    val r = SQL(s"SELECT User.id from User inner join Client on User.id=Client.user where Client.access_token='$token'")().map(_[Id]("User.id")).headOption
+    Logger.debug("getUserId: "+r.map(_.toString).getOrElse("None")+" with token: "+token)
+    r
+  }
+
   def getUserId[A](req: Request[A])(implicit c: Connection): Option[Id] = {
     val a = req.headers.get("Authorization")
     a match {
       case Some(auth) => {
         val token = auth.split(" ")(1)
-        Logger.debug("Token is" + token)
-        val r = SQL(s"SELECT id from User where api_secret='$token'")().map(_[Id]("id")).headOption
-        Logger.debug("getUserId: "+r.map(_.toString).getOrElse("None")+" with token: "+token)
-        r
+        getUserIdFromToken(token)
       }
       case _ => None
     }
   }
 
+  //This allows multiple access_token's from multiple browsers of the same account (email).
   private def addUserToken(email: String, accessToken: String, expiresIn: Int): Boolean = {
     import play.api.Play.current
     println(email,accessToken,expiresIn)
@@ -87,7 +94,8 @@ object Application extends Controller {
       if(0 == SQL(s"SELECT count(*) as c from User where email='$email'")().map(_[Long]("c")).head){
         UserAccess().setupUser(email)
       }
-      1 == SQL(s"UPDATE User SET api_secret='$accessToken' where email='$email'").executeUpdate()
+      val uid = SQL(s"SELECT id from User where email='$email'")().map(_[Id]("id")).head
+      1 == SQL(s"INSERT into Client(user,access_token,client) values($uid,'$accessToken','stub')").executeUpdate()
     }
   }
 
@@ -109,43 +117,12 @@ object Application extends Controller {
     Ok(Cache.get("state_key").asInstanceOf[String])
   }
 
-  def loginByOAuth2Token(email: String, access_token: String): Future[Result] = {
-    import scala.concurrent.ExecutionContext.Implicits.global
-    val url = "https://www.googleapis.com/oauth2/v1/tokeninfo"
-    WS.url(url).withQueryString("access_token" -> access_token).get().map{res =>
-      val j = res.json
-      Logger.debug(res.body)
-      val email_s = (j \ "email").as[String]
-      val expires = (j \ "expires_in").as[Int]
-      if(email == email_s){
-        addUserToken(email,access_token,expires)
-        Ok(Json.obj("email" -> email))
-      }else{
-        Status(400)("Email address incorrect.")
-      }
-    }
-  }
-
-  def login = Action.async(parse.tolerantFormUrlEncoded) {request =>
-    import scala.concurrent.ExecutionContext.Implicits.global
-    val params = request.body
-    val e = params.get("email").flatMap(_.headOption)
-
-    val a = request.headers.get("Authorization")
-    (e,a) match {
-      case (Some(email),Some(auth)) => {
-        val token: String = auth.split(" ")(1)
-        loginByOAuth2Token(email,token)
-      }
-      case _ => Future(Status(400)("Missing Auth info."))
-    }
-  }
-
+  //This does not rely on Authorizaion header. The access_token is being revoked soon so this is safe.
   def logout = Action { request =>
     DB.withConnection{implicit c =>
-      val u: Option[Id] = Application.getUserId(request)
-      u.map{id =>
-        if(1 == SQL(s"UPDATE User SET api_secret=null where id=$id").executeUpdate()){
+      val t = request.getQueryString("access_token")
+      t.map{token =>
+        if(1 == SQL(s"DELETE Client where access_token='$token'").executeUpdate()){
           Ok(Json.obj("success"->true))
         }else{
           Status(400)
@@ -184,6 +161,38 @@ object Application extends Controller {
         val expires = (j2 \ "expires_in").as[Int]
         addUserToken(email,access_token,expires)
         Ok(views.html.loggedIn(email,access_token))
+      }
+    }
+  }
+
+  def dumpdb = Action { request =>
+    import scala.concurrent.ExecutionContext.Implicits.global
+
+    DB.withConnection {implicit c =>
+      val t = request.getQueryString("access_token")
+      t match {
+        case Some(token) => {
+          val u = getUserIdFromToken(token)
+          u match {
+            case Some(uid) => {
+              models.Serialize.dumpAll(uid) match {
+                case Some(file) =>{
+                  val fileContent: Enumerator[Array[Byte]] = Enumerator.fromFile(file)
+                  Result(
+                    header = ResponseHeader(200),
+                    body = fileContent
+                  ).as("application/zip")
+                }
+                case None =>
+                  Status(400)("DB error.")
+              }
+            }
+            case _ =>
+              Status(400)("Not authorized.")
+          }
+        }
+        case None =>
+          Status(400)("Login is needed.")
       }
     }
   }

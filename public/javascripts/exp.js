@@ -330,6 +330,47 @@ expsApp.controller('ExpDetailCtrl', ['$scope', '$http', '$state', '$stateParams'
 
     }]);
 
+expsApp.controller('ExpDateCtrl',['$scope', function($scope){
+    $scope.today = function() {
+        $scope.dt = new Date();
+    };
+    $scope.today();
+
+    $scope.clear = function () {
+        $scope.dt = null;
+    };
+
+    // Disable weekend selection
+    $scope.disabled = function(date, mode) {
+        return ( mode === 'day' && ( date.getDay() === 0 || date.getDay() === 6 ) );
+    };
+
+    $scope.toggleMin = function() {
+        $scope.minDate = $scope.minDate ? null : new Date();
+    };
+    $scope.toggleMin();
+
+    $scope.open = function($event) {
+        $event.preventDefault();
+        $event.stopPropagation();
+
+        $scope.opened = true;
+    };
+
+    $scope.dateOptions = {
+        formatYear: 'yy',
+        startingDay: 1
+    };
+
+    $scope.initDate = new Date('2016-15-20');
+    $scope.formats = ['M/d/yyyy', 'yyyy/MM/dd', 'dd.MM.yyyy', 'shortDate'];
+    $scope.format = $scope.formats[0];
+
+    $scope.dateChanged = function(){
+        console.log(moment($scope.dt).valueOf());
+    }
+}]);
+
 prepareExpData = function(exp){
     var runs = _.map(exp.runs,function(run){return run.id;});
     var psteps = _.map(exp.protocolSteps,function(pstep){return pstep.id;});

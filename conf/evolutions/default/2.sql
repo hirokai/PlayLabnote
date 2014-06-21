@@ -25,12 +25,18 @@ CREATE TABLE GDriveExportSample (
   sample bigint(20) NOT NULL REFERENCES Sample(id),
   sheet_id text NOT NULL,
   save_count int NOT NULL,
-  PRIMARY KEY (sample   )
+  PRIMARY KEY (sample)
 );
 
+CREATE TABLE Client (
+  user bigint(20) NOT NULL REFERENCES User(id),
+  access_token text NOT NULL,
+  client text NOT NULL
+);
 
 # --- !Downs
 
 DROP TABLE ExpData;
 DROP TABLE GDriveExportExp;
 DROP TABLE GDriveExportSample;
+DROP TABLE Client;

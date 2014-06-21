@@ -139,7 +139,7 @@ expsApp.controller('entireCtrl',
         $scope.googleLogin = function(){
             var redirectUri = 'https://localhost/google_oauth2callback';
             var params = {response_type: 'code', client_id: clientId, redirect_uri: redirectUri,
-                scope: 'email https://www.googleapis.com/auth/drive.file', state: 'Hoge', access_type: 'online', approval_prompt: 'auto',
+                scope: 'email https://www.googleapis.com/auth/drive.file', state: 'Hoge', access_type: 'offline', approval_prompt: 'auto',
                 include_granted_scopes: false
             }
             var url = 'https://accounts.google.com/o/oauth2/auth?' + $.param(params);
@@ -149,17 +149,23 @@ expsApp.controller('entireCtrl',
         $scope.logout = function(){
             // https://developers.google.com/+/web/signin/#revoking_access_tokens_and_disconnecting_the_app
             // http://stackoverflow.com/questions/12809339/how-to-revoke-an-authentication-token-client-side-against-the-google-api
-            $http.jsonp('https://accounts.google.com/o/oauth2/revoke?token='+localStorage['labnote.access_token']).success(function(r){
-                console.log(r);
-            })
-            $http({url: '/account/logout', method:'GET'}).success(function(r){
-                delete localStorage['labnote.email'];
-                delete localStorage['labnote.access_token'];
-                $scope.account_email = null;
-                $scope.loggedIn = false;
-                $http.defaults.headers.common.Authorization = "";
+            var token = localStorage['labnote.access_token'];
+            delete localStorage['labnote.email'];
+            delete localStorage['labnote.access_token'];
+            $scope.account_email = null;
+            $scope.loggedIn = false;
+            $http.defaults.headers.common.Authorization = "";
+
+//            $http.jsonp('https://accounts.google.com/o/oauth2/revoke?token='+token).success(function(r){
+//                console.log(r);
+//            })
+            $http.get('/account/logout',{params: {access_token: token}}).success(function(r){
                 console.log(r);
             });
+        };
+
+        $scope.dumpDB = function(){
+            window.open('/account/database?access_token='+localStorage['labnote.access_token']);
         };
 
         angular.element($window).bind('storage',function(e){
@@ -230,7 +236,27 @@ expsApp.controller('entireCtrl',
 
     }]);
 
+expsApp.controller('MainMenuCtrl', ['$scope', '$http', 'listViewSvc', function ($scope, $http, listViewSvc) {
+    $scope.items = [
+        'The first choice!',
+        'And another choice for you.',
+        'but wait! A third!'
+    ];
 
+    $scope.status = {
+        isopen: false
+    };
+
+    $scope.toggled = function(open) {
+        console.log('Dropdown is now: ', open);
+    };
+
+    $scope.toggleDropdown = function($event) {
+        $event.preventDefault();
+        $event.stopPropagation();
+        $scope.status.isopen = !$scope.status.isopen;
+    };
+}]);
 
 
 expsApp.controller('itemListCtrl', ['$scope', '$http', 'listViewSvc', function ($scope, $http, listViewSvc) {

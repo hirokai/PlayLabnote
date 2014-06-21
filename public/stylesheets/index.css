@@ -23,6 +23,10 @@
     height: 200px;
 }
 
+#exp_date {
+    width: 200px;
+}
+
 /*#leftPane {*/
     /*height: 100%;*/
     /*overflow: auto;*/

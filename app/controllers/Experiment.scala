@@ -508,7 +508,15 @@ object Experiment extends Controller {
                 "Authorization" -> ("Bearer "+accessToken),
                 "Content-Type" -> ("multipart/mixed; boundary='" + boundary + "'"))
                 .put(multipartRequestBody).map{res =>
-                Ok(res.json)
+                val j = res.json
+                if((j \ "id").asOpt[String].isDefined){
+                  DB.withConnection{implicit c =>
+                    incrementGSheetSaveCount(id)
+                  }
+                  Ok(j)
+                }else{
+                  Status(400)(j)
+                }
               }
             }
             case None => {
@@ -555,7 +563,7 @@ object Experiment extends Controller {
     DB.withConnection {implicit c =>
       val u: Option[Id] = Application.getUserId(request)
       println(u)
-      Ok(Json.toJson(ExperimentAccess(u).list))
+      Ok(Json.toJson(ExperimentAccess(u).list(full = false)))
     }
   }
 
