@@ -298,12 +298,12 @@ class ExpSpec extends Specification {
           for(i <- 0 until len){
             ExperimentAccess(u).create(randomStr(5))
           }
-          val exps = ExperimentAccess(u).list
+          val exps = ExperimentAccess(u).list()
           exps must have size(len)
           for(e <- exps){
             ExperimentAccess(u).delete(e.id)
           }
-          ExperimentAccess(u).list must have size(0)
+          ExperimentAccess(u).list() must have size(0)
         }
       }
     }
