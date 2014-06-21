@@ -501,38 +501,58 @@ object Experiment extends Controller {
               "\r\n" +
               xlsData + close_delim
 
-          getGSheetId(id) match {
-            case Some(sheet_id) => {
-              WS.url("https://www.googleapis.com/upload/drive/v2/files/"+sheet_id+"?uploadType=multipart&convert=true")
-                .withHeaders(
-                "Authorization" -> ("Bearer "+accessToken),
-                "Content-Type" -> ("multipart/mixed; boundary='" + boundary + "'"))
-                .put(multipartRequestBody).map{res =>
-                val j = res.json
-                if((j \ "id").asOpt[String].isDefined){
-                  DB.withConnection{implicit c =>
-                    incrementGSheetSaveCount(id)
-                  }
-                  Ok(j)
-                }else{
-                  Status(400)(j)
+
+          def updateGSheet(eid: Id, sheet_id: String, token: String): Future[(Boolean,JsValue)] = {
+            WS.url("https://www.googleapis.com/upload/drive/v2/files/"+sheet_id+"?uploadType=multipart&convert=true")
+              .withHeaders(
+              "Authorization" -> ("Bearer "+token),
+              "Content-Type" -> ("multipart/mixed; boundary='" + boundary + "'"))
+              .put(multipartRequestBody).map{res =>
+              val j = res.json
+              val json = Json.obj("response" -> j, "access_token" -> (if(token!=accessToken) token else JsNull))
+              if((j \ "id").asOpt[String].isDefined){
+                DB.withConnection{implicit c =>
+                  incrementGSheetSaveCount(eid)
                 }
+                (true, json)
+              }else{
+                (false,json)
               }
             }
-            case None => {
-              WS.url("https://www.googleapis.com/upload/drive/v2/files?uploadType=multipart&convert=true")
-                .withHeaders(
-                "Authorization" -> ("Bearer "+accessToken),
-                "Content-Type" -> ("multipart/mixed; boundary='" + boundary + "'"))
-                .post(multipartRequestBody).map{res =>
-                  val j = res.json
-                  val sheet = (j \ "id").as[String]
-                  DB.withConnection{implicit c =>
-                    setGSheetId(id,sheet)
-                    incrementGSheetSaveCount(id)
+          }
+
+          def newGSheet(eid: Id, token: String): Future[JsValue] = {
+            WS.url("https://www.googleapis.com/upload/drive/v2/files?uploadType=multipart&convert=true")
+              .withHeaders(
+              "Authorization" -> ("Bearer "+token),
+              "Content-Type" -> ("multipart/mixed; boundary='" + boundary + "'"))
+              .post(multipartRequestBody).map{res =>
+              val j = res.json
+              val sheet = (j \ "id").as[String]
+              DB.withConnection{implicit c =>
+                setGSheetId(eid,sheet)
+                incrementGSheetSaveCount(eid)
+              }
+              Json.obj("response" -> j, "access_token" -> (if(token!=accessToken) token else JsNull))
+            }
+          }
+
+          Application.maybeRefreshToken(accessToken){token =>
+            getGSheetId(id) match {
+              case Some(sheet_id) => {
+                updateGSheet(id, sheet_id, token).flatMap{res =>
+                  if(!res._1){
+                    newGSheet(id,token).map{(j: JsValue) =>
+                      Ok(j)
+                    }
+                  }else{
+                     Future(Ok(res._2))
                   }
-                  Ok(j)
                 }
+              }
+              case None => {
+                newGSheet(id,token).map(Ok(_))
+              }
             }
           }
         }
@@ -555,8 +575,10 @@ object Experiment extends Controller {
     SQL(s"SELECT save_count from GDriveExportExp where experiment=$id")().map(_[Int]("save_count")).headOption
   }
 
-  def getGSheetId(id: Id)(implicit c: Connection): Option[String] = {
-    SQL(s"SELECT sheet_id from GDriveExportExp where experiment=$id")().map(_[String]("sheet_id")).headOption
+  def getGSheetId(id: Id): Option[String] = {
+    DB.withConnection{implicit c  =>
+      SQL(s"SELECT sheet_id from GDriveExportExp where experiment=$id")().map(_[String]("sheet_id")).headOption
+    }
   }
 
   def listJson = Action { request =>

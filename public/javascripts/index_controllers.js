@@ -191,7 +191,9 @@ expsApp.controller('entireCtrl',
 //            checkLogin();
 //        },5000);
 
+
         $scope.checkLogin = function(){
+            console.log('Checking log in status');
             $http.defaults.headers.common.Authorization = "OAuth2 " +  localStorage['labnote.access_token'];
             $http({url: '/account/loginStatus',method:'GET'}).success(function(r){
                 console.log(r);
@@ -204,6 +206,8 @@ expsApp.controller('entireCtrl',
                 }
             });
         };
+
+        $scope.checkLogin();
 
         //Selection change or content change
 
@@ -273,7 +277,19 @@ expsApp.controller('DBBackupCtrl',['$scope', '$http', function($scope,$http){
     };
     $scope.exportDB = function(){
         $scope.$close();
-        $http.get('/account/export_database');
+        $scope.showMessage('Database is being exported to Google Drive. This may take a while...');
+        $http.get('/account/export_database').success(function(r){
+            console.log(r);
+            $scope.showMessage('Database was exported to Google Drive');
+            if(r.access_token){
+                localStorage['labnote.access_token'] = r.access_token;
+                $http.defaults.headers.common.Authorization = "OAuth2 " +  localStorage['labnote.access_token'];
+                console.log('access_token updated.');
+            }
+        }).error(function(r){
+                console.log(r);
+                $scope.showMessage('Error during exporting.')
+            })
     };
     $scope.emailDB = function(){
         $scope.$close();

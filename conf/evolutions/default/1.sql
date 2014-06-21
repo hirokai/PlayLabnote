@@ -5,14 +5,7 @@
 CREATE TABLE User (
   id bigint(20) NOT NULL AUTO_INCREMENT,
   email text NOT NULL,
-  api_secret text,
   PRIMARY KEY (id)
-);
-
-CREATE TABLE GoogleOAuth2 (
-  user_id bigint(20) NOT NULL REFERENCES User(id),
-  access_token text,
-  refresh_token text
 );
 
 CREATE TABLE UserInfo (
@@ -32,6 +25,17 @@ CREATE TABLE Experiment (
     PRIMARY KEY (id)
 );
 
+CREATE TABLE ExpData (
+  experiment bigint(20) NOT NULL REFERENCES Experiment(id),
+  url  text NOT NULL,
+  name text NOT NULL,
+  note text,
+  icon text,
+  type text,
+  original_id text,
+  id bigint(20) NOT NULL AUTO_INCREMENT,
+  PRIMARY KEY (id)
+);
 
 CREATE TABLE SampleType (
     id bigint(20) NOT NULL AUTO_INCREMENT,
@@ -137,6 +141,7 @@ CREATE TABLE RunStepParam (
 # --- !Downs
 
 DROP TABLE Experiment;
+DROP TABLE ExpData;
 DROP TABLE SampleType;
 DROP TABLE Sample;
 DROP TABLE SampleData;
@@ -150,4 +155,3 @@ DROP TABLE RunStep;
 DROP TABLE RunStepParam;
 DROP TABLE UserInfo;
 DROP TABLE User;
-DROP TABLE GoogleOAuth2;

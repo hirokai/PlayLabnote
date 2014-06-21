@@ -2,18 +2,6 @@
 
 # --- !Ups
 
-CREATE TABLE ExpData (
-  experiment bigint(20) NOT NULL REFERENCES Experiment(id),
-  url  text NOT NULL,
-  name text NOT NULL,
-  note text,
-  icon text,
-  type text,
-  original_id text,
-  id bigint(20) NOT NULL AUTO_INCREMENT,
-  PRIMARY KEY (id)
-);
-
 CREATE TABLE GDriveExportExp (
   experiment bigint(20) NOT NULL REFERENCES Experiment(id),
   sheet_id text NOT NULL,
@@ -28,15 +16,22 @@ CREATE TABLE GDriveExportSample (
   PRIMARY KEY (sample)
 );
 
-CREATE TABLE Client (
+CREATE TABLE GoogleClient (
+  id bigint(20) NOT NULL AUTO_INCREMENT,
   user bigint(20) NOT NULL REFERENCES User(id),
   access_token text NOT NULL,
-  client text NOT NULL
+  expires_at bigint(64) NOT NULL,
+  PRIMARY KEY (id)
+);
+
+CREATE TABLE GoogleAuth (
+  user bigint(20) NOT NULL REFERENCES User(id),
+  refresh_token text NOT NULL
 );
 
 # --- !Downs
 
-DROP TABLE ExpData;
 DROP TABLE GDriveExportExp;
 DROP TABLE GDriveExportSample;
-DROP TABLE Client;
+DROP TABLE GoogleClient;
+DROP TABLE GoogleAuth;

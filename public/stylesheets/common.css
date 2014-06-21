@@ -99,3 +99,11 @@ input[disabled] {
 textarea[disabled] {
     background: #dadada;
 }
+
+.btn-icon-onleft {
+    margin-right: 8px;
+}
+
+.blue {
+    color: blue;
+}

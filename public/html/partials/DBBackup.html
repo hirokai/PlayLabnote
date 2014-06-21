@@ -4,12 +4,14 @@
 </div>
 <div class="modal-body">
     <div style='text-align: center'>
-        <a class='btn btn-lg btn-default' ng-click='downloadDB()' href="#">Download</a>
-        <a class='btn btn-lg btn-default' ng-click='exportDB()' href="#">Google Drive</a>
-        <a class='btn btn-lg btn-default' ng-click='emailDB()' href="#">Email</a>
+        <a class='btn btn-lg btn-default' ng-click='downloadDB()' href="#">
+            <span class='btn-icon-onleft blue glyphicon glyphicon-cloud-download'></span>Download</a>
+        <a class='btn btn-lg btn-default' ng-click='exportDB()' href="#">
+            <span class='btn-icon-onleft blue glyphicon glyphicon-transfer'></span>Google Drive</a>
+        <!--<a class='btn btn-lg btn-default' ng-click='emailDB()' href="#">Email</a>-->
     </div>
 
 </div>
 <div class="modal-footer">
-    <button type="button" class="btn btn-default" ng-click='$close()' data-dismiss="modal">Close</button>
+    <button type="button" class="btn btn-default" ng-click='$close()' data-dismiss="modal">Cancel</button>
 </div>

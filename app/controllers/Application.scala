@@ -14,11 +14,12 @@ import play.api.db.DB
 import play.libs.F.Promise
 import scala.concurrent.Future
 import play.Logger
-import play.api.libs.json.Json
+import play.api.libs.json.{JsNull, Json}
 import models.{ExperimentAccess, UserAccess}
 import java.io.{ByteArrayOutputStream, FileInputStream}
 import play.api.libs.iteratee.Enumerator
 import org.apache.poi.util.IOUtils
+//import play.api.Play
 
 
 object Application extends Controller {
@@ -39,7 +40,7 @@ object Application extends Controller {
       case Some(auth) => {
         val token = auth.split(" ")(1)
         Logger.debug("Token is" + token)
-        val r = SQL(s"SELECT User.id from User inner join Client on User.id=Client.user where Client.access_token='$token'")().map(_[Id]("User.id")).headOption
+        val r = SQL(s"SELECT User.id from User inner join GoogleClient on User.id=GoogleClient.user where GoogleClient.access_token='$token'")().map(_[Id]("User.id")).headOption
         Logger.debug("getUserId: "+r.map(_.toString).getOrElse("None")+" with token: "+token)
         r.map(id => (id,token))
       }
@@ -53,8 +54,8 @@ object Application extends Controller {
       case Some(auth) => {
         val token = auth.split(" ")(1)
         DB.withConnection {implicit c =>
-          val r = SQL(s"SELECT * from Client inner join User on Client.user=User.id where Client.access_token='$token'")().map{row =>
-            (row[Id]("User.id"),row[String]("User.email"),row[String]("Client.access_token"))
+          val r = SQL(s"SELECT * from GoogleClient inner join User on GoogleClient.user=User.id where GoogleClient.access_token='$token'")().map{row =>
+            (row[Id]("User.id"),row[String]("User.email"),row[String]("GoogleClient.access_token"))
           }.headOption
           r match {
             case Some((id,email,access_token)) =>
@@ -71,7 +72,7 @@ object Application extends Controller {
 
   def getUserIdFromToken(token: String)(implicit c: Connection): Option[Id] = {
     Logger.debug("Token is" + token)
-    val r = SQL(s"SELECT User.id from User inner join Client on User.id=Client.user where Client.access_token='$token'")().map(_[Id]("User.id")).headOption
+    val r = SQL(s"SELECT User.id from User inner join GoogleClient on User.id=GoogleClient.user where GoogleClient.access_token='$token'")().map(_[Id]("User.id")).headOption
     Logger.debug("getUserId: "+r.map(_.toString).getOrElse("None")+" with token: "+token)
     r
   }
@@ -87,17 +88,41 @@ object Application extends Controller {
     }
   }
 
-  //This allows multiple access_token's from multiple browsers of the same account (email).
-  private def addUserToken(email: String, accessToken: String, expiresIn: Int): Boolean = {
+  // This allows multiple access_token's from multiple browsers of the same account (email).
+  // refresh_token is shared among all clients
+  private def addUserRefreshToken(email: String, accessToken: String, refreshToken: String, expiresIn: Int): Boolean = {
     import play.api.Play.current
-    println(email,accessToken,expiresIn)
     DB.withConnection{implicit c =>
       if(0 == SQL(s"SELECT count(*) as c from User where email='$email'")().map(_[Long]("c")).head){
         UserAccess().setupUser(email)
       }
+      val expiresAt: Long = System.currentTimeMillis + (expiresIn * 1000)
       val uid = SQL(s"SELECT id from User where email='$email'")().map(_[Id]("id")).head
-      1 == SQL(s"INSERT into Client(user,access_token,client) values($uid,'$accessToken','stub')").executeUpdate()
+      SQL(s"INSERT into GoogleClient(user,access_token,expires_at) values($uid,'$accessToken', $expiresAt)").executeInsert()
+      SQL(s"INSERT into GoogleAuth(user,refresh_token) values($uid,'$refreshToken')").executeInsert()
+      true
     }
+  }
+
+  //Per client
+  private def addUserAccessToken(email: String, accessToken: String, expiresIn: Int): Boolean = {
+    import play.api.Play.current
+    DB.withConnection{implicit c =>
+      val expiresAt: Long = System.currentTimeMillis + (expiresIn * 1000)
+      val u = SQL(s"SELECT id from User where email='$email'")().map(_[Id]("id")).headOption
+      u match {
+        case Some(uid) => {
+          SQL(s"INSERT into GoogleClient(user,access_token,expires_at) values($uid,'$accessToken', $expiresAt)").executeInsert()
+        }
+        case None => {
+          revokeOAuth2()
+        }
+      }
+      true
+    }
+  }
+
+  private def revokeOAuth2(){
   }
 
   def getAccessToken[A](req: Request[A])(implicit c: Connection): Option[String] = {
@@ -123,7 +148,7 @@ object Application extends Controller {
     DB.withConnection{implicit c =>
       val t = request.getQueryString("access_token")
       t.map{token =>
-        if(1 == SQL(s"DELETE Client where access_token='$token'").executeUpdate()){
+        if(1 == SQL(s"DELETE GoogleClient where access_token='$token'").executeUpdate()){
           Ok(Json.obj("success"->true))
         }else{
           Status(400)
@@ -154,13 +179,21 @@ object Application extends Controller {
       "grant_type" -> Seq("authorization_code")
     )).flatMap{res =>
       val j = res.json
+      Logger.debug(res.body)
       val id_token = (j \ "id_token").as[String]
       val access_token = (j \ "access_token").as[String]
+      val refresh_token = (j \ "refresh_token").asOpt[String]
       WS.url("https://www.googleapis.com/oauth2/v1/tokeninfo").withQueryString("id_token" -> id_token).get().map{res2 =>
         val j2 = res2.json
+        Logger.debug(res2.body)
         val email = (j2 \ "email").as[String]
         val expires = (j2 \ "expires_in").as[Int]
-        addUserToken(email,access_token,expires)
+        refresh_token match {
+          case Some(rtoken) =>  // First login
+            addUserRefreshToken(email,access_token,rtoken,expires)
+          case None => //Other logins (do not have refresh_token)
+            addUserAccessToken(email,access_token,expires)
+        }
         Ok(views.html.loggedIn(email,access_token))
       }
     }
@@ -170,51 +203,89 @@ object Application extends Controller {
     import scala.concurrent.ExecutionContext.Implicits.global
     DB.withConnection{implicit c =>
       try{
-      val (uid,accessToken) = Application.getUserIdAndAccessToken(request).get
-      val file = models.Serialize.dumpAll(uid).get
-      val u: Option[Id] = Some(uid)
-      val boundary = "-------314159265358979323846"
-      val delimiter = "\r\n--" + boundary + "\r\n"
-      val close_delim = "\r\n--" + boundary + "--"
+        val (uid,accessToken) = Application.getUserIdAndAccessToken(request).get
+        val file = models.Serialize.dumpAll(uid).get
+        val u: Option[Id] = Some(uid)
+        val boundary = "-------314159265358979323846"
+        val delimiter = "\r\n--" + boundary + "\r\n"
+        val close_delim = "\r\n--" + boundary + "--"
 
-      import org.apache.commons.codec.binary.Base64OutputStream
+        import org.apache.commons.codec.binary.Base64OutputStream
 
-      val instream = new FileInputStream(file)
-      val byteOut = new ByteArrayOutputStream
-      val out = new Base64OutputStream(byteOut)
-      IOUtils.copy(instream,out)
-      out.close()
-      instream.close()
-      val fileData: String = byteOut.toString
+        val instream = new FileInputStream(file)
+        val byteOut = new ByteArrayOutputStream
+        val out = new Base64OutputStream(byteOut)
+        IOUtils.copy(instream,out)
+        out.close()
+        instream.close()
+        val fileData: String = byteOut.toString
 
-      val title = "Labnotebook all database dump.zip"
+        val title = "Labnotebook all database dump.zip"
 
-      val multipartRequestBody =
-        delimiter + "Content-Type: application/json\r\n\r\n" +
-          Json.obj("title" -> title, "mimeType" -> "text/csv").toString +
-          delimiter + "Content-Type: application/zip" + "\r\n" +
-          "Content-Transfer-Encoding: base64\r\n" +
-          "\r\n" +
-          fileData + close_delim
+        val multipartRequestBody =
+          delimiter + "Content-Type: application/json\r\n\r\n" +
+            Json.obj("title" -> title, "mimeType" -> "text/csv").toString +
+            delimiter + "Content-Type: application/zip" + "\r\n" +
+            "Content-Transfer-Encoding: base64\r\n" +
+            "\r\n" +
+            fileData + close_delim
 
 
-      WS.url("https://www.googleapis.com/upload/drive/v2/files?uploadType=multipart&convert=true")
-        .withHeaders(
-        "Authorization" -> ("Bearer "+accessToken),
-        "Content-Type" -> ("multipart/mixed; boundary='" + boundary + "'"))
-        .post(multipartRequestBody).map{res =>
-        val j = res.json
-        val sheet = (j \ "id").as[String]
-        Ok(j)
-      }
+        maybeRefreshToken(accessToken){token =>
+          WS.url("https://www.googleapis.com/upload/drive/v2/files?uploadType=multipart&convert=true")
+            .withHeaders(
+            "Authorization" -> ("Bearer "+token),
+            "Content-Type" -> ("multipart/mixed; boundary='" + boundary + "'"))
+            .post(multipartRequestBody).map{res =>
+            val j = res.json
+            Ok(Json.obj("response" -> j, "access_token" -> (if(token!=accessToken) token else JsNull)))
+          }
+        }
+
       }catch{
         case _: NoSuchElementException => Future(BadRequest("Error."))
       }
     }
   }
 
+  def maybeRefreshToken[A](accessToken: String)(proc: String => Future[A]): Future[A] = {
+    import play.api.Play
+    import scala.concurrent.ExecutionContext.Implicits.global
+
+    val expiresAt: Long = DB.withConnection{implicit c =>
+      SQL(s"SELECT expires_at from GoogleClient where access_token='$accessToken'")().map(_[Long]("expires_at")).head
+    }
+    if(expiresAt - System.currentTimeMillis < 60*1000){
+      Logger.debug("Obtaining a new access_token")
+
+      val refreshToken: String = DB.withConnection{implicit c =>
+        SQL(s"SELECT GoogleAuth.refresh_token from GoogleAuth inner join GoogleClient on GoogleAuth.user=GoogleClient.user where GoogleClient.access_token='$accessToken'")()
+          .map(_[String]("refresh_token")).head
+      }
+      val clientId = Play.current.configuration.getString("oauth2.google.client_id").get
+      val secret = Play.current.configuration.getString("oauth2.google.client_secret").get
+
+      WS.url("https://accounts.google.com/o/oauth2/token").post(Map(
+        "refresh_token" -> Seq(refreshToken),
+        "client_id" -> Seq(clientId),
+        "client_secret" -> Seq(secret),
+        "grant_type" -> Seq("refresh_token")
+      )).flatMap{res =>
+        val newToken = (res.json \ "access_token").as[String]
+        DB.withConnection{implicit c =>
+          SQL(s"UPDATE GoogleClient SET GoogleClient.access_token='$newToken' where GoogleClient.access_token='$accessToken'").executeUpdate()
+        }
+        proc(newToken)
+      }
+    }else{
+      proc(accessToken)
+    }
+  }
+
   def emailDB = Action {
-    Ok("")
+    import org.apache.commons.mail
+
+    Ok("Stub")
   }
 
   def downloadDB = Action { request =>
