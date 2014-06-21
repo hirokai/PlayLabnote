@@ -509,7 +509,7 @@ object Experiment extends Controller {
               "Content-Type" -> ("multipart/mixed; boundary='" + boundary + "'"))
               .put(multipartRequestBody).map{res =>
               val j = res.json
-              val json = Json.obj("response" -> j, "access_token" -> (if(token!=accessToken) token else JsNull))
+              val json = Json.obj("response" -> j, "updated_access_token" -> (if(token!=accessToken) token else JsNull))
               if((j \ "id").asOpt[String].isDefined){
                 DB.withConnection{implicit c =>
                   incrementGSheetSaveCount(eid)
@@ -533,7 +533,7 @@ object Experiment extends Controller {
                 setGSheetId(eid,sheet)
                 incrementGSheetSaveCount(eid)
               }
-              Json.obj("response" -> j, "access_token" -> (if(token!=accessToken) token else JsNull))
+              Json.obj("response" -> j, "updated_access_token" -> (if(token!=accessToken) token else JsNull))
             }
           }
 

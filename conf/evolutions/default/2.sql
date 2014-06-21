@@ -25,7 +25,7 @@ CREATE TABLE GoogleClient (
 );
 
 CREATE TABLE GoogleAuth (
-  user bigint(20) NOT NULL REFERENCES User(id),
+  user bigint(20) UNIQUE NOT NULL REFERENCES User(id),
   refresh_token text NOT NULL
 );
 

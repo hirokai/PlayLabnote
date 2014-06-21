@@ -57,11 +57,13 @@ object Application extends Controller {
           val r = SQL(s"SELECT * from GoogleClient inner join User on GoogleClient.user=User.id where GoogleClient.access_token='$token'")().map{row =>
             (row[Id]("User.id"),row[String]("User.email"),row[String]("GoogleClient.access_token"))
           }.headOption
+          val refreshValid = SQL("SELECT count(*) as c from GoogleAuth inner join GoogleClient on "+
+            s"GoogleAuth.user=GoogleClient.user where GoogleClient.access_token='$token'")().map(_[Long]("c")).head == 1
           r match {
             case Some((id,email,access_token)) =>
-              Ok(Json.obj("logged_in" -> true, "id" -> id, "email" -> email, "access_token" -> access_token))
+              Ok(Json.obj("logged_in" -> true, "valid_refresh_token" -> refreshValid,  "id" -> id, "email" -> email, "access_token" -> access_token))
             case _ =>
-              Ok(Json.obj("logged_in" -> false))
+              Ok(Json.obj("logged_in" -> false, "valid_refresh_token" -> refreshValid))
           }
           //          Logger.debug("getUserId: "+r.map(_.toString).getOrElse("None")+" with token: "+token)
         }
@@ -99,7 +101,11 @@ object Application extends Controller {
       val expiresAt: Long = System.currentTimeMillis + (expiresIn * 1000)
       val uid = SQL(s"SELECT id from User where email='$email'")().map(_[Id]("id")).head
       SQL(s"INSERT into GoogleClient(user,access_token,expires_at) values($uid,'$accessToken', $expiresAt)").executeInsert()
-      SQL(s"INSERT into GoogleAuth(user,refresh_token) values($uid,'$refreshToken')").executeInsert()
+      if(SQL(s"SELECT count(*) as c from GoogleAuth where user=$uid")().map(_[Long]("c")).head == 0){
+        SQL(s"INSERT into GoogleAuth(user,refresh_token) values($uid,'$refreshToken')").executeInsert()
+      }else{
+        SQL(s"UPDATE GoogleAuth SET refresh_token='$refreshToken' where user=$uid").executeUpdate()
+      }
       true
     }
   }
@@ -238,7 +244,7 @@ object Application extends Controller {
             "Content-Type" -> ("multipart/mixed; boundary='" + boundary + "'"))
             .post(multipartRequestBody).map{res =>
             val j = res.json
-            Ok(Json.obj("response" -> j, "access_token" -> (if(token!=accessToken) token else JsNull)))
+            Ok(Json.obj("response" -> j, "updated_access_token" -> (if(token!=accessToken) token else JsNull)))
           }
         }
 

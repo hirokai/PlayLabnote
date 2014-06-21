@@ -175,8 +175,8 @@ expsApp.controller('ExpDetailCtrl', ['$scope', '$http', '$state', '$stateParams'
                 }else{
                     $scope.showMessage('Error occured.','danger');
                 }
-                if(r.access_token){
-                    localStorage['labnote.access_token'] = r.access_token;
+                if(r.updated_access_token){
+                    localStorage['labnote.access_token'] = r.updated_access_token;
                     $http.defaults.headers.common.Authorization = "OAuth2 " +  localStorage['labnote.access_token'];
                 }
             }).error(function(r){
