@@ -174,6 +174,12 @@ expsApp.controller('entireCtrl',
             $scope.$apply(function(){
                 $scope.account_email = localStorage['labnote.email'];
                 $scope.loggedIn = !!localStorage['labnote.email'];
+
+                gapi.auth.setToken({access_token: localStorage['labnote.access_token']});
+                if(!$scope.loggedIn){
+                    gapi.auth.logout();
+                }
+
                 location.reload();
             });
 

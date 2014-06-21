@@ -124,25 +124,7 @@ expsApp.controller('SampleDetailCtrl', ['$scope', '$http', '$state', '$statePara
     };
 
     $scope.addData = function(){
-        // https://developers.google.com/accounts/docs/OAuth2UserAgent?hl=ja#handlingtheresponse
-
-        var scopes = 'https://www.googleapis.com/auth/drive.file';
-        gapi.auth.authorize({client_id: clientId, scope: scopes, immediate: true}, function(auth){
-            console.log(auth);
-            access_token = auth.access_token;
-            var url = 'https://www.googleapis.com/oauth2/v1/tokeninfo?access_token=' + access_token;
-            $.post(url).success(function(r){
-                console.log(r);
-                if(r.audience == clientId){
-                    console.log('Token verified.');
-                    gapi.load('picker', {'callback': createPicker});
-                }else{
-                    console.log('token is invalid!!!');
-                }
-            })
-        });
-
-        var access_token;
+        gapi.load('picker', {'callback': createPicker});
 
         function createPicker(){
             var view = new google.picker.View(google.picker.ViewId.DOCS);
@@ -151,7 +133,7 @@ expsApp.controller('SampleDetailCtrl', ['$scope', '$http', '$state', '$statePara
                 .enableFeature(google.picker.Feature.NAV_HIDDEN)
                 .enableFeature(google.picker.Feature.MULTISELECT_ENABLED)
                 .setAppId(clientId)
-                .setOAuthToken(access_token)
+                .setOAuthToken(localStorage['labnote.access_token'])
                 .addView(view)
                 .addView(new google.picker.DocsUploadView())
                 .setDeveloperKey(developerKey)
