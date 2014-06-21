@@ -97,10 +97,10 @@ expsApp.controller('protocolGraphCtrl', ['$scope', function ($scope) {
 
 //This controller is loaded in the beginning, no matter which tab is open. (Background loading).
 expsApp.controller('entireCtrl',
-    ['$scope', '$http', '$timeout', '$interval', '$window', '$sce',
+    ['$scope', '$http', '$timeout', '$interval', '$window', '$sce', '$modal',
         'listViewSvc',
         'ExpDataSvc', 'SampleDataSvc', 'TypeDataSvc',
-    function ($scope, $http, $timeout, $interval, $window, $sce,
+    function ($scope, $http, $timeout, $interval, $window, $sce, $modal,
               listViewSvc,
               ExpDataSvc, SampleDataSvc, TypeDataSvc) {
         var init = function () {
@@ -164,9 +164,10 @@ expsApp.controller('entireCtrl',
             });
         };
 
-        $scope.dumpDB = function(){
-            window.open('/account/database?access_token='+localStorage['labnote.access_token']);
+        $scope.backupDB = function(){
+            $modal.open({templateUrl: '/public/html/partials/dbBackup.html', scope: $scope, controller: 'DBBackupCtrl'});
         };
+
 
         angular.element($window).bind('storage',function(e){
             console.log('storage',e,localStorage);
@@ -257,6 +258,29 @@ expsApp.controller('MainMenuCtrl', ['$scope', '$http', 'listViewSvc', function (
         $scope.status.isopen = !$scope.status.isopen;
     };
 }]);
+
+expsApp.controller('DBBackupCtrl',['$scope', '$http', function($scope,$http){
+    var init = function(){
+
+    };
+
+    init();
+
+
+    $scope.downloadDB = function(){
+        $scope.$close();
+        window.open('/account/database?access_token='+localStorage['labnote.access_token']);
+    };
+    $scope.exportDB = function(){
+        $scope.$close();
+        $http.get('/account/export_database');
+    };
+    $scope.emailDB = function(){
+        $scope.$close();
+        $http.get('/account/email_database');
+    };
+}]);
+
 
 
 expsApp.controller('itemListCtrl', ['$scope', '$http', 'listViewSvc', function ($scope, $http, listViewSvc) {

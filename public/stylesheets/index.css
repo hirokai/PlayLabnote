@@ -280,3 +280,7 @@ th.run_header {
 #step_table td {
     padding: 0;
 }
+
+#mainmenu .dropdown-menu {
+//    font-size: 12px;
+}

@@ -15,9 +15,10 @@ import play.libs.F.Promise
 import scala.concurrent.Future
 import play.Logger
 import play.api.libs.json.Json
-import models.UserAccess
-import java.io.FileInputStream
+import models.{ExperimentAccess, UserAccess}
+import java.io.{ByteArrayOutputStream, FileInputStream}
 import play.api.libs.iteratee.Enumerator
+import org.apache.poi.util.IOUtils
 
 
 object Application extends Controller {
@@ -165,7 +166,58 @@ object Application extends Controller {
     }
   }
 
-  def dumpdb = Action { request =>
+  def saveDBToGDrive = Action.async {request =>
+    import scala.concurrent.ExecutionContext.Implicits.global
+    DB.withConnection{implicit c =>
+      try{
+      val (uid,accessToken) = Application.getUserIdAndAccessToken(request).get
+      val file = models.Serialize.dumpAll(uid).get
+      val u: Option[Id] = Some(uid)
+      val boundary = "-------314159265358979323846"
+      val delimiter = "\r\n--" + boundary + "\r\n"
+      val close_delim = "\r\n--" + boundary + "--"
+
+      import org.apache.commons.codec.binary.Base64OutputStream
+
+      val instream = new FileInputStream(file)
+      val byteOut = new ByteArrayOutputStream
+      val out = new Base64OutputStream(byteOut)
+      IOUtils.copy(instream,out)
+      out.close()
+      instream.close()
+      val fileData: String = byteOut.toString
+
+      val title = "Labnotebook all database dump.zip"
+
+      val multipartRequestBody =
+        delimiter + "Content-Type: application/json\r\n\r\n" +
+          Json.obj("title" -> title, "mimeType" -> "text/csv").toString +
+          delimiter + "Content-Type: application/zip" + "\r\n" +
+          "Content-Transfer-Encoding: base64\r\n" +
+          "\r\n" +
+          fileData + close_delim
+
+
+      WS.url("https://www.googleapis.com/upload/drive/v2/files?uploadType=multipart&convert=true")
+        .withHeaders(
+        "Authorization" -> ("Bearer "+accessToken),
+        "Content-Type" -> ("multipart/mixed; boundary='" + boundary + "'"))
+        .post(multipartRequestBody).map{res =>
+        val j = res.json
+        val sheet = (j \ "id").as[String]
+        Ok(j)
+      }
+      }catch{
+        case _: NoSuchElementException => Future(BadRequest("Error."))
+      }
+    }
+  }
+
+  def emailDB = Action {
+    Ok("")
+  }
+
+  def downloadDB = Action { request =>
     import scala.concurrent.ExecutionContext.Implicits.global
 
     DB.withConnection {implicit c =>

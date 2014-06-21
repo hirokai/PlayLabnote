@@ -93,4 +93,6 @@ GET           /google_oauth2callback                        controllers.Applicat
 
 
 # Global DB
-GET           /account/database                             controllers.Application.dumpdb
+GET           /account/database                             controllers.Application.downloadDB
+GET           /account/export_database                      controllers.Application.saveDBToGDrive
+GET           /account/email_database                       controllers.Application.emailDB
