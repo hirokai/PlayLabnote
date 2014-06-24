@@ -54,6 +54,9 @@
                                  ng-options="type as type.title for type in types"></select>
                     </span>
                     <span><a ng-disabled='selectedSamples.length != 1'  class='btn btn-sm btn-default' ui-sref="sample_id({id: selectedSamples[0]})">Detail</a></span>
+                    <span><a ng-disabled='selectedRunSampleCells.length == 0'  class='btn btn-sm btn-default' ng-click='newMulti()'>New</a></span>
+                    <span><a ng-disabled='selectedRunSampleCells.length == 0'  class='btn btn-sm btn-default' ng-click='assignMulti()'>Assign</a></span>
+                    <span><input type="checkbox" ng-model='showRSButtons.val' btn-checkbox/>Show buttons in cell</span>
                 </div>
 
             </div>
@@ -82,7 +85,7 @@
                     </td>
                     <td ng-repeat='run in item.runs' ng-class='{cell_runsample: true, selected: isSelectedSample(), selected_cell: isSelectedCell()}' ng-controller='RunSampleCtrl'>
                         <div class='runsample' ng-if='id' ng-click='clickRunSample($event)'>{{name()}} <br><small>{{typName()}}</small></div>
-                        <div ng-if='!id' class='empty_runsample' ng-click='clickEmptyCell($event)'>
+                        <div ng-if='!id' ng-class='{enable_btns:showRSButtons.val, empty_runsample:true}' ng-click='clickEmptyCell($event)'>
                             <a class="btn btn-xs btn-primary" ng-click='addRunSample(psample,run,$event)'><span class='glyphicon glyphicon-plus'></span></a>
                             <a class="btn btn-xs btn-primary" ng-click='chooseRunSampleToAssign(psample,run)'><span class='glyphicon glyphicon-import'></span></a>
                         </div>

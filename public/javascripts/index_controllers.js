@@ -137,7 +137,7 @@ expsApp.controller('entireCtrl',
         };
 
         $scope.googleLogin = function(){
-            var redirectUri = 'https://localhost/google_oauth2callback';
+            var redirectUri = 'https://'+window.location.host+'/google_oauth2callback';
             var params = {response_type: 'code', client_id: clientId, redirect_uri: redirectUri,
                 scope: 'email https://www.googleapis.com/auth/drive.file', state: 'Hoge', access_type: 'offline', approval_prompt: 'auto',
                 include_granted_scopes: false

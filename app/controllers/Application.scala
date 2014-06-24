@@ -185,13 +185,13 @@ object Application extends Controller {
       "grant_type" -> Seq("authorization_code")
     )).flatMap{res =>
       val j = res.json
-      Logger.debug(res.body)
+      Logger.warn(res.body)
       val id_token = (j \ "id_token").as[String]
       val access_token = (j \ "access_token").as[String]
       val refresh_token = (j \ "refresh_token").asOpt[String]
       WS.url("https://www.googleapis.com/oauth2/v1/tokeninfo").withQueryString("id_token" -> id_token).get().map{res2 =>
         val j2 = res2.json
-        Logger.debug(res2.body)
+        Logger.warn(res2.body)
         val email = (j2 \ "email").as[String]
         val expires = (j2 \ "expires_in").as[Int]
         refresh_token match {

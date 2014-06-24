@@ -213,6 +213,10 @@ expsApp.controller('ExpDetailCtrl', ['$scope', '$http', '$state', '$stateParams'
                 });
         };
 
+        $scope.assignMulti = function(){
+            console.log('assignMulti()', $scope.selectedRunSampleCells);
+        }
+
         var mkName = function(vs){
             return _.map(vs,function(v){
                 v.name = v.title;
