@@ -318,6 +318,7 @@ object Experiment extends Controller {
   def createRunSample(rid: Id, pid: Id) = Action(parse.tolerantFormUrlEncoded) { request =>
     val params = request.body
     val creating = params.get("create").flatMap(_.headOption) == Some("true")
+    //Sample ID to assign.
     val o_id = params.get("id").flatMap(_.headOption).flatMap(toIdOpt)
     val o_name = params.get("name").flatMap(_.headOption)
     val tid = params.get("type").flatMap(_.headOption).flatMap(toIdOpt)

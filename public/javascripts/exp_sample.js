@@ -154,23 +154,7 @@ expsApp.controller('RunSampleCtrl',['$scope','$http', '$timeout', 'listViewSvc',
     };
 
     $scope.addRunSample = function(psample,run,$event){
-        var rid = run.id;
-        var pid = psample.id;
-        var name = psample.typ.name + moment().format("-M/D/YY");
-        $http({url: '/runsamples/'+rid+'/'+pid, method: 'POST', data: $.param({create: true, name: name})}).success(function(r){
-            var d = r.data;
-            console.log(r,d);
-            var key = d.run + ':' + d.protocolSample;
-            console.log(key,$scope.item.runSamples);
-            $scope.item.runSamples[rid][pid] = r.data.id;
-            $scope.item.samples[d.id] = d;
-            listViewSvc.samples.value.push(d);
-            $scope.id = d.id;
-            console.log($scope.item.runSamples);
-//            $timeout(function(){$scope.$digest();},0);
-        }).error(function(r){
-                console.log(r);
-            });
+        $scope.doAddSample(run,psample);
         $event.stopPropagation()
     };
 
@@ -201,3 +185,60 @@ expsApp.controller('SampleChooserCtrl',['$scope', '$http', function($scope,$http
 
     };
 }]);
+
+//FIXME: This is stub.
+expsApp.controller('MultiSampleChooserCtrl',['$scope', '$http', function($scope,$http){
+    var init = function(){
+        $scope.compatibleSamples = [];
+        var typs = _.uniq(_.map($scope.selectedRunSampleCells,function(c){
+            var vs = c.split(":");
+            var psid = parseInt(vs[1]);
+            var ps = _.findWhere($scope.item.protocolSamples,{id: psid});
+            return ps.typ.id;
+        }));
+
+        var tstr = typs.join(",");
+        console.log(tstr);
+
+        $http({url: '/samples/of_types', method: 'GET', params: {types: tstr, subtypes: true}}).success(function(r){
+            $scope.compatibleSamples = r;
+        }).error(function(r){
+                console.log(r);
+            });
+
+
+
+//        var typ = $scope.psample.typ.id // $scope.types[0].id;
+//        $http({url: '/samples/of_type/'+typ, method: 'GET', params: {subtypes: true}}).success(function(r){
+//            console.log(r);
+//            $scope.compatibleSamples = r;
+//        })
+    };
+
+    init();
+
+    $scope.run = function(s){
+        var rid = parseInt(s.split(":")[0]);
+        var run = _.findWhere($scope.item.runs,{id: rid});
+        console.log($scope.item.runs,rid,run);
+        return run;
+    };
+
+    $scope.psample = function(s){
+        var sid = parseInt(s.split(":")[1]);
+        var psample = _.findWhere($scope.item.protocolSamples,{id: sid});
+        console.log(psample);
+        return psample;
+    };
+
+    $scope.chooseSample = function(sample) {
+//        var rid = $scope.run.id;
+//        var pid = $scope.psample.id;
+//        $http({url: '/runsamples/'+rid+'/'+pid, method: 'POST', data: $.param({create: false, id: sample.id})}).success(function(r){
+//            $scope.$parent.id = sample.id;
+//        });
+        $scope.$close();
+
+    };
+}]);
+

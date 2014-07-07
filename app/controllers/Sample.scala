@@ -1,7 +1,7 @@
 package controllers
 
 import models.Database._
-import models.{SampleTypeAccess, SampleAccess, JsonWriter}
+import models.{Sample, SampleTypeAccess, SampleAccess, JsonWriter}
 import play.api.db.DB
 import play.api.libs.json.Json
 import play.api.mvc.BodyParsers.parse
@@ -87,6 +87,23 @@ object Sample extends Controller {
       }else{
         Logger.debug("%d %b".format(tid,subtypes))
         val samples = SampleAccess(u).findCompatibleSamples(tid,subtypes).toArray
+        Ok(Json.toJson(samples))
+      }
+    }
+  }
+
+  def samplesOfTypes = Action { request =>
+    val tids: Array[Id] = request.getQueryString("types").map(_.split(",").map(toIdOpt(_).get)).getOrElse(Array()).distinct
+    val subtypes = request.getQueryString("subtypes") == Some("true")
+    val countOnly = request.getQueryString("countOnly") == Some("true")
+    DB.withConnection {implicit c =>
+      val u: Option[Id] = Application.getUserId(request)
+      if(countOnly){
+        val count: Long = tids.map(tid => SampleAccess(u).findCompatibleSampleCount(tid,subtypes)).sum
+        Ok(Json.obj("count" -> count))
+      }else{
+//        Logger.debug("%d %b".format(tid,subtypes))
+        val samples: Array[models.Sample] = tids.map(tid => SampleAccess(u).findCompatibleSamples(tid,subtypes).toArray).flatten
         Ok(Json.toJson(samples))
       }
     }

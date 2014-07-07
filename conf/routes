@@ -70,6 +70,7 @@ DELETE        /sampledata/$id<[0-9]+>                       controllers.Sample.d
 
 
 GET           /samples/of_type/:tid                         controllers.Sample.samplesOfType(tid: models.Database.Id)
+GET           /samples/of_types                             controllers.Sample.samplesOfTypes()
 
 GET           /types.json                                   controllers.SampleType.listJson
 POST          /types                                        controllers.SampleType.create

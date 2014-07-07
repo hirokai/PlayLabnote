@@ -60,8 +60,8 @@ expsApp.controller('ExpListCtrl', ['$scope', '$state', '$stateParams', 'listView
 }]);
 
 
-expsApp.controller('ExpDetailCtrl', ['$scope', '$http', '$state', '$stateParams', 'listViewSvc', 'ExpDataSvc', '$timeout',
-    function ($scope, $http, $state, $stateParams, listViewSvc, ExpDataSvc, $timeout) {
+expsApp.controller('ExpDetailCtrl', ['$scope', '$http', '$state', '$stateParams', 'listViewSvc', 'ExpDataSvc', '$timeout','$modal',
+    function ($scope, $http, $state, $stateParams, listViewSvc, ExpDataSvc, $timeout, $modal) {
         var initData = function(){
             $scope.pageTitle = listViewSvc.pageTitle;
             $scope.selectedItem = listViewSvc.selectedItem;
@@ -213,9 +213,53 @@ expsApp.controller('ExpDetailCtrl', ['$scope', '$http', '$state', '$stateParams'
                 });
         };
 
+        $scope.newMulti = function(){
+            console.log('newMulti()');
+            _.map($scope.selectedRunSampleCells,function(cell){
+               var vs = cell.split(':');
+               var run = vs[0];
+               var psample = vs[1];
+               console.log(run,psample);
+                var url = "/runsamples/"+run+'/'+psample;
+                $http({url: url, method: 'POST', data: $.param({name: 'hoge', create: true})}).success(function(r){
+                    console.log(r,$scope.item.runSamples);
+                    $scope.item.runSamples[run][psample] = r.data.id;
+                    console.log($scope.item.runSamples);
+                }).error(function(r){
+                        console.log(r);
+
+                    });
+            });
+        };
+
         $scope.assignMulti = function(){
             console.log('assignMulti()', $scope.selectedRunSampleCells);
-        }
+            $scope.openMultiAssignDialog();
+        };
+
+        $scope.openMultiAssignDialog = function() {
+          $modal.open({templateUrl: '/public/html/partials/multiSampleChooser.html', scope: $scope, controller: 'MultiSampleChooserCtrl'});
+        };
+
+        $scope.doAddSample = function(run,psample) {
+            var rid = run.id;
+            var pid = psample.id;
+            var name = psample.typ.name + moment().format("-M/D/YY");
+            $http({url: '/runsamples/'+rid+'/'+pid, method: 'POST', data: $.param({create: true, name: name})}).success(function(r){
+                var d = r.data;
+                console.log(r,d);
+                var key = d.run + ':' + d.protocolSample;
+                console.log(key,$scope.item.runSamples);
+                $scope.item.runSamples[rid][pid] = r.data.id;
+                $scope.item.samples[d.id] = d;
+                listViewSvc.samples.value.push(d);
+                $scope.id = d.id;
+                console.log($scope.item.runSamples);
+//            $timeout(function(){$scope.$digest();},0);
+            }).error(function(r){
+                    console.log(r);
+                });
+        };
 
         var mkName = function(vs){
             return _.map(vs,function(v){

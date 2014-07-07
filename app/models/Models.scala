@@ -308,9 +308,9 @@ case class ExperimentAccess(o_owner: Option[Id]) {
           val sid = row[Id]("sample")
           val r = row[Id]("run")
           val p = row[Id]("protocol_sample")
-          val s = SampleAccess(o_owner).get(sid).get
-          ((r,p),s)
-        }
+          val o_s = SampleAccess(o_owner).get(sid)  //FIXME: This should NOT be Option. If this is None, there is something wrong with DB logic.
+          o_s.map(s => ((r,p),s))
+        }.flatten
       ss.toMap
   }
 
@@ -783,7 +783,7 @@ object Sample {
 }
 
 case class SampleAccess(o_owner: Option[Id]) {
-  val owner: Id = o_owner.getOrElse(Database.sandboxUserId)
+  val owner: Id = o_owner.get
   val dbname = "Sample"
 
   def get(id: Id)(implicit c: Connection): Option[Sample] = {
