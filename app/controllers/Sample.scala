@@ -175,4 +175,8 @@ object Sample extends Controller {
     }
   }
 
+  def exportToGDrive(id: Id) = Action {request =>
+    Ok("stub")
+  }
+
 }

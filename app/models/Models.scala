@@ -49,6 +49,25 @@ case class UserAccess() {
   }
 
 }
+object SpreadSheetHelper {
+  def mkHeaderRowStyle(wb: HSSFWorkbook) = {
+    val style = wb.createCellStyle
+    val font = wb.createFont
+    font.setBoldweight(Font.BOLDWEIGHT_BOLD)
+    style.setFont(font)
+    style.setFillForegroundColor(IndexedColors.AQUA.getIndex)
+    style.setFillPattern(CellStyle.SOLID_FOREGROUND)
+    style
+  }
+  def mkH2Style(wb: HSSFWorkbook) = {
+    val style = wb.createCellStyle
+    val font = wb.createFont
+    font.setBoldweight(Font.BOLDWEIGHT_BOLD)
+    font.setFontHeightInPoints(14)
+    style.setFont(font)
+    style
+  }
+}
 
 case class Experiment (
                        id: Id,
@@ -61,6 +80,9 @@ case class Experiment (
                        runSamples: Map[(Id,Id),Sample] = Map(),
                        runSteps: Map[(Id,Id),RunStep] = Map()
                        ){
+
+  import SpreadSheetHelper._
+
   def mkSpreadSheet: String = {
     import org.apache.poi.hssf.usermodel._
     import org.apache.commons.codec.binary.Base64OutputStream
@@ -83,13 +105,11 @@ case class Experiment (
   }
 
   def mkSummarySheet(wb: HSSFWorkbook, sheet: Sheet){
-    val createHelper = wb.getCreationHelper
-
     val row = sheet.createRow(0)
     val h2style = mkH2Style(wb)
     val cell = row.createCell(0)
     cell.setCellStyle(h2style)
-    cell.setCellValue(createHelper.createRichTextString(this.name))
+    cell.setCellValue(this.name)
     row.createCell(1).setCellValue("ID: " + id.toString)
     sheet.autoSizeColumn(0)
     sheet.autoSizeColumn(1)
@@ -208,25 +228,6 @@ case class Experiment (
     }
     cols.indices.map(sheet.autoSizeColumn)
   }
-
-  private def mkHeaderRowStyle(wb: HSSFWorkbook) = {
-    val style = wb.createCellStyle
-    val font = wb.createFont
-    font.setBoldweight(Font.BOLDWEIGHT_BOLD)
-    style.setFont(font)
-    style.setFillForegroundColor(IndexedColors.AQUA.getIndex)
-    style.setFillPattern(CellStyle.SOLID_FOREGROUND)
-    style
-  }
-  private def mkH2Style(wb: HSSFWorkbook) = {
-    val style = wb.createCellStyle
-    val font = wb.createFont
-    font.setBoldweight(Font.BOLDWEIGHT_BOLD)
-    font.setFontHeightInPoints(14)
-    style.setFont(font)
-    style
-  }
-
 }
 
 object Experiment {
@@ -871,7 +872,48 @@ object SampleData {
       original_id = row[Option[String]]("original_id"))
   }
 }
-case class Sample(id: Id, owner: Id, name: String, typ: Either[Id,SampleType], note: String = "", data: Array[SampleData] = Array())
+case class Sample(id: Id, owner: Id, name: String, typ: Either[Id,SampleType], note: String = "", data: Array[SampleData] = Array()) {
+  import SpreadSheetHelper._
+
+  def mkSpreadSheet: String = {
+    import org.apache.poi.hssf.usermodel._
+    import org.apache.commons.codec.binary.Base64OutputStream
+
+    val wb = new HSSFWorkbook
+    val sheet = wb.createSheet("Summary")
+    mkSummarySheet(wb,sheet)
+
+    val byteOut = new ByteArrayOutputStream
+    val out = new Base64OutputStream(byteOut)
+    wb.write(out)
+    out.close()
+    byteOut.toString
+  }
+
+  def mkSummarySheet(wb: HSSFWorkbook, sheet: Sheet){
+    var ci = 0
+    var row = sheet.createRow(ci)
+    val h2style = mkH2Style(wb)
+    val cell = row.createCell(0)
+    cell.setCellStyle(h2style)
+    cell.setCellValue(this.name)
+    ci += 1
+
+    row = sheet.createRow(ci)
+    row.createCell(0).setCellValue("ID")
+    row.createCell(1).setCellValue(id)
+    ci += 1
+
+    row = sheet.createRow(ci)
+    row.createCell(0).setCellValue("Type")
+    val typname: String = typ.fold(l => "", r => r.name)
+    row.createCell(1).setCellValue(typname)
+    ci += 1
+
+    sheet.autoSizeColumn(0)
+    sheet.autoSizeColumn(1)
+  }
+}
 
 object Sample {
   //Caution: Always use join query to include sampletype.

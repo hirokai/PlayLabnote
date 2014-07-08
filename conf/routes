@@ -22,7 +22,7 @@ POST          /exps/$id<[0-9]+>/psamples                    controllers.Experime
 POST          /exps/$id<[0-9]+>/psteps                      controllers.Experiment.createProtocolStep(id: models.Database.Id)
 GET           /exps/$id<[0-9]+>/socket                      controllers.Experiment.socket(id: models.Database.Id)
 
-POST          /exps/$id<[0-9]+>/export                      controllers.Experiment.exportExp(id: models.Database.Id)
+POST          /exps/$id<[0-9]+>/export                      controllers.Experiment.exportToGDrive(id: models.Database.Id)
 
 
 GET           /psteps/$id<[0-9]+>.json                      controllers.Experiment.getProtocolStep(id: models.Database.Id)
@@ -60,6 +60,9 @@ POST          /samples                                      controllers.Sample.c
 GET           /samples/$id<[0-9]+>.json                     controllers.Sample.getJson(id: models.Database.Id)
 PUT           /samples/$id<[0-9]+>                          controllers.Sample.update(id: models.Database.Id)
 DELETE        /samples/$id<[0-9]+>                          controllers.Sample.delete(id: models.Database.Id)
+
+POST          /samples/$id<[0-9]+>/export                   controllers.Sample.exportToGDrive(id: models.Database.Id)
+
 
 GET           /samples/$id<[0-9]+>/exps                     controllers.Sample.getExps(id: models.Database.Id)
 GET           /samples/$id<[0-9]+>/related                  controllers.Sample.stub(id: models.Database.Id)

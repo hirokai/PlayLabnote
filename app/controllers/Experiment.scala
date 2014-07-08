@@ -477,7 +477,96 @@ object Experiment extends Controller {
     Ok("Stub")
   }
 
-  def exportExp(id: Id) = Action.async {request =>
+  object ExportGSheet {
+    import scala.concurrent.ExecutionContext.Implicits.global
+
+    //Return Future of (GDrive ID, access token, json from GDrive API).
+    def export(accessToken: String, sheet_id: Option[String], title: String, xlsData: String): Future[(Option[String], Option[String], JsValue)] = {
+      val boundary = "-------314159265358979323846"
+      val delimiter = "\r\n--" + boundary + "\r\n"
+      val close_delim = "\r\n--" + boundary + "--"
+
+      val multipartRequestBody =
+        delimiter + "Content-Type: application/json\r\n\r\n" +
+          Json.obj("title" -> title, "mimeType" -> "text/csv").toString +
+          delimiter + "Content-Type: application/vnd.ms-excel" + "\r\n" +
+          "Content-Transfer-Encoding: base64\r\n" +
+          "\r\n" +
+          xlsData + close_delim
+
+      def updateGSheet(sheet_id: String, token: String): Future[(Option[String],JsValue)] = {
+        WS.url("https://www.googleapis.com/upload/drive/v2/files/"+sheet_id+"?uploadType=multipart&convert=true")
+          .withHeaders(
+          "Authorization" -> ("Bearer "+token),
+          "Content-Type" -> ("multipart/mixed; boundary='" + boundary + "'"))
+          .put(multipartRequestBody).map{res =>
+          val j = res.json
+          ((j \ "id").asOpt[String],j)
+        }
+      }
+
+      def newGSheet(token: String): Future[(Option[String],JsValue)] = {
+        WS.url("https://www.googleapis.com/upload/drive/v2/files?uploadType=multipart&convert=true")
+          .withHeaders(
+          "Authorization" -> ("Bearer "+token),
+          "Content-Type" -> ("multipart/mixed; boundary='" + boundary + "'"))
+          .post(multipartRequestBody).map{res =>
+          val j = res.json
+          ((j \ "id").asOpt[String],j)
+        }
+      }
+
+      Application.maybeRefreshToken(accessToken){token =>
+        val resToken = if (token == accessToken) None else Some(token)
+        sheet_id match {
+          case Some(sid) => {
+            updateGSheet(sid, token).flatMap{res =>
+              if(res._1.isEmpty){
+                newGSheet(token).map{res =>
+                  (res._1, resToken, res._2)
+                }
+              }else{
+                Future((res._1, resToken, res._2))
+              }
+            }
+          }
+          case None => {
+            newGSheet(token).map{res =>
+              (res._1, resToken, res._2)
+            }
+          }
+        }
+      }
+    }
+  }
+  import scala.concurrent.ExecutionContext.Implicits.global
+  def exportToGDrive(id: Id) = Action.async {request =>
+
+    DB.withConnection{implicit c =>
+      val user: Option[(Id,String)] = Application.getUserIdAndAccessToken(request)
+      user match {
+        case Some((uid, accessToken)) =>{
+          val u: Option[Id] = Some(uid)
+          val exp = ExperimentAccess(u).getFull(id).get
+          val title = "Labnotebook: Experiment: " + exp.name
+          ExportGSheet.export(accessToken, getGSheetId(id), title, exp.mkSpreadSheet).map{r =>
+            DB.withConnection{implicit c =>
+              r._1.map({
+                  setGSheetId(id,_)
+              })
+              incrementGSheetSaveCount(id)
+            }
+            val json = Json.obj("response" -> r._3, "updated_access_token" -> r._2)
+            Ok(json)
+          }
+        }
+        case _ => Future(Status(400))
+      }
+    }
+  }
+
+
+  def exportToGDriveOld(id: Id) = Action.async {request =>
     import scala.concurrent.ExecutionContext.Implicits.global
 
     DB.withConnection{implicit c =>
