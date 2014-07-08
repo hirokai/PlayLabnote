@@ -1,7 +1,7 @@
 package controllers
 
 import models.Database._
-import models.{Sample, SampleTypeAccess, SampleAccess, JsonWriter}
+import models._
 import play.api.db.DB
 import play.api.libs.json.Json
 import play.api.mvc.BodyParsers.parse
@@ -9,6 +9,16 @@ import play.api.mvc.{Action, Controller}
 import scala.Some
 import play.api.Play.current
 import play.Logger
+import scala.Some
+import models.SampleTypeAccess
+import models.SampleAccess
+import scala.concurrent.Future
+import java.sql.Connection
+import anorm._
+import models.Database.Id
+import scala.Some
+import models.SampleTypeAccess
+import models.SampleAccess
 
 object Sample extends Controller {
   import JsonWriter.implicitSampleTypeWrites
@@ -175,8 +185,49 @@ object Sample extends Controller {
     }
   }
 
-  def exportToGDrive(id: Id) = Action {request =>
-    Ok("stub")
+  def exportToGDrive(id: Id) = Action.async {request =>
+    import scala.concurrent.ExecutionContext.Implicits.global
+    DB.withConnection{implicit c =>
+      val user: Option[(Id,String)] = Application.getUserIdAndAccessToken(request)
+      user match {
+        case Some((uid, accessToken)) =>{
+          val u: Option[Id] = Some(uid)
+          val sample = SampleAccess(u).get(id).get
+          val title = "Labnotebook: Experiment: " + sample.name
+          ExportGSheet.export(accessToken, getGSheetId(id), title, sample.mkSpreadSheet).map{r =>
+            DB.withConnection{implicit c =>
+              r._1.map({
+                setGSheetId(id,_)
+              })
+              incrementGSheetSaveCount(id)
+            }
+            val json = Json.obj("response" -> r._3, "updated_access_token" -> r._2)
+            Ok(json)
+          }
+        }
+        case _ => Future(Status(400))
+      }
+    }
+  }
+
+  def setGSheetId(id: Id, sheet_id: String)(implicit c: Connection): Boolean = {
+    if(getGSheetId(id).isDefined){
+      SQL(s"UPDATE GDriveExportSample SET sheet_id='${escape(sheet_id)}' where sample=$id").executeUpdate() == 1
+    }else{
+      SQL(s"INSERT into GDriveExportSample(sample,sheet_id,save_count) values($id,'${escape(sheet_id)}',0)").executeInsert()
+      true
+    }
+  }
+
+  def incrementGSheetSaveCount(id: Id)(implicit c: Connection): Option[Int] = {
+    SQL(s"UPDATE GDriveExportSample SET save_count=save_count+1 where sample=$id").executeUpdate()
+    SQL(s"SELECT save_count from GDriveExportSample where sample=$id")().map(_[Int]("save_count")).headOption
+  }
+
+  def getGSheetId(id: Id): Option[String] = {
+    DB.withConnection{implicit c  =>
+      SQL(s"SELECT sheet_id from GDriveExportSample where sample=$id")().map(_[String]("sheet_id")).headOption
+    }
   }
 
 }

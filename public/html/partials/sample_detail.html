@@ -4,6 +4,7 @@
 </div>
 
 
+    <a class="btn btn-sm btn-primary" ng-click='saveSample(item.id)'>Save</a>
     <button type="button" class="btn btn-danger btn-sm" ng-click="deleteSample()">Delete</button>
     <button type="button" class="btn btn-default btn-sm" ng-model="showDetailJson.value" btn-checkbox >JSON</button>
     <pre class='json' ng-if='showDetailJson.value'>{{selectedItem.sample | json}}</pre>

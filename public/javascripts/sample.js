@@ -157,7 +157,27 @@ expsApp.controller('SampleDetailCtrl', ['$scope', '$http', '$state', '$statePara
             }
         }
 
-    }
+    };
+
+    $scope.saveSample = function (id) {
+        $scope.showMessage('Saving to Google Drive. This may take a while...');
+        $http.post('/samples/'+id+'/export').success(function(r){
+            console.log(r);
+            if(r.response.id){
+                var url = "https://docs.google.com/spreadsheets/d/" + r.id;
+                $scope.showMessage('Data was exported to Google Drive')
+               window.open(url);
+            }else{
+                $scope.showMessage('Error occured.','danger');
+            }
+            if(r.updated_access_token){
+                localStorage['labnote.access_token'] = r.updated_access_token;
+                $http.defaults.headers.common.Authorization = "OAuth2 " +  localStorage['labnote.access_token'];
+            }
+        }).error(function(r){
+                $scope.showMessage('Error occured.','danger');
+            });
+    };
 
 }]);
 
