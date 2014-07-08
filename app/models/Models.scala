@@ -341,13 +341,13 @@ case class ExperimentAccess(o_owner: Option[Id]) {
   }
 
   def getProtocolSamples(eid: Id)(implicit c: Connection): Array[ProtocolSample] = {
-    val s = s"SELECT * from ProtocolSample INNER JOIN Experiment ON ProtocolSample.experiment=Experiment.id where Experiment.id=$eid and Experiment.owner=$owner"
-    val samples: Array[ProtocolSample] = SQL(s)().map{row =>
-      val tid = row[Id]("ProtocolSample.type")
-    val s2 = s"SELECT * from SampleType where id=$tid and owner=$owner"
-    Logger.debug(s2)
-      val t = SQL(s2)().map(SampleType.fromRow).headOption
-      val typ = Right(t.get)
+    val samples: Array[ProtocolSample]
+    = SQL("SELECT * from ProtocolSample INNER JOIN Experiment ON ProtocolSample.experiment=Experiment.id "+
+      "INNER JOIN SampleType on SampleType.id=ProtocolSample.type " +
+      s"where Experiment.id=$eid and Experiment.owner=$owner and SampleType.owner=$owner")().map{row =>
+      val typ = Right(
+        SampleType(id = row[Id]("SampleType.id"), name = row[String]("SampleType.name"), parent = row[Option[Id]]("SampleType.parent"))
+      )
 
       ProtocolSample(
         row[Id]("ProtocolSample.id"),
@@ -754,12 +754,13 @@ case class ExpRunAccess(o_owner: Option[Id]) {
 
 }
 
-case class SampleData(id: Id, name: String, url: String, typ: Option[String], icon: Option[String] = None, note: Option[String] = None,
+case class SampleData(id: Id, sample: Id, name: String, url: String, typ: Option[String], icon: Option[String] = None, note: Option[String] = None,
                        original_id: Option[String] = None)
 
 object SampleData {
   def fromRow(row: Row): SampleData = {
     SampleData(id = row[Id]("id"),
+      sample = row[Id]("sample"),
       name = row[String]("name"),
       url = row[String]("url"),
       typ = row[Option[String]]("type"),
@@ -772,13 +773,15 @@ case class Sample(id: Id, owner: Id, name: String, typ: Either[Id,SampleType], n
 
 object Sample {
   //Caution: Always use join query to include sampletype.
-  def fromRow(row: Row)(implicit c: Connection): Sample = {
+  def fromRow(data: Option[Map[Id,Array[SampleData]]] = None)(row: Row)(implicit c: Connection): Sample = {
     val t = SampleType(id = row[Id]("sampletype.id"), name = row[String]("sampletype.name"), parent = row[Option[Id]]("sampletype.parent"))
 
     val id = row[Id]("sample.id")
-    val data = SQL(s"SELECT * from SampleData where sample=$id")().map(SampleData.fromRow).toArray
-
-    Sample(id = id, owner=row[Id]("owner"), name=row[String]("sample.name"), typ = Right(t), data = data)
+    val dat = data match {
+      case Some(d) => d.get(id).getOrElse(Array())
+      case None => SQL(s"SELECT * from SampleData where sample=$id")().map(SampleData.fromRow).toArray
+    }
+    Sample(id = id, owner=row[Id]("owner"), name=row[String]("sample.name"), typ = Right(t), data = dat)
   }
 }
 
@@ -788,12 +791,23 @@ case class SampleAccess(o_owner: Option[Id]) {
 
   def get(id: Id)(implicit c: Connection): Option[Sample] = {
       SQL(s"SELECT * from Sample inner join sampletype on sample.type=sampletype.id " +
-        s"where sample.owner=$owner and sample.id=$id")().map(Sample.fromRow).headOption
+        s"where sample.owner=$owner and sample.id=$id")().map(Sample.fromRow()).headOption
   }
 
   def list(implicit c: Connection): Array[Sample] = {
+    val map: Map[Id,Array[SampleData]] = SQL(s"SELECT * from SampleData inner join Sample on SampleData.sample=Sample.owner where Sample.owner=$owner")()
+      .map(row => {
+      SampleData(id = row[Id]("sampledata.id"),
+        sample = row[Id]("sampledata.sample"),
+        name = row[String]("sampledata.name"),
+        url = row[String]("sampledata.url"),
+        typ = row[Option[String]]("sampledata.type"),
+        icon = row[Option[String]]("sampledata.icon"),
+        note = row[Option[String]]("sampledata.note"),
+        original_id = row[Option[String]]("sampledata.original_id"))
+    }).groupBy(_.sample).mapValues(_.toArray)
     SQL(s"SELECT * from sample inner join sampletype " +
-      s"on sample.type = sampletype.id where sample.owner=$owner")().map(Sample.fromRow).toArray
+      s"on sample.type = sampletype.id where sample.owner=$owner")().map(Sample.fromRow(Some(map))).toArray
   }
 
   def findExps(id: Id)(implicit c: Connection): Array[Experiment] = {
