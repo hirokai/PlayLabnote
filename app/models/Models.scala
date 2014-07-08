@@ -10,8 +10,9 @@ import javax.transaction.Transaction
 import scala.reflect.ClassTag
 import org.h2.jdbc.JdbcSQLException
 import java.io.{ByteArrayOutputStream, OutputStream}
-import org.apache.poi.ss.usermodel.Sheet
+import org.apache.poi.ss.usermodel.{CellStyle, IndexedColors, Font, Sheet}
 import org.apache.poi.hssf.usermodel.HSSFWorkbook
+import org.apache.poi.ss.util.CellRangeAddress
 
 object Database {
   type Id = Long
@@ -71,6 +72,9 @@ case class Experiment (
     val sheet2 = wb.createSheet("Samples")
     mkSampleSheet(wb,sheet2)
 
+    val sheet3 = wb.createSheet("Steps")
+    mkStepSheet(wb,sheet3)
+
     val byteOut = new ByteArrayOutputStream
     val out = new Base64OutputStream(byteOut)
     wb.write(out)
@@ -82,12 +86,9 @@ case class Experiment (
     val createHelper = wb.getCreationHelper
 
     val row = sheet.createRow(0)
-    val font = wb.createFont
-    val style = wb.createCellStyle
-    style.setFont(font)
-    font.setFontHeightInPoints(16)
+    val h2style = mkH2Style(wb)
     val cell = row.createCell(0)
-    cell.setCellStyle(style)
+    cell.setCellStyle(h2style)
     cell.setCellValue(createHelper.createRichTextString(this.name))
     row.createCell(1).setCellValue("ID: " + id.toString)
     sheet.autoSizeColumn(0)
@@ -99,12 +100,20 @@ case class Experiment (
 
     var ci = 0
     var row = sheet.createRow(ci)
-    row.createCell(0).setCellValue("Samples used in the experiment")
+    val h2style = mkH2Style(wb)
+
+    val cellh2 = row.createCell(0)
+    cellh2.setCellStyle(h2style)
+    cellh2.setCellValue("Samples used in the experiment")
 
     val toprow = sheet.createRow(1)
     val cols = Seq("Name","ID","Date","Note")
+    val headerStyle = mkHeaderRowStyle(wb)
+
     for((s,i) <- cols.zipWithIndex){
-      toprow.createCell(i).setCellValue(s)
+      val cell = toprow.createCell(i)
+      cell.setCellValue(s)
+      cell.setCellStyle(headerStyle)
     }
     ci = 2
     for((s,i) <- samples.zipWithIndex){
@@ -115,16 +124,109 @@ case class Experiment (
     }
     ci += 1
     row = sheet.createRow(ci)
-    row.createCell(0).setCellValue("Related samples")
+    val cell3 = row.createCell(0)
+    cell3.setCellValue("Related samples")
+    cell3.setCellStyle(h2style)
     ci += 1
 
     row = sheet.createRow(ci)
     for((s,i) <- cols.zipWithIndex){
-      row.createCell(i).setCellValue(s)
+      val cell = row.createCell(i)
+      cell.setCellValue(s)
+      cell.setCellStyle(headerStyle)
     }
     cols.indices.map(sheet.autoSizeColumn)
 
   }
+
+  def mkStepSheet(wb: HSSFWorkbook, sheet: Sheet){
+    val steps: Seq[RunStep] = this.runSteps.values.toSeq
+    val h2 = mkH2Style(wb)
+    var ci = 0
+    var row = sheet.createRow(ci)
+    var cell = row.createCell(0)
+    cell.setCellStyle(h2)
+    cell.setCellValue("Experimental steps")
+    sheet.addMergedRegion(new CellRangeAddress(0,0,0,1))
+    ci += 1
+
+    row = sheet.createRow(ci)
+    val runs = this.runs.map(_.name).toSeq
+    val cols = Seq("","") ++ runs
+    val headerStyle = mkHeaderRowStyle(wb)
+    for((s,i) <- cols.zipWithIndex){
+      val cell = row.createCell(i)
+      cell.setCellValue(s)
+      cell.setCellStyle(headerStyle)
+    }
+    ci += 1
+    for(step: ProtocolStep <- this.protocolSteps) {
+      row = sheet.createRow(ci)
+      row.createCell(0).setCellValue(step.name)
+      row.createCell(1).setCellValue("Time")
+      for((run,i) <- this.runs.zipWithIndex) {
+        val runstep: Option[RunStep] = this.runSteps.get((run.id,step.id))
+        val t: Option[Long] = runstep.flatMap(_.timeAt)
+        t match {
+          case Some(time) => {
+            import com.github.nscala_time.time.Imports._
+            val dtf = DateTimeFormat.forPattern("MM/dd/yyyy HH:mm:ss")
+            row.createCell(i+2).setCellValue(dtf.print(time))
+          }
+          case _ =>
+        }
+      }
+      ci += 1
+      row = sheet.createRow(ci)
+      row.createCell(1).setCellValue("Note")
+      for((run,i) <- this.runs.zipWithIndex) {
+        val runstep: Option[RunStep] = this.runSteps.get((run.id,step.id))
+        val n: Option[String] = runstep.flatMap(_.note)
+        n match {
+          case Some(note) => {
+            row.createCell(i+2).setCellValue(note)
+          }
+          case _ =>
+        }
+      }
+      ci += 1
+      for(param <- step.params) {
+        row = sheet.createRow(ci)
+        row.createCell(1).setCellValue(param.name + param.unit.map(" ["+_+"]").getOrElse(""))
+        for((run,i) <- this.runs.zipWithIndex) {
+          val runstep: Option[RunStep] = this.runSteps.get((run.id,step.id))
+          val p: Option[RunStepParam] = runstep.flatMap(_.params).flatMap(_.find(_.protocolParam == param.id))
+          p match {
+            case Some(paramVal) => {
+              row.createCell(i+2).setCellValue(paramVal.value)
+            }
+            case _ =>
+          }
+        }
+        ci += 1
+      }
+    }
+    cols.indices.map(sheet.autoSizeColumn)
+  }
+
+  private def mkHeaderRowStyle(wb: HSSFWorkbook) = {
+    val style = wb.createCellStyle
+    val font = wb.createFont
+    font.setBoldweight(Font.BOLDWEIGHT_BOLD)
+    style.setFont(font)
+    style.setFillForegroundColor(IndexedColors.AQUA.getIndex)
+    style.setFillPattern(CellStyle.SOLID_FOREGROUND)
+    style
+  }
+  private def mkH2Style(wb: HSSFWorkbook) = {
+    val style = wb.createCellStyle
+    val font = wb.createFont
+    font.setBoldweight(Font.BOLDWEIGHT_BOLD)
+    font.setFontHeightInPoints(14)
+    style.setFont(font)
+    style
+  }
+
 }
 
 object Experiment {

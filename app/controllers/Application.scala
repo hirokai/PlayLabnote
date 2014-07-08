@@ -277,11 +277,20 @@ object Application extends Controller {
         "client_secret" -> Seq(secret),
         "grant_type" -> Seq("refresh_token")
       )).flatMap{res =>
-        val newToken = (res.json \ "access_token").as[String]
-        DB.withConnection{implicit c =>
-          SQL(s"UPDATE GoogleClient SET GoogleClient.access_token='$newToken' where GoogleClient.access_token='$accessToken'").executeUpdate()
+        (res.json \ "access_token").asOpt[String] match {
+          case Some(newToken) => {
+            DB.withConnection{implicit c =>
+              SQL(s"UPDATE GoogleClient SET GoogleClient.access_token='$newToken' where GoogleClient.access_token='$accessToken'").executeUpdate()
+            }
+            proc(newToken)
+          }
+          case None => {
+            Logger.warn("Access token renewal failed.")
+            Logger.warn(res.body)
+            proc(accessToken)
+          }
         }
-        proc(newToken)
+
       }
     }else{
       proc(accessToken)
