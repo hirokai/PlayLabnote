@@ -21,3 +21,5 @@ dist
 /.settings
 .DS_Store
 var
+conf/private/*
+
